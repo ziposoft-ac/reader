@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="CMakeSharedSettings">
+    <configurations>
+      <configuration PROFILE_NAME="ARM Rel" ENABLED="false" GENERATION_DIR="$PROJECT_DIR$/../../build/timer/arm_rel" CONFIG_NAME="Release" GENERATION_OPTIONS="-DCMAKE_TOOLCHAIN_FILE=/ac/code/zs/toolchain.armhf -DCMAKE_SYSTEM_PROCESSOR=armhf -DZS_BUILD_ARM=1 -DZS_BUILD_STATIC=1" />
+      <configuration PROFILE_NAME="ARM Debug" ENABLED="false" GENERATION_DIR="$PROJECT_DIR$/../../build/timer/arm_dbg" CONFIG_NAME="Debug" GENERATION_OPTIONS="-DCMAKE_TOOLCHAIN_FILE=/ac/code/zs/toolchain.armhf  -DZS_BUILD_STATIC=1" />
+      <configuration PROFILE_NAME="DebugStatic" ENABLED="false" GENERATION_DIR="$USER_HOME$/buildzipo/debug_static" CONFIG_NAME="Debug" GENERATION_OPTIONS="-DZS_BUILD_STATIC=1" />
+      <configuration PROFILE_NAME="Pi64" ENABLED="false" GENERATION_DIR="$PROJECT_DIR$/../../build/timer/arm_dbg" CONFIG_NAME="Debug" GENERATION_OPTIONS="-DCMAKE_TOOLCHAIN_FILE=toolchain.armhf  -DZS_BUILD_STATIC=1" />
+    </configurations>
+  </component>
+</project>
