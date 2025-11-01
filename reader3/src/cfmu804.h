@@ -304,7 +304,7 @@ public:
     virtual z_status inventory_single() ;
     virtual RfidRead* read_single() ;
     virtual z_status exp_data_read() ;
-    virtual z_status set_inventory_time() ;
+    virtual z_status inventory_time_set() ;
     z_status set_return_loss(int val)
     {
         U8 data = val;
@@ -328,6 +328,17 @@ public:
     {
         U8 data = val;
         return send_command(0x2f, &data, 1);
+    }
+	/*
+	 *Scantime: inventory time. Reader will modify the maximum response time according to user defined value (0*100ms ~ 255*100ms),
+	 *and reader will apply this new setting for future inventories.
+	 *Default setting of Scantime is 0x14 (corresponding to 20*100ms).
+	 *Valid setting of Scantime is 0x00 ~ 0xff (corresponding to 3*100ms ~ 255*100ms).
+	 */
+	z_status scan_time_set(int val)
+    {
+    	U8 data = val;
+    	return send_command(0x25, &data, 1);
     }
     z_status ant_check_set(int val)
     {
@@ -381,7 +392,6 @@ ZMETA_DECL(Cfmu804)
     ZACT(antCheck);
 
     ZACT(inventory);
-    ZACT(set_inventory_time);
 
     ZACT(exp_data_read);
     ZACT(info_get);
@@ -423,6 +433,13 @@ ZMETA_DECL(Cfmu804)
     ZCMD(set_return_loss, ZFF_CMD_DEF, "set_return_loss", ZPRM(int, val, 0, "val", ZFF_PARAM));
     ZCMD(ant_check_set, ZFF_CMD_DEF, "ant_check_set", ZPRM(int, val, 0, "val", ZFF_PARAM));
     ZCMD(ant_cfg_set, ZFF_CMD_DEF, "ant_cfg_set", ZPRM(int, val, 0, "val", ZFF_PARAM));
+	/*
+ *Scantime: inventory time. Reader will modify the maximum response time according to user defined value (0*100ms ~ 255*100ms),
+ *and reader will apply this new setting for future inventories.
+ *Default setting of Scantime is 0x14 (corresponding to 20*100ms).
+ *Valid setting of Scantime is 0x00 ~ 0xff (corresponding to 3*100ms ~ 255*100ms).
+ */
+    ZCMD(scan_time_set, ZFF_CMD_DEF, "scan_time_set", ZPRM(int, val, 0x14, "val", ZFF_PARAM));
 };
 
 

@@ -37,6 +37,23 @@ void send_status(http_request r) {
 
 
 }
+int fn_post_set_config(http_request r,z_json_obj &o)
+{
+    rfid_config_t cfg;
+    root.app.start();
+
+    cfg.qValue=o.get_int("qValue");
+    cfg.session=o.get_int("session");
+    cfg.power=o.get_int("power");
+    cfg.pauseTime=o.get_int("pauseTime");
+    cfg.antMask=o.get_int("antMask");
+    cfg.freqLow=o.get_int("freqLow");
+    cfg.freqHigh=o.get_int("freqHigh");
+    cfg.filterTime=o.get_int("filterTime");
+
+    send_status(r);
+    return 200;
+}
 int fn_post_start(http_request r,z_json_obj &o)
 {
     root.app.start();
@@ -113,7 +130,16 @@ int fn_get_delay(http_request r,z_string_map &vars)
 
     return 200;
 }
+int fn_set_config(http_request r,z_string_map &vars)
+{
+    send_json_response(r,[](z_json_stream &js)
+    {
+        js.keyval("status","yeah boy!");
+    });
 
+
+    return 200;
+}
 int fn_get_status(http_request r,z_string_map &vars)
 {
     send_json_response(r,[](z_json_stream &js)

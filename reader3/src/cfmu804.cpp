@@ -377,20 +377,7 @@ struct inv_params_t
 
 }  __attribute__((__packed__)) ;
 
-z_status  Cfmu804::set_inventory_time()
-{
-    inv_params_t params=
-            {
-                    0x85,0,1,0,0,0,0,0,1,30
-            };
-    const int data_len=100;
-    char data[data_len];
-    int retlen=0;
 
-    z_status status=send_command(1, (U8*)&params,sizeof(params),0,&data,data_len,&retlen);
-
-    return status;
-}
 z_status  Cfmu804::inventory()
 {
     inv_params_t params=

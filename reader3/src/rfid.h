@@ -69,14 +69,49 @@ public:
 };
 
 typedef struct {
-    U8 QValue;
+    U8 qValue;
+    /*
+    *Session: 1 byte, the Session-value of the EPC tag inventory.
+        0x00 – apply S0 as Session value;
+        0x01 – apply S1 as Session value;
+        0x02 – apply S2 as Session value;
+        0x03 – apply S3 as Session value;
+        0xff – apply reader smart configuration (only valid in EPC inventory).
+     */
     U8 session;
-    U8 target;
-    U8 ant;
-    U8 freq;
+    //U8 target;
+    U8 antMask;
+    /*
+     * Set freq quadrants, 0-3
+     * Full range: low=0 hi=3
+     * Bottom half: low=0 hi=1
+     * Top half : low=2 hi=3
+ */
+    U8 freqLow;
+    U8 freqHigh;
+
     U8 power;
-    U8 pause_time;
-} rfid_setup_t;
+
+    /*
+    *ReadPauseTime: 1 byte, time break between 2 real time inventories.
+        0x00 – 10ms;
+        0x01 – 20ms;
+        0x02 – 30ms;
+        0x03 – 50ms;
+        0x04 – 100ms.
+     */
+    U8 pauseTime;
+    /*
+     *FliterTime: 1 byte, tag filtering time. The valid value of this parameter is 0 ~ 255, corresponds to (0 ~ 255)*1s.
+     *In real time inventory, if reader detects a particular tag for more than 1 time,
+     *reader will only upload tag information of this tag once within the pre-defined filtering time.
+     *For FliterTime = 0, disable tag filtering function.
+     */
+    U8 filterTime;
+
+} rfid_config_t;
+
+
 
 class RfidReader
 {

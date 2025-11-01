@@ -23,13 +23,17 @@ target_link_libraries(DebugView  zipolib  )
 if (ZS_BUILD_ARM)
     target_compile_definitions(DebugView PUBLIC ARM=1)
 
-    add_custom_command(TARGET DebugView POST_BUILD
-            COMMAND  scp DebugView pi@10.1.1.1:/home/pi/test/
-            )
+
 else()
+
 
 endif()
 
+if (NOT_USED)
+    add_custom_command(TARGET DebugView POST_BUILD
+            COMMAND  scp DebugView pi@10.1.1.1:/home/pi/test/
+    )
+endif()
 
 add_custom_command(
         COMMAND touch src/timestamp.cpp
