@@ -402,13 +402,13 @@ z_json_val* zp_text_parser::parse_json_val()
 
 	return 0;
 }
-I64 z_json_obj::get_int(ctext key)
+I64 z_json_obj::get_int(ctext key,I64 def)
 {
-    I64 val=0;
-    get_int(key,val);
+    I64 val=def;
+    get_int_val(key,val);
     return val;
 }
-bool z_json_obj::get_int(ctext key, I64 &i)
+bool z_json_obj::get_int_val(ctext key, I64 &i)
 {
 	z_json_val* jv = get_val(key);
 	if (!jv)
@@ -421,7 +421,7 @@ bool z_json_obj::get_int(ctext key, I64 &i)
 	i = str.get_i64_val();
 	return true;
 }
-z_string z_json_obj::get_str(ctext key)
+z_string z_json_obj::get_str_def(ctext key,ctext def)
 {
     z_string s;
 	z_json_str* ji = get_val_t<z_json_str>(key);

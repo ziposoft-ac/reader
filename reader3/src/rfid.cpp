@@ -206,21 +206,34 @@ z_status RfidReader::start()
 
 
 }
-z_status RfidReader::setupParams(
-
-        U8 ant, //0==auto
-        U8 power,
-        U8 session,
-        U8 filterTime,
-        U8 qValue
-
-        )
-{
-    return zs_ok;
+z_status RfidReader::configure(
+        const rfid_config_t& c
+        ){
+    _qvalue=c.qValue;
+    _session=c.session;
+    _antenna_mask=c.antMask;
+    freq_set(c.freqLow,c.freqHigh);
+    _power=c.power;
+    _pause_read_time=c.pauseTime;
+    _filter_time=c.filterTime;
+    return config_write();
 }
-z_status RfidReader::setup()
-{
-    return setupParams(_antenna_mask,_power,_session,_filter_time,_qvalue);
+z_status RfidReader::config_dump() {
+
+    z_status status=config_read();
+
+    if (status!=zs_ok)
+        return status;
+
+
+    printf("ReadPauseTime=%d\n", _pause_read_time);
+    printf("Antenna=%x\n", _antenna_detected);
+    printf("FilterTime=%d\n", _filter_time);
+    printf("QValue=%d\n", _qvalue);
+    printf("Session=%d\n", _session);
+    printf("Power=%d\n", _power);
+    printf("Write Power=%d\n", _write_power);
+    return zs_ok;
 }
 
 
@@ -312,6 +325,25 @@ z_status RfidReader::get_reads_since(z_json_stream &js,U32 index,bool include_re
     return zs_ok;
 
 }
+void RfidReader::get_json_config(z_json_stream &js) {
+
+    js.key("reader_config");
+
+    js.obj_start();
+    js.key_bool("reading",_reading);
+    js.keyval_int("power",_power);
+    js.keyval_int("ant_config",_antenna_config);
+    js.keyval_int("ant_mask",_antenna_mask);
+    js.keyval_int("ant_detected",_antenna_detected);
+    js.keyval_int("qValue",_qvalue);
+    js.keyval_int("session",_session);
+    js.keyval_int("filter_time",_filter_time);
+    js.keyval_int("pause_read_time",_pause_read_time);
+    js.obj_end();
+
+    return ;
+}
+
 int RfidReader::add_json_status(z_json_stream &js) {
 
     js.key("reader_status");

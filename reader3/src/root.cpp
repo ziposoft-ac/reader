@@ -124,7 +124,7 @@ int Root::heat_test_callback(void*)
 }
 z_status Root::heat_test()
 {
-    cfmu804.setupParams(1,30,0,5,15);
+    cfmu804.configure(rfid_config_heattest);
 
     cfmu804.readmode_get();
     cfmu804.info_get();

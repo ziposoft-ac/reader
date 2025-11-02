@@ -131,7 +131,9 @@ z_status App::setup_reader_live(z_json_obj &settings)
         filterTime=5;
     if((power<10)||(power>30))
         power=30;
-    return root.getReader().setupParams(0xf,power,session,filterTime,5);
+    return root.getReader().configure({
+        5,1,0xf,0,3,30,0,0
+    });
 
 
 }
@@ -142,6 +144,10 @@ z_status App::_start_new_file()
     z_string time_str;
     z_time time_now = z_time::get_now();
     time_now.string_format(time_str, "-%Y_%m_%d_%H_%M_%S",true);
+    if (!_file_path_record) {
+        return Z_ERROR_MSG(zs_bad_parameter,"Record path not set");
+
+    }
     _record_file_name = "live-"+  std::to_string(time_now.get_t()) + time_str + ".txt";
     _record_file_fullname=_file_path_record+"/"+_record_file_name;
     _write_to_file=true;
@@ -163,9 +169,11 @@ z_status App::start()
 
     _t_started.set_now();
 
-    _start_new_file();
-    //z_string fullname =  _file_path_record+_record_file_name;
-    z_status s = _record_file.open(_record_file_fullname, "ab");
+    z_status s=_start_new_file();
+    if (s)
+        return s;
+        //z_string fullname =  _file_path_record+_record_file_name;
+    s = _record_file.open(_record_file_fullname, "ab");
     if (s)
     {
         msg= "Could not open record file!";

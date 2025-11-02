@@ -111,7 +111,12 @@ typedef struct {
 
 } rfid_config_t;
 
-
+const rfid_config_t rfid_config_heattest={
+    5,0,0xf,0,3,30,0,0
+};
+const rfid_config_t rfid_config_program={
+    5,0,1,0,3,10,0,0
+};
 
 class RfidReader
 {
@@ -143,6 +148,7 @@ protected:
 
 public:
     int _power=30;
+    int _write_power=10;
     int _pause_read_time=0;
     int _session=0;
     int _qvalue=15;
@@ -150,6 +156,8 @@ public:
     int _antenna_config=0xf;
     int _antenna_mask=0xf;
     int _antenna_detected=0;
+    int _freq_low=0;
+    int _freq_high=3;
 
     int cached_read_count() {
         return _queue_reads_all.size();
@@ -180,20 +188,18 @@ public:
             z_string num_ant,
             z_string powerlvl
     );
-    virtual z_status setupParams(
-
-            U8 antmask,
-            U8 power,
-            U8 session,
-            U8 filterTime,
-            U8 qValue
-
-            )=0;
+    virtual z_status configure(
+            const rfid_config_t& config
+            );
+    virtual z_status config_write(){ return zs_not_implemented;}
+    virtual z_status config_read(){ return zs_not_implemented;}
+    virtual z_status config_dump();
     virtual z_status readmode_get(){ return zs_not_implemented;}
     virtual z_status readmode_set(){ return zs_not_implemented;}
     virtual z_status info_get(){ return zs_not_implemented;}
-    virtual z_status setup();
     int add_json_status(z_json_stream &js);
+    void get_json_config(z_json_stream &js);
+	virtual z_status freq_set(U8 low,U8 max){ return zs_not_implemented;}
 
 };
 
@@ -217,7 +223,9 @@ ZMETA_DECL(RfidReader)
     ZACT(stop);
     ZACT(close);
     ZACT(start);
-    ZACT(setup);
+    ZACT(config_write);
+    ZACT(config_dump);
+    ZACT(config_read);
     ZCMD(dump_queue, ZFF_CMD_DEF, "dump_reads_since",
          ZPRM(int, index, 0, "index", ZFF_PARAM)
     );
@@ -239,6 +247,7 @@ ZMETA_DECL(RfidReader)
     ZPROP(_antenna_mask);
     ZPROP(_session);
     ZPROP(_pause_read_time);
+    ZPROP(_write_power);
     ZPROP(_power);
     ZPROP(_filter_time);
     ZPROP(_qvalue);

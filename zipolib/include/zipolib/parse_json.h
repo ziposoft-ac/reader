@@ -179,10 +179,10 @@ public:
 			stream.set_pretty_print(pp);
 	}
 
-	I64 get_int(ctext key);
-	bool get_int(ctext key, I64 &i);
+	I64 get_int(ctext key,I64 def=0);
+	bool get_int_val(ctext key, I64 &i);
 	bool get_str(ctext key,z_string& s, ctext def);
-	z_string get_str(ctext key);
+	z_string get_str_def(ctext key,ctext def);
 	bool get_bool(ctext key, bool& s, bool def);
 	template <class VALTYPE> VALTYPE* get_val_t(ctext key)
 	{

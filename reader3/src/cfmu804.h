@@ -218,14 +218,15 @@ public:
 #ifdef ARM
     "/dev/ttyAMA0";
 #else
-    "/dev/ttyUSB2";
+    "/dev/ttyUSB0";
 
 #endif
     virtual ~Cfmu804()
     {
     }
 
-    z_status send_cmd_byte(U8 cmd_code,U8 data);
+	z_status send_cmd_byte(U8 cmd_code,U8 data);
+    z_status cmd_single_byte_return(U8 cmd_code,U8 *data);
 
 
 
@@ -287,15 +288,8 @@ public:
     U8 get_ant_loss(int antnum);
 
     int get_temperature_cmd();
-    z_status setupParams(
-
-            U8 ant, //0==auto
-            U8 power,
-            U8 session,
-            U8 filterTime,
-            U8 qValue
-
-            ) override;
+    virtual z_status config_write();
+    virtual z_status config_read();
 
     virtual z_status readmode_get() override;
     virtual z_status readmode_set();
@@ -304,7 +298,6 @@ public:
     virtual z_status inventory_single() ;
     virtual RfidRead* read_single() ;
     virtual z_status exp_data_read() ;
-    virtual z_status inventory_time_set() ;
     z_status set_return_loss(int val)
     {
         U8 data = val;
@@ -324,10 +317,25 @@ public:
 
     	return send_command(0x40, &data, 1);
     }
-    z_status power_set(int val)
+	z_status write_power_set(int val)
     {
-        U8 data = val;
-        return send_command(0x2f, &data, 1);
+    	U8 data = val;
+    	return send_command(0x79, &data, 1);
+    }
+	z_status write_power_get()
+    {
+    	U8 data = 0;
+    	if (cmd_single_byte_return(0x7a, &data)==zs_ok) {
+    		_write_power = data;
+    		ZLOG("Write power set to %d\n",_write_power);
+    		return zs_ok;
+    	}
+    	return zs_io_error;
+    }
+	z_status power_set(int val)
+    {
+    	U8 data = val;
+    	return send_command(0x2f, &data, 1);
     }
 	/*
 	 *Scantime: inventory time. Reader will modify the maximum response time according to user defined value (0*100ms ~ 255*100ms),
@@ -363,12 +371,7 @@ public:
     {
         return send_command(cmd,0,0);
     }
-    bool wait_for_response()
-    {
 
-        return true;
-    }
-    z_status program_setup();
     z_status write_bcd(int number);
     z_status program(int number,bool overwrite);
     cfmu_status_code program_epc(Epc& epc);
@@ -398,11 +401,15 @@ ZMETA_DECL(Cfmu804)
     ZACT(beep_on);
     ZACT(beep_off);
     ZACT(readmode_get);
-    ZACT(readmode_set);
+    ZACT(write_power_get);
     //ZACT(set_freq);
     ZCMD(measure_ant, ZFF_CMD_DEF, "measure_ant",
          ZPRM(int, ant, 0, "ant", ZFF_PARAM)
     );
+	ZCMD(write_power_set, ZFF_CMD_DEF, "write_power_set",
+		 ZPRM(int, number, 10, "number", ZFF_PARAM)
+	);
+
     ZCMD(write_bcd, ZFF_CMD_DEF, "write_bcd",
          ZPRM(int, number, 0, "number", ZFF_PARAM)
     );

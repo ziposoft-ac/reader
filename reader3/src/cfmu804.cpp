@@ -263,7 +263,7 @@ z_status Cfmu804::info_get()
         ZLOG("Scntm=%d\n", info.Scntm);
 
         if (((info.dmaxfre&0xc0) ==0 )&&((info.dminfre&0xc0) ==0x80 )) {
-            ZLOG("US Band #1: Min=%3.3lf Max=%3.3lf",
+            ZLOG("US Band #1: Min=%3.3lf Max=%3.3lf\n",
             getFreqBand(FREQ_BAND_US1,info.dminfre&0x3f),
             getFreqBand(FREQ_BAND_US1,info.dmaxfre&0x3f)
                 );
@@ -271,7 +271,7 @@ z_status Cfmu804::info_get()
         }
         else
         if (((info.dmaxfre&0xc0) ==0xc0 )&&((info.dminfre&0xc0) ==0x0 )) {
-            ZLOG("US Band #3: Min=%3.3lf Max=%3.3lf",
+            ZLOG("US Band #3: Min=%3.3lf Max=%3.3lf\n",
             getFreqBand(FREQ_BAND_US3,info.dminfre&0x3f),
             getFreqBand(FREQ_BAND_US3,info.dmaxfre&0x3f)
                 );
@@ -377,6 +377,15 @@ struct inv_params_t
 
 }  __attribute__((__packed__)) ;
 
+z_status Cfmu804::config_read() {
+
+    readmode_get();
+    info_get();
+    write_power_get();
+    antCheck();
+    return zs_ok;
+
+}
 
 z_status  Cfmu804::inventory()
 {
@@ -533,9 +542,12 @@ RfidRead*  Cfmu804::read_single()
         Z_ERROR_MSG(zs_not_open,"not open");
         return NULL;
     }
-    U8 data[133];
-    int len=0,i;
-    z_status status=send_command(0xf,0,0,data,0,133,&len);
+    U8 data[134];
+    int len=0;
+    cfmu_status_code return_code=0xF0;//Quit waiting for response
+
+    z_status status=send_command(0xf,0,0,&return_code,
+        data,133,&len);
 
 
     if(status)
@@ -546,7 +558,7 @@ RfidRead*  Cfmu804::read_single()
 
     U8* epc=(U8*)(data+3);
     U8 rssi=data[epc_len+3];
-
+    ZLOG("rssi=%d epclen=%d",rssi,epc_len);
     RfidRead* r=new RfidRead(1,data[0],rssi,epc,epc_len,z_time::get_now());
 
 
@@ -622,30 +634,12 @@ z_status Cfmu804::antCheck()
 
     return zs_ok;
 }
-
-z_status Cfmu804::program_setup(
-)
-{
-    return setupParams(1,10,0,0,5);
-
-}
-
-z_status Cfmu804::setupParams(
-        U8 antmask, //0==auto
-        U8 power,
-        U8 session,
-        U8 filterTime,
-        U8 qValue
-        )
-{
+z_status Cfmu804::config_write(        )
+    {
     z_status status=open();
     if(status)
         return status;
 
-    if(power>30) power=30;
-    if(session>3) session=1;
-    if(filterTime>255) filterTime=5;
-    if(qValue>15) qValue=15;
 
     working_mode_t mode;
     _readmode_get(mode);
@@ -653,18 +647,17 @@ z_status Cfmu804::setupParams(
     {
         _read_stop();
     }
-    power_set(power);
+    power_set(_power);
 
-    mode.QValue=qValue;
-    mode.Session=session;
-    mode.FilterTime=filterTime;
+    mode.QValue=_qvalue;
+    mode.Session=_session;
+    mode.FilterTime=_filter_time;
     _readmode_set(mode);
     _session=mode.Session;
     _qvalue=mode.QValue;
     _filter_time=mode.FilterTime;
-    _antenna_mask=antmask;
     antCheck();
-    _antenna_config=antmask&_antenna_detected;
+    _antenna_config=_antenna_mask&_antenna_detected;
     zout<< "_antenna_config:"<<_antenna_config<<"\n";
 
     ant_cfg_set(_antenna_config);
@@ -839,7 +832,12 @@ z_status Cfmu804::send_cmd_byte(U8 cmd_code,U8 data)
     return send_command(cmd_code,&data,1);
 
 }
+z_status Cfmu804::cmd_single_byte_return(U8 cmd_code,U8* pdata)
+{
+    z_status status=send_command(cmd_code, 0,0,0,pdata,1);
+    return status;
 
+}
 z_status Cfmu804::__cmd_tx(U8 cmd_code,U8* data,U8 data_len)
 {
 

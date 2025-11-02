@@ -26,7 +26,17 @@ cmd_entry_t cmd_list[]={
 
 const size_t cmd_list_size = (sizeof(cmd_list)/sizeof(cmd_entry_t));
 
+void send_command_response(http_request r,z_status status,const z_string& msg) {
+    send_json_response(r,[status,msg](z_json_stream &js)
+    {
+        js.keyval("msg",msg);
+        js.keyval_int("result",status);
 
+
+    });
+
+
+}
 void send_status(http_request r) {
     send_json_response(r,[](z_json_stream &js)
     {
@@ -37,21 +47,39 @@ void send_status(http_request r) {
 
 
 }
-int fn_post_set_config(http_request r,z_json_obj &o)
+
+int fn_get_config(http_request r,z_string_map &vars)
+{
+
+
+    send_json_response(r,[](z_json_stream &js)
+    {
+        root.getReader().get_json_config(js);
+
+
+    });
+
+
+    return 200;
+}
+
+int fn_post_configure(http_request r,z_json_obj &o)
 {
     rfid_config_t cfg;
-    root.app.start();
 
-    cfg.qValue=o.get_int("qValue");
-    cfg.session=o.get_int("session");
-    cfg.power=o.get_int("power");
-    cfg.pauseTime=o.get_int("pauseTime");
-    cfg.antMask=o.get_int("antMask");
-    cfg.freqLow=o.get_int("freqLow");
-    cfg.freqHigh=o.get_int("freqHigh");
-    cfg.filterTime=o.get_int("filterTime");
+    o.print(stdout_json);
+    cfg.qValue=o.get_int("qValue",5);
+    cfg.session=o.get_int("session",1);
+    cfg.power=o.get_int("power",30);
+    cfg.pauseTime=o.get_int("pauseTime",0);
+    cfg.antMask=o.get_int("antMask",0xf);
+    cfg.freqLow=o.get_int("freqLow",0);
+    cfg.freqHigh=o.get_int("freqHigh",3);
+    cfg.filterTime=o.get_int("filterTime",0);
+    z_status s=root.getReader().configure(cfg);
 
-    send_status(r);
+
+    send_command_response(r,s,"ok");
     return 200;
 }
 int fn_post_start(http_request r,z_json_obj &o)
@@ -171,19 +199,21 @@ int fn_post(z_json_obj &jin,z_json_stream &jout,z_string msg)
 
     return 0;
 }
-
+#if 0
 int callback_rx(ctext in, int len,
     ctext* p_status_msg // TODO, bad bad bad
 
     ) {
     zp_text_parser p;
     z_json_obj obj=p.parseJsonObj(in,len);
-    z_string path= obj.get_str("path");
+    z_string path= obj.get_str_def("path","./");
     z_status status=zs_bad_command;
     ctext status_msg=NULL;
 
 
-    z_string cmd= obj.get_str("command");
+    z_string cmd= "";
+    obj.get_str_def("command","");
+
     ZDBG("command=%s\n",cmd.c_str());
     if(cmd=="quit")
         status=root.quit_notify();
@@ -214,7 +244,7 @@ int callback_rx(ctext in, int len,
     }
     if(cmd=="program_setup") {
 
-        status=root.cfmu804.program_setup();
+        //status=root.cfmu804.program_setup();
     }
     if(cmd=="program_bcd")
     {
@@ -313,3 +343,4 @@ int callback_rx(ctext in, int len,
     return status;
 }
 
+#endif
