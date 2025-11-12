@@ -257,6 +257,18 @@ U32 z_time::get_fract_ms() const
 	return get_ptime_ms() % 1000;
 
 }
+
+z_string z_time::getTimeStrLocalFsFormat() {
+	z_time t;
+	z_string  s;
+
+	t.set_now();
+	t.string_format(s, "%Y_%m_%d_%H_%M_%S",true);
+
+	return s;
+
+}
+
 z_string z_time::to_string_ms(bool local) const
 {
 	z_string  s;

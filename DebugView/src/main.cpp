@@ -15,7 +15,7 @@
 void testWrite() {
     int _fPipe=0;
 
-    mkfifo("/tmp/debugview",0666);
+    //mkfifo("/tmp/debugview",0666);
     _fPipe = ::open("/tmp/debugview",(  O_WRONLY | O_NONBLOCK));
     if (_fPipe<0) {
         if (errno==6) {

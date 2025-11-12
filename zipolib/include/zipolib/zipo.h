@@ -21,6 +21,8 @@ ___________________________________________*/
 //#define __STDC_LIMIT_MACROS
 //#define __STDC_CONSTANT_MACROS
 
+#ifdef __cplusplus
+
 #include <cstdint>
 #include <string>
 #include <cstring>
@@ -41,6 +43,19 @@ ___________________________________________*/
 #include <mutex>
 #include <list>
 
+class z_void_obj
+{
+    virtual void func() {};
+};
+#define z_new new
+#define z_delete delete
+
+#else
+#include <stdint.h>
+#include <stdbool.h>
+
+#endif
+
 /*
 #include <thread>
 #include <cfenv>
@@ -54,48 +69,16 @@ typedef   uint16_t  U16;
 typedef   unsigned char  U8;
 typedef const char* ctext;
 typedef const char* utf8;
-
-/*=====================================================
-WINDOWS
-=====================================================*/
-#ifdef _MSC_VER 
-#define BUILD_VSTUDIO
-#define WINDOWS
-
-#include "zipolib/z_windows.h"
-//#include "zipolib/Windows_zipo.h"
-typedef   size_t  uint;
-
-#define DEBUGBREAK() do{if (IsDebuggerPresent()) DebugBreak();}while(0)
-
-
-//WINDOWS DEBUG
-#ifdef DEBUG
-#define _CRTDBG_MAP_ALLOC
-#define z_new new ( _NORMAL_BLOCK , __FILE__ , __LINE__ )
-#define z_delete delete 
-
-#else
-
-//WINDOWS RELEASE
-#define z_new new 
-#define z_delete delete 
-//#define new DBG_NEW
-#endif
-
-#else
 /*=====================================================
 LINUX
 =====================================================*/
-#define z_new new 
-#define z_delete delete 
+
 #include <unistd.h>
 #include <stdarg.h>
 #include <errno.h>
 #include <signal.h>
 #define DEBUGBREAK() raise(SIGINT);
 typedef int errno_t;
-#endif
 
 
 
@@ -108,10 +91,6 @@ typedef int errno_t;
 
 #define zout gz_stdout
 
-class z_void_obj
-{
-	virtual void func() {};
-};
 
 
 

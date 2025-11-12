@@ -30,15 +30,14 @@ class App : public RfidReadConsumer{
 
     bool _print_reads=false;
     bool _broadcast=false;
-    bool _write_to_file=true;
+    //bool _write_to_file=true;
     bool _recording=false;
     z_status _start_new_file();
     z_status _close_copy_file();
 
 public:
     App();
-    z_string _file_path_record = "";
-    z_string _file_path_complete = "";
+    z_string _file_path_record = "/zs/reader/reads/";
 
     z_string _record_file_name = "record_live.csv";
 
@@ -52,7 +51,7 @@ public:
     virtual z_status setup_reader_live(z_json_obj &settings);
 
     virtual z_status remote_quit();
-    virtual z_status read_stop();
+    virtual z_status stop();
     virtual z_status start();
     z_string createJsonStatus(int status, ctext msg,bool ack);
 
@@ -71,15 +70,15 @@ ZMETA_DECL(App) {
 
     ZPROP(_record_file_name);
     ZPROP(_file_path_record);
-    ZPROP(_file_path_complete);
+    //ZPROP(_file_path_complete);
     ZPROP(_buzzer);
     ZPROP(_file_flush_seconds);
     ZPROP(_min_split_time);
-    ZPROP(_write_to_file);
-    ZPROP(_broadcast);
+    ZPROP(_recording);
+    //ZPROP(_broadcast);
     ZPROP(_print_reads);
     //#define ZACT(_ACT_) ZACT_X(_ACT_,#_ACT_,ZFF_ACT_DEF,"")
-    ZACT_X(read_stop,"stop",ZFF_ACT_DEF,"stop reading");
+    ZACT_X(stop,"stop",ZFF_ACT_DEF,"stop reading");
     ZACT(start);
    // ZACT(start_new_file);
     ZACT(run);

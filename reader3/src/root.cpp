@@ -114,13 +114,19 @@ int Root::heat_test_callback(void*)
     int count=cfmu804.getReadIndex();
     int queue=cfmu804.get_queue_depth();
     int temp=cfmu804.get_temperature_cmd();
+    z_string ts=z_time::getTimeStrLocal();
+    ZLOG("%s : ");
     printf("COUNT: %d QUEUE: %d TEMP:%d\n",count,queue,temp);
-    if(temp>52)
+    if(temp>55) {
+        printf("TEMP EXCESS! STOPPING TEST");
+
         return 0;
+
+    }
     if(_shutting_down)
         return 0;
     cfmu804.start();
-    return 10000;
+    return 60000;
 }
 z_status Root::heat_test()
 {

@@ -34,7 +34,7 @@ void RfidReader::process_reads_thread() {
                 {
                     consumer->callbackQueueEmpty();
                 }
-                ZDBGS.flush();
+                //ZDBGS.flush();
 
             }
 
@@ -62,7 +62,7 @@ void RfidReader::process_reads_thread() {
                 U64 ts=r->_time_stamp - _ts_reading_started.get_t();
                 U64 diff=r->_time_stamp - ts_last;
                 ts_last=r->_time_stamp;
-                ZDBGS << r->_index<<'\t'<< ts << '\t'<< diff << '\t' <<queue<<'\t'<< r->_antNum  << '\t' << r->_rssi<< '\t' << r->_epc<<"\n";
+                //ZDBGS << r->_index<<'\t'<< ts << '\t'<< diff << '\t' <<queue<<'\t'<< r->_antNum  << '\t' << r->_rssi<< '\t' << r->_epc<<"\n";
 
             }
             _queue_reads_all.push_front(r);
@@ -72,7 +72,7 @@ void RfidReader::process_reads_thread() {
                 RfidRead* old=_queue_reads_all.back();
                 z_string s;
                 old->getEpcString(s);
-                ZDBG("DELETING OLD READ: %d %s\n",old->_index,s.c_str());
+                //ZDBG("DELETING OLD READ: %d %s\n",old->_index,s.c_str());
                 _queue_reads_all.pop_back();
                 delete old;
             }
@@ -212,7 +212,9 @@ z_status RfidReader::configure(
     _qvalue=c.qValue;
     _session=c.session;
     _antenna_mask=c.antMask;
-    freq_set(c.freqLow,c.freqHigh);
+    z_status status=freq_set(c.freqLow,c.freqHigh);
+    if (status)
+        return status;
     _power=c.power;
     _pause_read_time=c.pauseTime;
     _filter_time=c.filterTime;

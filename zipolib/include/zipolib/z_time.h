@@ -55,6 +55,7 @@ public:
 
 	// Static func to get z_time set to now
 	static z_string getTimeStrLocal();
+	static z_string getTimeStrLocalFsFormat();
 	static z_string getTimeStrGmt();
 
 	static z_time get_now();

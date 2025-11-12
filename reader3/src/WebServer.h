@@ -20,8 +20,8 @@ class WebServer {
     int timer_callback_req_wait_expire(void*);
 
 public:
-    int _log_level=8000;
-    int _port;
+    int _log_level=0;
+    int _port=8000;
     int _req_count=0;
     z_string _address;
     z_obj_list<delayed_request> _outstanding_reqs;

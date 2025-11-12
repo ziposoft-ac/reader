@@ -1,3 +1,4 @@
 add_subdirectory(test_gpio)
 add_subdirectory(test_mongoose)
 add_subdirectory(test_serial)
+add_subdirectory(test_logging)

@@ -13,6 +13,7 @@
 #include <iostream>
 #include "zipolib/zipolib.h"
 #include "zipolib/z_factory.h"
+#include "zipolib/z_time.h"
 #include "zipolib/z_console.h"
 #include "zipolib/z_safe_queue.h"
 #include "zipolib/z_safe_map.h"

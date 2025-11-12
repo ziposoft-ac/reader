@@ -4,6 +4,8 @@
 
 #include <filesystem>
 
+#include "zipolib/z_log_old.h"
+
 void ctrl_C_handler(int s) {
     root.console.quit();
     root.quit_notify();
@@ -43,8 +45,6 @@ int isCwdWritable()
 int main(int argc, char* argv[])
 {
 
-    printf("/a");
-
 
     srand(time(NULL));
     //testfunc(eval(1),eval(2),eval(3));
@@ -57,23 +57,33 @@ int main(int argc, char* argv[])
     }
     printf("\n========Zipo Timer=========\nBUILD: %s\n",timestamp);
 
+    std::filesystem::create_directory("logs");
+
+    z_string ts=z_time::getTimeStrLocal();
+
     //z_filesys_setcwd();
     z_debug_load_save_args(&argc, &argv);
-    z_string logname = argv[0];
-    logname += ".log";
-    get_zlog().fileout(logname);
+    z_string logname =
+        "logs/";
+    logname+=argv[0];
+    logname+="-"+z_time::getTimeStrLocalFsFormat()+".log";
+    z_file_out log_file(logname);
+    get_default_logger().create_file_out(logname);
+    std::error_code ec;
+    std::filesystem::remove("last.log",ec);
+    std::filesystem::create_symlink(logname.c_str(),"last.log",ec);
+
 #ifndef ARM
     //get_zlog().add_stdout();
 #endif
 
-    ZLOG("\n========Zipo Timer=========\n%s\n%s\nBUILD: %s\n",
+    ZLOG("\n========Zipo Timer=========\nLOCAL:%s\nGMT:%s\nBUILD: %s\n",
          z_time::getTimeStrLocal().c_str(),
          z_time::getTimeStrGmt().c_str(),
          timestamp);
     ZTF;
 
     z_catch_ctl_c(ctrl_C_handler);
-    get_zlog().get_stream_err().add_stdout();
     root.console.initialize(&root, argv[0]);
 
     z_status status = root.console.loadcfg();

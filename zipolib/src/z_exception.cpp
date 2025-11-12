@@ -7,8 +7,7 @@
 void z_except::point::debug_log()
 {
 
-	
-	get_zlog().error_msg_t(_pm._status, z_log::lvl_error, _pm._file, _pm._func, _pm._line,_msg.c_str());
+	Z_ERROR_MSG(_pm._status,  _pm._file, _pm._func, _pm._line,_msg.c_str());
 
 
 }

@@ -107,7 +107,15 @@ public:
 
 };
 */
+class TestHeatTest : public TestTimer{
+public:
+    virtual z_status onStart();
+    virtual z_status onStop();
+    int onCallback(void*);
+    int _read_pause_time=4;
+    int _max_temp_shutoff=50;
 
+};
 class TestGpioOnOff : public TestTimer{
 public:
     int _gpioNum=20;
@@ -126,7 +134,7 @@ public:
     z_status shutdown();
     TestGpioOnOff gpioOnOff;
     TestLedFlash flashleds;
-    //TestWsBlast wsBlast;
+    TestHeatTest heatTest;
     TestTimers timer;
     TestPipe pipe;
     TestThread thread;
@@ -144,10 +152,10 @@ ZMETA_DECL(TestTimer) {
     ZPROP(_time_on);
     ZPROP(_time_off);
     ZPROP(_iterations);
-    ZPROP(_time_off);
 }
 ZMETA_DECL(TestThread) {
     ZBASE(Test);
 
 }
+
 #endif //ZIPOSOFT_TESTS_H

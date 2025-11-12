@@ -33,7 +33,7 @@ z_status App::remote_quit()
 z_status App::shutdown()
 {
     printf("App quiting\n");
-    read_stop();
+    stop();
     //
     if(_timer)
         root.timerService.remove_timer(_timer);
@@ -73,7 +73,7 @@ z_status App::close()
     root.gpio.buzzer.pushBeeps(
             {{1500,50},{1000,50},{500,50},{0,50},
             });
-    read_stop();
+    stop();
     _open=false;
     return zs_ok;
 }
@@ -82,15 +82,12 @@ z_status App::run()
 
     return open();
 }
-z_status App::read_stop()
+z_status App::stop()
 {
     if(_open)
     {
         if(_reading)
         {
-            if(_buzzer)
-            root.gpio.buzzer.pushBeeps(
-                    {{1500,30},{1000,30},{750,30},{500,100}});
         }
         _timer->stop();
 
@@ -118,7 +115,7 @@ z_status App::setup_reader_live(z_json_obj &settings)
 {
     if(root.getReader().isReading())
         return zs_access_denied;
-    _write_to_file=true;
+    //_write_to_file=true;
     _broadcast= true;
     settings.print(stdout_json);
     int power=settings.get_int("powerLevel");
@@ -140,7 +137,7 @@ z_status App::setup_reader_live(z_json_obj &settings)
 z_status App::_start_new_file()
 {
     bool restart=_reading;
-    read_stop();
+    stop();
     z_string time_str;
     z_time time_now = z_time::get_now();
     time_now.string_format(time_str, "-%Y_%m_%d_%H_%M_%S",true);
@@ -150,7 +147,7 @@ z_status App::_start_new_file()
     }
     _record_file_name = "live-"+  std::to_string(time_now.get_t()) + time_str + ".txt";
     _record_file_fullname=_file_path_record+"/"+_record_file_name;
-    _write_to_file=true;
+    //_write_to_file=true;
     root.console.savecfg();
 
     return zs_ok;
@@ -162,10 +159,7 @@ z_status App::start()
     open();
     if(_reading)
         return zs_already_open;
-    if(_buzzer)
 
-    root.gpio.buzzer.pushBeeps(
-            {{500,30},{0,30},{750,30}});
 
     _t_started.set_now();
 
@@ -181,20 +175,12 @@ z_status App::start()
     }
     else
     {
-        /*
-        z_string current=_file_path_record+"current.csv";
-        std::filesystem::remove(current.c_str());
-        std::filesystem::create_symlink(_record_file_name.c_str(),current.c_str() );
-         */
         s= root.getReader().start();
         if(s==zs_ok)
         {
             _reading=true;
-            if(_write_to_file)
-                _recording=true;
+            _recording=true;
             _timer->start(_file_flush_seconds, true);
-            //root.gpio.ledGreen.on();
-            //root.gpio.ledRed.off();
             msg="reading started";
         }
     }
@@ -209,18 +195,18 @@ z_status App::start()
 
 z_status App::_close_copy_file()
 {
-    read_stop();
+    stop();
     z_string time_str;
     z_time time_now = z_time::get_now();
-
+    _recording=false;
     _t_started.string_format(time_str, "%Y_%m_%d_%H_%M_%S-",true);
-    z_string new_name =_file_path_complete+"/reads-"+time_str +  std::to_string(_t_started.get_t()) +"-" + std::to_string(time_now.get_t())  + "-.txt";
+    z_string new_name =_file_path_record+"/reads-"+time_str +  std::to_string(_t_started.get_t()) +"-" + std::to_string(time_now.get_t())  + "-.txt";
     try {
         // Copy the file
         std::error_code ec;
-        bool success=std::filesystem::copy_file(_record_file_fullname.c_str(), new_name.c_str(),ec);
-        if (!success) {
-            ZT("Error copying file %s",ec.message().c_str());
+        std::filesystem::rename(_record_file_fullname.c_str(), new_name.c_str(),ec);
+        if (ec.value()) {
+            ZT("Error moving file %s",ec.message().c_str());
         }
 
     } catch (const std::filesystem::filesystem_error& e) {
@@ -268,7 +254,7 @@ z_string App::createJsonStatus(int status, ctext msg,bool ack)
 
 bool App::callbackQueueEmpty()
 {
-    if(_write_to_file)
+    if(_record_file.is_open())
         _record_file.flush();
     return true;
 }

@@ -6,7 +6,7 @@
 
 int main() {
 
-    printf("tests/test_logging/test_logging.c(10)\n");
+    ZDBG("Hello World!");
     return Z_ERROR(zs_access_denied);
 
 }

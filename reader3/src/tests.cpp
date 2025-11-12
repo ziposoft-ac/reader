@@ -14,6 +14,7 @@
 ZMETA(Tests)
 {
 
+    ZOBJ(heatTest);
     ZOBJ(flashleds);
     ZOBJ(gpioOnOff);
     //ZOBJ(wsBlast);
@@ -25,8 +26,12 @@ ZMETA(Tests)
 
 };
 
+ZMETA(TestHeatTest) {
+    ZBASE(TestTimer);
 
-
+    ZPROP(_max_temp_shutoff);
+    ZPROP(_read_pause_time);
+}
 
 ZMETA(TestPipe)
 {
@@ -149,8 +154,11 @@ z_status TestTimer::start()
     _count=0;
     _state=0;
     z_status status=onStart();
-    if(status!=zs_ok)
+    if(status!=zs_ok) {
+        Z_ERROR_MSG(status,"start timer failed");
         return status;
+
+    }
 
     bool res=onCallback(0);
     if(!res)
@@ -172,6 +180,55 @@ int TestTimer::timer_callback(void* context)
     }
     return ms;
 }
+z_status TestHeatTest::onStart() {
+    if (root.cfmu804.stop())
+        return zs_io_error;
+    auto conf=rfid_config_heattest;
+    conf.pauseTime=_read_pause_time;
+
+    if (root.cfmu804.configure(conf))
+        return zs_io_error;
+    root.cfmu804.config_dump();
+    ZLOG("STARTING HEAT TEST: intvl=%d maxtemp=%d pause=%d\n",_time_off,_max_temp_shutoff,_read_pause_time);
+
+    root.cfmu804.start();
+
+    return zs_ok;
+
+}
+z_status TestHeatTest::onStop() {
+    root.cfmu804.stop();
+
+    ZLOG("STOPPING HEAT TEST: intvl=%d maxtemp=%d pause=%d\n",_time_off,_max_temp_shutoff,_read_pause_time);
+    ZLOG("TIME STOP:",z_time::getTimeStrLocal().c_str());
+
+
+    return zs_ok;
+
+}
+
+int TestHeatTest::onCallback(void* context)
+{
+    root.cfmu804.stop();
+    if(root.shuttingDown())
+        return 0;
+
+    int count=root.cfmu804.getReadIndex();
+    int temp=root.cfmu804.get_temperature_cmd();
+    z_string ts=z_time::getTimeStrLocal();
+    ZLOG("%s :%dc ",ts.c_str(),temp);
+    if(temp>_max_temp_shutoff) {
+        ZLOG("TEMP EXCESS! STOPPING TEST");
+        return 0;
+
+    }
+    if(root.shuttingDown())
+        return 0;
+    root.cfmu804.start();
+    return _time_off;
+}
+
+
 
 
 z_status TestGpioOnOff::onStop()

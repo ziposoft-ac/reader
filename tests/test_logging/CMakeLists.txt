@@ -8,7 +8,7 @@ include_directories(
 
 
 
-set(TARGET test_gpio)
+set(TARGET test_logging)
 
 
 

@@ -91,7 +91,7 @@ int fn_post_start(http_request r,z_json_obj &o)
 }
 int fn_post_stop(http_request r,z_json_obj &o)
 {
-    root.app.read_stop();
+    root.app.stop();
 
     send_status(r);
 
@@ -307,7 +307,7 @@ int callback_rx(ctext in, int len,
     }
     if(cmd=="startNewFile")
     {
-        root.app.read_stop();
+        root.app.stop();
         root.app.setup_reader_live(obj);
         z_string path=obj.get_str("path");
 
@@ -325,7 +325,7 @@ int callback_rx(ctext in, int len,
 
     if(cmd=="stopReading")
     {
-        status=root.app.read_stop();
+        status=root.app.stop();
     }
     if(cmd=="getStatus")
     {

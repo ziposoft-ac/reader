@@ -648,14 +648,12 @@ z_status Cfmu804::config_write(        )
         _read_stop();
     }
     power_set(_power);
-
+    mode.ReadPauseTime=_pause_read_time;
     mode.QValue=_qvalue;
     mode.Session=_session;
     mode.FilterTime=_filter_time;
     _readmode_set(mode);
-    _session=mode.Session;
-    _qvalue=mode.QValue;
-    _filter_time=mode.FilterTime;
+
     antCheck();
     _antenna_config=_antenna_mask&_antenna_detected;
     zout<< "_antenna_config:"<<_antenna_config<<"\n";
