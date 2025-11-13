@@ -152,8 +152,7 @@ int RfidReader::stat_timer_callback(void* context)
 
     static U64 last_read_index=0;
     if (last_read_index != _indexReads) {
-        ZDBG("Reads per second:%d\n",_indexReads-last_read_index);
-        ZDBG("Bytes per second:%d\n",_total_bytes_read-last_bytes_read);
+        ZDBG("Reads per second:%d (%d bytes)\n",_indexReads-last_read_index,_total_bytes_read-last_bytes_read);
         last_read_index=_indexReads;
         last_bytes_read=_total_bytes_read;
     }

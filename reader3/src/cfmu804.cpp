@@ -252,18 +252,18 @@ z_status Cfmu804::info_get()
 {
     reader_info_t info;
     if (_info_get(&info)==zs_ok) {
-        ZLOG("Version=%x\n", info.Version);
-        ZLOG("Type=%x\n", info.Type);
-        ZLOG("Tr_Type=%x\n", info.Tr_Type);
-        ZLOG("dmaxfre=%x\n", info.dmaxfre);
-        ZLOG("dminfre=%x\n", info.dminfre);
-        ZLOG("Power=%d\n", info.Power);
-        ZLOG("CheckAnt=%d\n", info.CheckAnt);
-        ZLOG("Ant=%d\n", info.Ant);
-        ZLOG("Scntm=%d\n", info.Scntm);
+        ZOUT("Version=%x\n", info.Version);
+        ZOUT("Type=%x\n", info.Type);
+        ZOUT("Tr_Type=%x\n", info.Tr_Type);
+        ZOUT("dmaxfre=%x\n", info.dmaxfre);
+        ZOUT("dminfre=%x\n", info.dminfre);
+        ZOUT("Power=%d\n", info.Power);
+        ZOUT("CheckAnt=%d\n", info.CheckAnt);
+        ZOUT("Ant=%d\n", info.Ant);
+        ZOUT("Scntm=%d\n", info.Scntm);
 
         if (((info.dmaxfre&0xc0) ==0 )&&((info.dminfre&0xc0) ==0x80 )) {
-            ZLOG("US Band #1: Min=%3.3lf Max=%3.3lf\n",
+            ZOUT("US Band #1: Min=%3.3lf Max=%3.3lf\n",
             getFreqBand(FREQ_BAND_US1,info.dminfre&0x3f),
             getFreqBand(FREQ_BAND_US1,info.dmaxfre&0x3f)
                 );
@@ -271,12 +271,12 @@ z_status Cfmu804::info_get()
         }
         else
         if (((info.dmaxfre&0xc0) ==0xc0 )&&((info.dminfre&0xc0) ==0x0 )) {
-            ZLOG("US Band #3: Min=%3.3lf Max=%3.3lf\n",
+            ZOUT("US Band #3: Min=%3.3lf Max=%3.3lf\n",
             getFreqBand(FREQ_BAND_US3,info.dminfre&0x3f),
             getFreqBand(FREQ_BAND_US3,info.dmaxfre&0x3f)
                 );
         }else {
-            ZLOG("ERROR! Unknown band");
+            ZOUT("ERROR! Unknown band");
         }
 
         return zs_ok;
@@ -558,7 +558,7 @@ RfidRead*  Cfmu804::read_single()
 
     U8* epc=(U8*)(data+3);
     U8 rssi=data[epc_len+3];
-    ZLOG("rssi=%d epclen=%d",rssi,epc_len);
+    ZOUT("rssi=%d epclen=%d",rssi,epc_len);
     RfidRead* r=new RfidRead(1,data[0],rssi,epc,epc_len,z_time::get_now());
 
 

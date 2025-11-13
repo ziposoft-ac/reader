@@ -216,7 +216,10 @@ int TestHeatTest::onCallback(void* context)
     int count=root.cfmu804.getReadIndex();
     int temp=root.cfmu804.get_temperature_cmd();
     z_string ts=z_time::getTimeStrLocal();
-    ZLOG("%s :%dc ",ts.c_str(),temp);
+    double tempf=temp;
+    tempf=tempf*9/5+32;
+    ZLOG("%s :%d°c %.1lf°f %d\n",ts.c_str(),temp,tempf,count);
+    get_default_logger().flush();
     if(temp>_max_temp_shutoff) {
         ZLOG("TEMP EXCESS! STOPPING TEST");
         return 0;

@@ -42,6 +42,7 @@ public:
 	z_stream& operator << (long double x);
 	z_stream & operator << (double x);
 	z_stream & format_append(ctext pFormat, ...);
+	z_stream & format_line(ctext pFormat, ...);
 	bool format_args(ctext pFormat, va_list ArgList);
 	int try_format_args(int buff_size, ctext pFormat, va_list ArgList);
 

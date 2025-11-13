@@ -54,16 +54,16 @@ public:
 	~z_trace_obj()
 	{
 		get_trace_logger().indent_dec();
-		get_trace_logger().write_str("<<");
+		get_trace_logger().write_str("<<\n");
 
 	}
 
 
 };
 
-#define	ZLOG(...) get_debug_logger().format_append(__VA_ARGS__)
+#define	ZLOG(...) get_default_logger().format_append(__VA_ARGS__)
 
-
+#define ZOUT(...) gz_stdout.format_append(__VA_ARGS__)
 
 
 #ifdef DEBUG
