@@ -55,7 +55,7 @@ void RfidReader::process_reads_thread() {
             {
                 consumer->callbackRead(r);
             }
-
+#ifdef DEBUG
             if(_debug_reads)
             {
                 int queue=_queue_reads.get_count();
@@ -63,8 +63,10 @@ void RfidReader::process_reads_thread() {
                 U64 diff=r->_time_stamp - ts_last;
                 ts_last=r->_time_stamp;
                 //ZDBGS << r->_index<<'\t'<< ts << '\t'<< diff << '\t' <<queue<<'\t'<< r->_antNum  << '\t' << r->_rssi<< '\t' << r->_epc<<"\n";
+                ZDBGS << r->_index<<'\t'<< '\t' <<queue<<'\t'<< r->_antNum  << '\t' << r->_rssi<< '\t' << r->_epc<<"\n";
 
             }
+#endif
             _queue_reads_all.push_front(r);
             std::unique_lock<std::mutex> mlock(_queue_reads_all_mutex);
 

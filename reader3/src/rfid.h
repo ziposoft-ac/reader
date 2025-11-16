@@ -158,6 +158,7 @@ public:
     int _antenna_detected=0;
     int _freq_low=0;
     int _freq_high=3;
+    int _inventory_offtime=500;
 
     int cached_read_count() {
         return _queue_reads_all.size();

@@ -14,6 +14,7 @@
 ZMETA(Tests)
 {
 
+    ZOBJ(readTest);
     ZOBJ(heatTest);
     ZOBJ(flashleds);
     ZOBJ(gpioOnOff);
@@ -25,12 +26,17 @@ ZMETA(Tests)
     ZACT(shutdown);
 
 };
-
-ZMETA(TestHeatTest) {
+ZMETA(ReaderTest) {
     ZBASE(TestTimer);
 
-    ZPROP(_max_temp_shutoff);
     ZPROP(_read_pause_time);
+    ZPROP(_session);
+}
+
+ZMETA(TestHeatTest) {
+    ZBASE(ReaderTest);
+
+    ZPROP(_max_temp_shutoff);
 }
 
 ZMETA(TestPipe)
@@ -196,6 +202,92 @@ z_status TestHeatTest::onStart() {
     return zs_ok;
 
 }
+
+/*
+ * ReaderTest
+ *
+ */
+z_status ReaderTest::onStart() {
+    if (root.cfmu804.stop())
+        return zs_io_error;
+    auto conf=rfid_config_heattest;
+    conf.pauseTime=_read_pause_time;
+    conf.session=_session;
+
+    if (root.cfmu804.configure(conf))
+        return zs_io_error;
+    root.cfmu804.config_dump();
+    ZLOG("STARTING ReaderTest : _time_off=%d _time_on=%d pause=%d\n",_time_off,_time_on,_read_pause_time);
+
+    root.cfmu804.start();
+
+    return zs_ok;
+
+}
+z_status ReaderTest::onStop() {
+    root.cfmu804.stop();
+
+    ZLOG("STOPPING ReaderTest : _time_off=%d _time_on=%d pause=%d\n",_time_off,_time_on,_read_pause_time);
+    ZLOG("TIME STOP:",z_time::getTimeStrLocal().c_str());
+
+
+    return zs_ok;
+
+}
+
+int ReaderTest::onCallback(void* context)
+{
+    if(root.shuttingDown()) {
+        root.cfmu804.stop();
+        return 0;
+
+    }
+    if (root.cfmu804.isReading()) {
+
+        root.cfmu804.stop();
+
+        return _time_off;
+    }
+    root.cfmu804.start();
+    return _time_on;
+}
+
+
+/*
+ * ReaderTest
+ *
+ */
+z_status Inventory::onStart() {
+    if (root.cfmu804.stop())
+        return zs_io_error;
+
+    return zs_ok;
+
+}
+z_status Inventory::onStop() {
+
+    root.cfmu804.cmd(0x93);
+
+    return zs_ok;
+
+}
+
+int Inventory::onCallback(void* context)
+{
+    if(root.shuttingDown()) {
+        return 0;
+
+    }
+    return _time_on;
+}
+
+
+z_status TestGpioOnOff::onStop()
+{
+    root.gpio.set(_gpioNum,false);
+    return zs_ok;
+}
+
 z_status TestHeatTest::onStop() {
     root.cfmu804.stop();
 
@@ -234,11 +326,6 @@ int TestHeatTest::onCallback(void* context)
 
 
 
-z_status TestGpioOnOff::onStop()
-{
-    root.gpio.set(_gpioNum,false);
-    return zs_ok;
-}
 
 
 int  TestGpioOnOff::onCallback(void*)

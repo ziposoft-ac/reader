@@ -187,6 +187,19 @@ z_stream & z_stream::format_append(ctext pFormat, ...)
 	}
 	return *this;
 }
+z_stream & z_stream::dump_hex(U8* data,size_t len) {
+	for (int i=0;i<len;i++) {
+		U8 b=data[i];
+		format_append("%02x ",b);
+
+
+	}
+	return *this;
+
+}
+
+
+
 void  z_stream::trace(ctext file, ctext func, int line, bool endline)
 {
 	*this << z_get_filename_from_path(file) << '(' << line << ") " << func << "()";

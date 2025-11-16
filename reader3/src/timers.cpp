@@ -31,13 +31,20 @@ Timer::~Timer()
 }
 int Timer::update(int ms_elapsed)
 {
-    if(!_ms_left)
+    if (!_running)
+        return 0;
+
+    if(!_ms_left) {
         return 0; //not running
+
+    }
     if(_ms_left> ms_elapsed)
     {
         _ms_left-=ms_elapsed;
     } else{
-        invoke_callback();
+        _ms_left=invoke_callback();
+        if (!_ms_left)
+            _running=false;
     }
     return _ms_left;
 }
@@ -45,14 +52,20 @@ int Timer::update(int ms_elapsed)
 // TODO - possible race condition !!
 // TimerSerice could be updating timer while user calls start/stop
 void Timer::stop() {
+    _running=false;
     _ms_left=0;
 }
 void Timer::start() {
     //TODO calling start if already running?
+    if (_running)
+        return;
+    _running=true;
+
     _ms_left=_interval;
     _service->start();
 }
 void Timer::start(int ms,bool reset) {
+    _running=true;
 
     if(reset || (_ms_left==0))
     {
@@ -65,8 +78,7 @@ void Timer::start(int ms,bool reset) {
 }
 int Timer::invoke_callback()
 {
-    _ms_left=(*_user_callback)(_user_context);
-    return _ms_left;
+    return (*_user_callback)(_user_context);
 }
 
 TimerService::~TimerService()

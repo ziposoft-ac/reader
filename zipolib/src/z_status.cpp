@@ -54,7 +54,8 @@ ERR(zs_out_of_memory,"Out Of Memory")
 ERR(zs_too_long,"Too Long")
 ERR(zs_invalid_conversion,"Invalid conversion")
 	ERR(zs_bad_command,"Bad Command")
-ERR(zs_failed_on_device,"Failed on device")
+	ERR(zs_failed_on_device,"Failed on device")
+ERR(zs_more_data_to_follow,"More data to follow")
 
 };
 z_status z_get_os_error()

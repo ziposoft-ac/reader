@@ -41,6 +41,7 @@ public:
 	z_stream & operator << (float x);
 	z_stream& operator << (long double x);
 	z_stream & operator << (double x);
+	z_stream & dump_hex(U8* data,size_t len);
 	z_stream & format_append(ctext pFormat, ...);
 	z_stream & format_line(ctext pFormat, ...);
 	bool format_args(ctext pFormat, va_list ArgList);
@@ -69,6 +70,15 @@ class z_stream_null : public z_stream
 public:
 	virtual z_status write(const char* data, size_t len) { return zs_ok; }
 	virtual z_status write_str(const char* data, size_t len = -1) { return zs_ok; }
+
+	template<class T> z_stream& operator , (T x)
+	{
+		return *this;
+	}
+	template<class T> z_stream& operator << (T x)
+	{
+		return *this;
+	}
 	z_stream_null() {}
 	virtual ~z_stream_null() {}
 
