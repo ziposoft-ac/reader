@@ -72,11 +72,19 @@ void  z_log_trace(const char* file, const char* func, int line, bool endline) {
 }
 
 
-z_status z_log_warn_msg_t(z_status status,  ctext file, ctext func, int line, const char*  lpszFormat, ...) {
+z_status z_log_warn_msg_t(z_status status,  ctext file, ctext func, int line, const char*  pFormat, ...) {
+    va_list ArgList;
+    va_start(ArgList, pFormat);
+
+    get_error_logger().trace_vargs(file,func,line,pFormat,ArgList);
     return status;
 }
 
-z_status z_log_error_msg_t(z_status status,  ctext file, ctext func, int line, const char*  lpszFormat, ...) {
+z_status z_log_error_msg_t(z_status status,  ctext file, ctext func, int line, const char*  pFormat, ...) {
+	va_list ArgList;
+    va_start(ArgList, pFormat);
+
+    get_error_logger().trace_vargs(file,func,line,pFormat,ArgList);
     return status;
 
 }

@@ -207,6 +207,14 @@ void  z_stream::trace(ctext file, ctext func, int line, bool endline)
 		*this << "\n";
 
 }
+void z_stream::trace_vargs(ctext file, ctext func, int line, ctext pFormat, va_list ArgList)
+{
+	*this << z_get_filename_from_path(file) << '(' << line << ") " << func << "()";
+	format_args(pFormat,ArgList);
+	*this << "\n";
+
+}
+
 void z_stream::trace_v(ctext file, ctext func, int line, ctext pFormat, ...)
 {
 	static int buff_size = BUFF_SIZE;

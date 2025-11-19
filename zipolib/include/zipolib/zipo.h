@@ -78,6 +78,7 @@ LINUX
 #include <errno.h>
 #include <signal.h>
 #define DEBUGBREAK() raise(SIGINT);
+#define TODO_NOT_IMPLEMENTED raise(SIGINT);
 typedef int errno_t;
 
 

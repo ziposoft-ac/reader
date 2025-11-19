@@ -61,6 +61,7 @@ public:
 	virtual z_status write_str(const char* data, size_t len = -1);
 	void trace(ctext file, ctext func, int line, bool endline);
 	void trace_v(ctext file, ctext func, int line,  ctext pFormat, ...);
+	void trace_vargs(ctext file, ctext func, int line, ctext pFormat, va_list ArgList);
 
 
 	virtual void flush() {}
