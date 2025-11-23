@@ -14,11 +14,12 @@ To stdout, to the zipo log, to the OS debug/trace facilities (DbgPrint), to cust
 */
 
 #if 1 
+#define	Z_ERROR_MSG(status,...)  z_log_error_msg_t (status,__FILE__,__FUNCTION__,__LINE__,__VA_ARGS__)
+#define	Z_WARN_MSG(status,...)  z_log_warn_msg_t (status,__FILE__,__FUNCTION__,__LINE__,__VA_ARGS__)
 
 #define	Z_ERROR(status)  z_log_error_t(status,__FILE__,__FUNCTION__,__LINE__)
 #define	Z_WARN(status)  z_log_warn_t (status,__FILE__,__FUNCTION__,__LINE__)
-#define	Z_ERROR_MSG(status,...)  z_log_error_msg_t (status,__FILE__,__FUNCTION__,__LINE__,__VA_ARGS__)
-#define	Z_WARN_MSG(status,...)  z_log_warn_msg_t (status,__FILE__,__FUNCTION__,__LINE__,__VA_ARGS__)
+
 #define	Z_ERROR_NOT_IMPLEMENTED  z_log_error_t (zs_operation_not_supported,__FILE__,__FUNCTION__,__LINE__)
 
 #else

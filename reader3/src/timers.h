@@ -17,7 +17,7 @@ typedef int (*TimerCallback)(void* data);
 class Timer {
     friend TimerService;
 protected:
-
+    bool _running=false;
     int _interval=0;
     int _ms_left=0;
     TimerService* _service;
@@ -42,8 +42,7 @@ template <class T> class  Timer_t : public Timer
     friend TimerService;
     virtual int invoke_callback()
     {
-        _ms_left= (_object->*_member_callback)(_user_context);
-        return _ms_left;
+        return  (_object->*_member_callback)(_user_context);
     }
     T* _object=0;
 public:

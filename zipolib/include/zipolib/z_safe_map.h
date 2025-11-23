@@ -14,7 +14,7 @@ class z_safe_map
 private:
     bool _quit;
 
-    z_obj_map_k<KEY,OBJ,true> _map;
+    z_obj_map_k<KEY,OBJ,OWNER> _map;
 
 public:
     z_safe_map()
@@ -22,12 +22,8 @@ public:
 		_quit = false;
 	}
     virtual ~z_safe_map() {
-        if (OWNER) {
-            for (auto i: _map) {
-                //ZLOG("deleting cr %d",i.first);
-                delete i.second;
-            }
-        }
+        // member _map gets auto deleted
+
     }
 	void init()
 	{

@@ -73,6 +73,10 @@ public:
 class ResponseFrame
 {
 public:
+	ResponseFrame() {}
+	virtual ~ResponseFrame() {
+	};
+
 	const static int max_len = 255;
 	int _len = 0;
 	void reset() {
@@ -85,6 +89,7 @@ public:
 		return 1;
 	}
 	U8 get_cmd() { return buff.frame.cmd; }
+	U8 get_status() { return buff.frame.status; }
 	U8* get_data_ptr()
 	{
 		return &(buff.frame.data[0]);
@@ -121,8 +126,11 @@ public:
     ResponseFrame* _frame=0;
     Response(ResponseFrame* frame) { _frame=frame;  };
 	virtual ~Response() {
-		if (_frame)
+
+		if (_frame) {
 			delete _frame;
+
+		}
 	};
     virtual void dump();
     virtual void dump_read();
@@ -185,7 +193,7 @@ public:
     void  rx_thread();
     bool  _rx_frame(ResponseFrame* frame);
 
-    z_obj_vector<Response> _cmd_responses;
+   // z_obj_vector<Response> _cmd_responses;
 
     //int port_speed = 9600;
     //int _port_speed = 57600;
@@ -204,7 +212,9 @@ public:
 
     serial::Serial _port;
 
-    bool _debug_rx=false;
+    bool _debug_rx_frames=false;
+    bool _debug_rx_bytes=false;
+    bool _debug_response=false;
     bool _debug_tx=false;
 
     z_status _readmode_get(working_mode_t& mode);
@@ -275,8 +285,8 @@ public:
 
         return zs_ok;
     }
-    z_status send_command(U8 code,U8* tx_data,int tx_len,cfmu_status_code *p_status=0,void* rx_data=0,
-                             int max_rx_len=0,int* var_len=0);
+    z_status send_command(U8 code, U8* tx_data, int tx_len, int wait_time_ms = 2000, cfmu_status_code *p_status=0,
+                          void* rx_data=0, int max_rx_len=0, int* var_len=0);
     z_status badcmd();
     z_status measure_ant(int antnum);
     z_status temperature_get()
@@ -295,9 +305,15 @@ public:
     virtual z_status readmode_set();
     virtual z_status info_get() override;
     virtual z_status inventory() ;
+    virtual z_status inv(int session,int target) ;
     virtual z_status inventory_single() ;
     virtual RfidRead* read_single() ;
     virtual z_status exp_data_read() ;
+	z_status profile_load(int val)
+	{
+		U8 data = val;
+		return send_command(0x7f,&data,1);
+	}
     z_status set_return_loss(int val)
     {
         U8 data = val;
@@ -385,7 +401,10 @@ ZMETA_DECL(Cfmu804)
     ZBASE(RfidReader);
     ZPROP(_port_speed);
     ZPROP(_debug_tx);
-    ZPROP(_debug_rx);
+    ZPROP(_debug_rx_bytes);
+    ZPROP(_debug_rx_frames);
+    ZPROP(_debug_response);
+
     ZPROP(_maskMem);
     ZPROP(_tagProtocol);
 
@@ -408,6 +427,15 @@ ZMETA_DECL(Cfmu804)
     );
 	ZCMD(write_power_set, ZFF_CMD_DEF, "write_power_set",
 		 ZPRM(int, number, 10, "number", ZFF_PARAM)
+	);
+	ZCMD(profile_load, ZFF_CMD_DEF, "profile_load",
+		 ZPRM(int, number, 13, "number", ZFF_PARAM)
+	);
+
+
+	ZCMD(inv, ZFF_CMD_DEF, "inv",
+		 ZPRM(int, session, 0, "session", ZFF_PARAM),
+		 ZPRM(int, target, 0, "target", ZFF_PARAM)
 	);
 
     ZCMD(write_bcd, ZFF_CMD_DEF, "write_bcd",

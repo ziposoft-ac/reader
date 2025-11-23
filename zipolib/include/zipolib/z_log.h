@@ -67,8 +67,9 @@ public:
 
 
 #ifdef DEBUG
-
+#define ZDBGS get_debug_logger()
 #define	ZDBG(...) get_debug_logger().format_append(__VA_ARGS__)
+#define	ZDBG_HEX(data,len) get_debug_logger().dump_hex(data,len)
 #endif
 
 #ifdef Z_TRACE_ENABLE
@@ -105,6 +106,7 @@ z_status z_log_warn_t(z_status status,  ctext file, ctext func, int line);
 
 #ifdef DEBUG
 #define	ZDBG(...) z_log_debug_f(__VA_ARGS__)
+#define	ZDBG_HEX(data,len)
 #endif
 
 #endif
@@ -115,6 +117,9 @@ z_status z_log_warn_t(z_status status,  ctext file, ctext func, int line);
 
 #ifndef DEBUG
 #define	ZDBG(...)
+#define ZDBGS get_debug_logger()
+#define	ZDBG_HEX(data,len)
+
 #endif
 
 #ifndef Z_TRACE_ENABLE

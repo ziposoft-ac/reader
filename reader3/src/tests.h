@@ -107,13 +107,29 @@ public:
 
 };
 */
-class TestHeatTest : public TestTimer{
+
+class ReaderTest : public TestTimer{
 public:
     virtual z_status onStart();
     virtual z_status onStop();
-    int onCallback(void*);
+    virtual int onCallback(void*);
     int _read_pause_time=4;
+    int _session=1;
+
+};
+class TestHeatTest : public ReaderTest{
+public:
+    virtual z_status onStart();
+    virtual z_status onStop();
+    virtual int onCallback(void*);
     int _max_temp_shutoff=50;
+
+};
+class Inventory : public TestTimer{
+public:
+    virtual z_status onStart();
+    virtual z_status onStop();
+    virtual int onCallback(void*);
 
 };
 class TestGpioOnOff : public TestTimer{
@@ -135,6 +151,7 @@ public:
     TestGpioOnOff gpioOnOff;
     TestLedFlash flashleds;
     TestHeatTest heatTest;
+    ReaderTest readTest;
     TestTimers timer;
     TestPipe pipe;
     TestThread thread;

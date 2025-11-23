@@ -54,6 +54,8 @@ typedef enum  {
     zs_quit,
     zs_bad_command,
     zs_failed_on_device,
+	zs_more_data_to_follow
+
 } z_status;
 ctext zs_get_status_text(z_status status);
 
