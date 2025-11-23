@@ -1,0 +1,11 @@
+//
+// Created by ac on 11/23/25.
+//
+
+#ifndef ZIPOSOFT_CONFIG_H
+#define ZIPOSOFT_CONFIG_H
+
+#define WAIT_FOR_NEW_READS_TIMEOUT 4000
+#define WEBSERVER_PORT 8000
+
+#endif //ZIPOSOFT_CONFIG_H

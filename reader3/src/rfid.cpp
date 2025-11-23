@@ -335,7 +335,6 @@ void RfidReader::get_json_config(z_json_stream &js) {
     js.keyval_int("power",_power);
     js.keyval_int("ant_config",_antenna_config);
     js.keyval_int("ant_mask",_antenna_mask);
-    js.keyval_int("ant_detected",_antenna_detected);
     js.keyval_int("qValue",_qvalue);
     js.keyval_int("session",_session);
     js.keyval_int("filter_time",_filter_time);
@@ -351,14 +350,8 @@ int RfidReader::add_json_status(z_json_stream &js) {
 
     js.obj_start();
     js.key_bool("reading",_reading);
-    js.keyval_int("power",_power);
     js.keyval_int("ant_config",_antenna_config);
-    js.keyval_int("ant_mask",_antenna_mask);
     js.keyval_int("ant_detected",_antenna_detected);
-    js.keyval_int("qValue",_qvalue);
-    js.keyval_int("session",_session);
-    js.keyval_int("filter_time",_filter_time);
-    js.keyval_int("pause_read_time",_pause_read_time);
     js.obj_end();
 
     return 0;

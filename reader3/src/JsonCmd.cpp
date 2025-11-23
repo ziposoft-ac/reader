@@ -5,6 +5,7 @@
 #include "JsonCmd.h"
 
 #include "root.h"
+#include "config.h"
 
 #include "zipolib/z_time.h"
 
@@ -114,7 +115,7 @@ int fn_get_reads(http_request r,z_string_map &vars)
         delayed_request *req = new delayed_request();
         req->r=r;
 
-        req->ts_expire=z_time_get_ticks()+5000;
+        req->ts_expire=z_time_get_ticks()+WAIT_FOR_NEW_READS_TIMEOUT;
         req->ctx1=ofs;
         req->ctx2=statusOnly;
         req->fn_complete=[](z_json_stream &js,size_t ctx1,size_t ctx2) {
