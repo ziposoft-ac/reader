@@ -14,8 +14,8 @@
     CMD_GET(status) \
     CMD_GET(reads) \
     CMD_GET(config) \
+    CMD_POST(config) \
     CMD_GET(delay) \
-    CMD_POST(configure) \
     CMD_POST(stop) \
     CMD_POST(start) \
     CMD_GET(test)

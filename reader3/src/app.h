@@ -37,7 +37,7 @@ class App : public RfidReadConsumer{
 
 public:
     App();
-    z_string _file_path_record = "/zs/reader/reads/";
+    z_string _file_path_record = "/zs/reader/reads";
 
     z_string _record_file_name = "record_live.csv";
 

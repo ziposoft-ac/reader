@@ -41,6 +41,8 @@ RfidRead*  Cfmu804::read_single()
 
     return r;
 }
+const U8 US_band_range=48;
+
 z_status Cfmu804::freq_set(U8 low,U8 hi)
 {
     struct param_t{
@@ -49,12 +51,15 @@ z_status Cfmu804::freq_set(U8 low,U8 hi)
     } p;
     if ((hi>3)||(hi<low))
         return Z_ERROR_MSG(zs_bad_parameter,"freq quad out of range: low=%d hi=%d",low,hi);
-    const U8 range=50;
-
-    p.min=range/4*low+0x80;
-    p.max=range/4*(hi+1)-1;
-
-
+    _freq_low=low;
+    _freq_high=hi;
+    p.min=((US_band_range/4)*low) | 0x80;
+    p.max=(US_band_range/4)*(hi+1)-1;
+    ZDBG("Setting freq min=%x max=%x\n",p.min,p.max);
+    /*
+     low=(min&0x7f)*4/range
+     hi=(max+1)*4/range-1
+     */
 
 
 
@@ -82,7 +87,7 @@ z_status Cfmu804::badcmd()
 z_status Cfmu804::measure_ant(int antnum)
 {
     U8 loss=get_ant_loss(antnum);
-    zout.format_append("ANT#%d loss=%d",antnum,loss);
+    ZDBGS.format_append("ANT#%d loss=%d",antnum,loss);
     return zs_ok;
 
 }
@@ -97,17 +102,17 @@ z_status Cfmu804::antCheck()
     _antenna_detected=0;
     for(i=0;i<4;i++)
     {
-        zout<< "ANT#" << i+1;
+        ZDBGS<< "ANT#" << i+1;
         loss=get_ant_loss(i);
         if(loss>3)
         {
             _antenna_detected|=(1<<i);
-            zout<< "Connected:"<<loss<<"\n";
+            ZDBGS<< "Connected:"<<loss<<"\n";
         } else
-            zout<< "Not Connected:"<<loss<<"\n";
+            ZDBGS<< "Not Connected:"<<loss<<"\n";
 
     }
-    zout<< "_antenna_detected:"<<_antenna_detected<<"\n";
+    ZDBGS<< "_antenna_detected:"<<_antenna_detected<<"\n";
 
     return zs_ok;
 }
@@ -133,14 +138,13 @@ z_status Cfmu804::config_write(        )
 
     antCheck();
     _antenna_config=_antenna_mask&_antenna_detected;
-    zout<< "_antenna_config:"<<_antenna_config<<"\n";
+    ZDBGS<< "_antenna_config:"<<_antenna_config<<"\n";
 
     ant_cfg_set(_antenna_config);
     if(_antenna_config)
     {
         reader_info_t info;
         if (_info_get(&info) == zs_ok) {
-            _antenna_config=info.Ant;
         }
     }
 
@@ -148,7 +152,7 @@ z_status Cfmu804::config_write(        )
 }
 
 /*
-cfmu804>info_get
+cfmu804>info_dump
 starting rx_thread
 response:11 00 21 00 01 14 75 02 31 80 1e 00 01 01 00 01 d5 e0
 data:01 14 75 02 31 80 1e 00 01 01 00 01
@@ -164,11 +168,19 @@ Scntm=0
 US Band #1: Min=902.750 Max=927.250
 */
 
-z_status Cfmu804::_info_get(reader_info_t* p_info)
+z_status Cfmu804::_info_get(reader_info_t* pi)
 {
-    z_status status=send_command(0x21, 0,0,2000,0,p_info, sizeof(reader_info_t));
-    if (status==zs_ok)
-        _power=p_info->Power;
+    z_status status=send_command(0x21, 0,0,2000,0,pi, sizeof(reader_info_t));
+    if (status==zs_ok) {
+
+        _power=pi->Power;
+
+        _antenna_config=pi->Ant;
+        _freq_low=(pi->dminfre & 0x7f)*4/US_band_range;
+        _freq_high=(pi->dmaxfre +1)*4/US_band_range -1;
+
+
+    }
 
 
 
@@ -222,10 +234,11 @@ double getFreqBand(double base,int n) {
     return base+n*0.5;
 }
 
-z_status Cfmu804::info_get()
+z_status Cfmu804::info_dump()
 {
     reader_info_t info;
     if (_info_get(&info)==zs_ok) {
+
         ZOUT("Version=%x\n", info.Version);
         ZOUT("Type=%x\n", info.Type);
         ZOUT("Tr_Type=%x\n", info.Tr_Type);
@@ -284,6 +297,8 @@ z_status Cfmu804::readmode_set()
     status=_readmode_set(mode);
     if(status)
         return status;
+
+    /*
     printf("set status=%x\n", status);
 
     printf("TagProtocol=%x\n", mode.TagProtocol);
@@ -294,7 +309,7 @@ z_status Cfmu804::readmode_set()
     printf("MaskMem=%d\n", mode.MaskMem);
     printf("MaskAdr=%d\n", mode.MaskAdr);
     printf("MaskLen=%d\n", mode.MaskLen);
-
+*/
     return zs_ok;
 
 }
@@ -323,7 +338,7 @@ z_status Cfmu804::readmode_get()
     _maskMem=mode.MaskMem;
     _tagProtocol=mode.TagProtocol;
     _pause_read_time=mode.ReadPauseTime;
-
+    /*
     printf("ReadMode=%x\n", mode.ReadMode);
     printf("TagProtocol=%x\n", mode.TagProtocol);
     printf("ReadPauseTime=%x\n", mode.ReadPauseTime);
@@ -332,7 +347,8 @@ z_status Cfmu804::readmode_get()
     printf("Session=%d\n", mode.Session);
     printf("MaskMem=%d\n", mode.MaskMem);
     printf("MaskAdr=%d\n", mode.MaskAdr);
-    printf("MaskLen=%d\n", mode.MaskLen);
+    printf("MaskLen=%d\n", mode.MaskLen)    ;
+    */
     return zs_ok;
 }
 
@@ -354,7 +370,7 @@ struct inv_params_t
 z_status Cfmu804::config_read() {
 
     readmode_get();
-    info_get();
+    //info_dump();
     write_power_get();
     antCheck();
     return zs_ok;

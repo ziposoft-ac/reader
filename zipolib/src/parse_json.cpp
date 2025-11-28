@@ -60,7 +60,8 @@ template <class T> z_status z_json_val::get_scalar(T& t)
 template <>  z_status z_json_val::get_scalar(z_string& t)
 {
 	z_json_str* s = get_as_json_str();
-	if (!s) return Z_ERROR(zs_data_error);
+	if (!s)
+		return Z_DBG_WARN_RETURN(zs_data_error);
 	t = s->_str;
 	return zs_ok;
 }
@@ -68,14 +69,14 @@ template <>  z_status z_json_val::get_scalar(z_string& t)
 template <>  z_status z_json_val::get_scalar(int64_t& t)
 {
 	z_json_int* s = get_as_json_int();
-	if (!s) return Z_ERROR(zs_data_error);
+	if (!s) return Z_DBG_WARN_RETURN(zs_data_error);
 	t = s->_val;
 	return zs_ok;
 }
 template <>  z_status z_json_val::get_scalar(U32& t)
 {
 	z_json_int* s = get_as_json_int();
-	if (!s) return Z_ERROR(zs_data_error);
+	if (!s) return Z_DBG_WARN_RETURN(zs_data_error);
 	t = s->_val;
 	return zs_ok;
 }
@@ -85,7 +86,7 @@ template <>  z_status z_json_val::get_scalar(U32& t)
 template <>  z_status z_json_val::get_scalar(bool& t)
 {
 	z_json_bool* s = get_as_json_bool();
-	if (!s) return Z_ERROR(zs_data_error);
+	if (!s) return Z_DBG_WARN_RETURN(zs_data_error);
 	t= s->_val;
 	return zs_ok;
 }
@@ -93,7 +94,7 @@ template <>  z_status z_json_val::get_scalar(bool& t)
 template <>  z_status z_json_val::get_scalar(double& t)
 {
 	z_json_float* s = get_as_json_float();
-	if (!s) return Z_ERROR(zs_data_error);
+	if (!s) return Z_DBG_WARN_RETURN(zs_data_error);
 	t = s->_val;
 	return zs_ok;
 }
@@ -217,7 +218,8 @@ z_json_obj zp_text_parser::parseJsonObj(ctext input, size_t len)
     z_status status;
     do {
         status = test_char('{');
-        if (status)       break;
+        if (status)
+        	break;
         status=parse_json_obj_contents(obj);
         if (status)
         {
@@ -246,7 +248,14 @@ z_status zp_text_parser::parse_json(ctext json, size_t len, z_json_val*& valout)
 	valout = 0;
 	return zs_not_found;
 }
+z_json_null* zp_text_parser::parse_json_null()
+{
+	if (test_string("null",4))
+		return 0;
+	z_json_null* jb = z_new z_json_null();
+	return jb;
 
+}
 z_json_bool* zp_text_parser::parse_json_bool(ctext str, bool val)
 {
 	if (test_string(str))
@@ -368,6 +377,10 @@ z_json_val* zp_text_parser::parse_json_val()
 		z_str_unescape(s, js->_str);
 		return js;
 	}
+	z_json_null* jn;
+	if (jn= parse_json_null())
+		return jn;
+
 	z_json_bool* jb;
 	if (jb= parse_json_bool("FALSE",false))
 		return jb;

@@ -28,6 +28,12 @@ To stdout, to the zipo log, to the OS debug/trace facilities (DbgPrint), to cust
 #define	Z_ERROR_NOT_IMPLEMENTED  (zs_operation_not_supported)
 
 #endif
+#ifdef DEBUG
+#define	Z_DBG_WARN_RETURN(status)  z_debug_warn_t(status,__FILE__,__FUNCTION__,__LINE__)
+#else
+#define	Z_DBG_WARN_RETURN(status)  (status)
+
+#endif
 
 #endif
 

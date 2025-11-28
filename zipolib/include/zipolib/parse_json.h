@@ -11,6 +11,7 @@ class z_json_int;
 class z_json_float;
 class z_json_val;
 class z_json_bool;
+class z_json_null;
 class z_json_container;
 /*
 class z_json_parser : zp_text_parser
@@ -84,6 +85,15 @@ public:
 	virtual void print(z_json_stream &s)
 	{
 		s % _val;
+	}
+};
+
+class z_json_null : public z_json_val
+{
+public:
+	virtual void print(z_json_stream &s)
+	{
+		s % "null";
 	}
 };
 class z_json_bool : public z_json_val

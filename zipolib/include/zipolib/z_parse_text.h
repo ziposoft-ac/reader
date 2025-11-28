@@ -30,6 +30,7 @@ ________________________________________________________________________*/
 class z_json_val;
 class z_json_obj;
 class z_json_bool;
+class z_json_null;
 union zpt_options {
 	struct {
 		 U32 ignore_tabs:1;
@@ -59,6 +60,7 @@ class zp_text_parser
 
 	z_json_bool* parse_json_bool(ctext str, bool val);
 	z_json_val* parse_json_val();
+	z_json_null* parse_json_null();
 protected:
 	const char* _index_under_test;
 public:

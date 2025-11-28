@@ -51,6 +51,11 @@ z_status App::open()
 
     _record_file_fullname=_file_path_record+"/"+_record_file_name;
 
+    std::error_code ec;
+    std::filesystem::create_directory(_file_path_record.c_str(),ec);
+    if (ec.value()) {
+        Z_ERROR_MSG(zs_bad_parameter,"Could not create directory record file!");
+    }
     root.getReader().register_consumer(this);
 
     if(!_timer)
@@ -167,13 +172,18 @@ z_status App::start()
     if (s)
         return s;
         //z_string fullname =  _file_path_record+_record_file_name;
+
+
     s = _record_file.open(_record_file_fullname, "ab");
     if (s)
     {
         msg= "Could not open record file!";
-        Z_ERROR_MSG(s,"Could not open record file: \"%s\"  ",_record_file_fullname.c_str());
+        Z_ERROR_MSG(s,"Could not open record file: \"%s\" : %s ",_record_file_fullname.c_str(),zs_get_status_text(s));
+
     }
-    else
+
+
+    if (s==zs_ok)
     {
         s= root.getReader().start();
         if(s==zs_ok)
@@ -220,7 +230,7 @@ int App::add_json_status(z_json_stream &js) {
     js.keyval("reads_filename",_record_file_name);
     js.keyval("reads_path",_file_path_record);
     js.key_bool("reading",is_reading());
-    root.getReader().add_json_status(js);
+    root.getReader().json_status_get(js);
     return 0;
 
 }

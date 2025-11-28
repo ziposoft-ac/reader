@@ -468,7 +468,22 @@ z_status z_factory_controller::print_features(zf_node& obj, zf_feature_type type
 	}
 	return zs_ok;
 }
+z_status z_factory_controller::list_props_node(zf_node& node, z_stream &output)
+{
+	z_factory *fact = node.get_factory();
+	if (!fact)
+		return Z_ERROR_MSG(zs_internal_error,"no factory");
+	void *obj = node.get_obj();
+	if (!obj)
+		return Z_ERROR_MSG(zs_internal_error, "no object");
 
+	//output << "Properties:\n";
+	fact->dump_features(zf_ft_prop, ZFF_LIST, output, obj, 1);
+	output << "##Stats##\n";
+	fact->dump_features(zf_ft_stat, ZFF_LIST, output, obj, 1);
+
+	return zs_ok;
+}
 z_status z_factory_controller::list_features_node(zf_node& node, z_stream &output)
 {
 	z_factory *fact = node.get_factory();
@@ -482,11 +497,22 @@ z_status z_factory_controller::list_features_node(zf_node& node, z_stream &outpu
 	fact->dump_features(zf_ft_prop, ZFF_LIST, output, obj, 1);
 	//output << "Actions:\n";
 	fact->dump_features(zf_ft_act, ZFF_LIST, output, obj, 1);
-	//output << "Stats:\n";
+	output << "##Stats##\n";
 	fact->dump_features(zf_ft_stat, ZFF_LIST, output, obj, 1);
-
-
-
+	return zs_ok;
+}
+z_status z_factory_controller::list_acts_node(zf_node& node, z_stream &output)
+{
+	z_factory *fact = node.get_factory();
+	if (!fact)
+		return Z_ERROR_MSG(zs_internal_error,"no factory");
+	void *obj = node.get_obj();
+	if (!obj)
+		return Z_ERROR_MSG(zs_internal_error, "no object");
+	//output << "Actions:\n";
+	fact->dump_features(zf_ft_act, ZFF_LIST, output, obj, 1);
+	output << "##Stats##\n";
+	fact->dump_features(zf_ft_stat, ZFF_LIST, output, obj, 1);
 	return zs_ok;
 }
 
@@ -518,8 +544,16 @@ z_status z_factory_controller::dump(z_stream &s)
 z_status z_factory_controller::list_features(z_stream &s)
 {
 	return list_features_node(get_temporary_evaluation_node(), s);
-
 }
+z_status z_factory_controller::list_props(z_stream &s)
+{
+	return list_props_node(get_temporary_evaluation_node(), s);
+}
+z_status z_factory_controller::list_acts(z_stream &s)
+{
+	return list_acts_node(get_temporary_evaluation_node(), s);
+}
+
 z_status z_factory_controller::dumpcfg()
 {
 	get_root().dump(zf_ft_all, ZFF_SHOW, _output, 0);

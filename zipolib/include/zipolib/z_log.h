@@ -15,11 +15,7 @@ public:
 	z_status create_file_out(ctext file_name);
 
 };
-class z_logger_debug : public z_logger {
-public:
-	z_logger_debug();
 
-};
 class z_logger_default : public z_logger {
 public:
 	z_logger_default();
@@ -40,7 +36,6 @@ public:
 };
 z_logger_trace& get_trace_logger();
 z_logger_error& get_error_logger();
-z_logger_debug& get_debug_logger();
 z_logger_default& get_default_logger();
 
 class z_trace_obj
@@ -67,6 +62,13 @@ public:
 
 
 #ifdef DEBUG
+class z_logger_debug : public z_logger {
+public:
+	z_logger_debug();
+
+};
+z_logger_debug& get_debug_logger();
+
 #define ZDBGS get_debug_logger()
 #define	ZDBG(...) get_debug_logger().format_append(__VA_ARGS__)
 #define	ZDBG_HEX(data,len) get_debug_logger().dump_hex(data,len)
@@ -97,6 +99,7 @@ z_status z_log_warn_msg_t(z_status status,  ctext file, ctext func, int line, co
 z_status z_log_error_msg_t(z_status status,  ctext file, ctext func, int line, const char*  lpszFormat, ...);
 z_status z_log_error_t(z_status status,  ctext file, ctext func, int line);
 z_status z_log_warn_t(z_status status,  ctext file, ctext func, int line);
+z_status z_debug_warn_t(z_status status,  ctext file, ctext func, int line);
 
 #ifdef  __cplusplus
 }
@@ -117,7 +120,7 @@ z_status z_log_warn_t(z_status status,  ctext file, ctext func, int line);
 
 #ifndef DEBUG
 #define	ZDBG(...)
-#define ZDBGS get_debug_logger()
+#define ZDBGS  gz_stream_null
 #define	ZDBG_HEX(data,len)
 
 #endif

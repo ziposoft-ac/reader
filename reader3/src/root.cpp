@@ -133,7 +133,7 @@ z_status Root::heat_test()
     cfmu804.configure(rfid_config_heattest);
 
     cfmu804.readmode_get();
-    cfmu804.info_get();
+    cfmu804.info_dump();
     cfmu804.start();
     timerService.create_timer_t(this,&Root::heat_test_callback,0,2000);
     run_as_service();

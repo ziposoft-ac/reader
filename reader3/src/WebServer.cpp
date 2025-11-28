@@ -41,6 +41,7 @@ void complete_delayed_req(delayed_request *dr) {
     z_json_stream js(s);
     //RfidReader &reader = root.getReader();
     js.obj_start();
+    js.keyval_int("ts",z_time::get_now_ms());
 
     (*(dr->fn_complete))(js,dr->ctx1,dr->ctx2);
     js.obj_end();
@@ -112,11 +113,11 @@ z_status WebServer::complete_all()
     return zs_ok;
 }
 
-ctext HEADERS="HTTP/1.1 200 OK\r\nAccess-Control-Allow-Headers: Content-Type\r\nAccess-Control-Allow-Origin: *\r\n"
+ctext HEADERS="HTTP/1.1 %d OK\r\nAccess-Control-Allow-Headers: Content-Type\r\nAccess-Control-Allow-Origin: *\r\n"
               "Content-Type: application/json; charset=utf-8\r\n"
               "Transfer-Encoding: chunked\r\n\r\n";
-void send_headers(struct mg_connection *c) {
-    mg_printf(c, HEADERS);
+void send_headers(struct mg_connection *c,int status) {
+    mg_printf(c, HEADERS,status);
 }
 
 
@@ -191,7 +192,8 @@ void WebServer::event_handler(struct mg_connection *c, int ev, void *ev_data) {
         WS_DBG("[%d] MG_EV_WAKEUP\n",c->id);
 
         struct mg_str *data = (struct mg_str *) ev_data;
-        mg_http_reply(c, 200, "Content-Type:application/json\r\nAccess-Control-Allow-Origin: *\r\n", "%.*s\n", data->len, data->ptr);
+        mg_http_reply(c, 200, "Content-Type:application/json\r\nAccess-Control-Allow-Origin: *\r\n", "%.*s\n",
+            data->len, data->ptr);
     }
     if (ev == MG_EV_HTTP_MSG) {
         _req_count++;

@@ -117,6 +117,8 @@ protected:
 
 	z_json_obj _json_params;
 	z_status list_features_node(zf_node& obj, z_stream &s);
+	z_status list_props_node(zf_node& obj, z_stream &s);
+	z_status list_acts_node(zf_node& obj, z_stream &s);
 	z_status print_features(zf_node& obj, zf_feature_type type);
 
 
@@ -184,6 +186,8 @@ public:
 
 	//command line actions
 	z_status list_features(z_stream &s);
+	z_status list_props(z_stream &s);
+	z_status list_acts(z_stream &s);
 	z_status help(z_stream &s);
 	z_status dump(z_stream &s);
 	z_status up();
@@ -253,6 +257,8 @@ Z_FC_COMMANDS(z_factory_controller)
 	ZFC_ACTS(web_context);
 	ZFC_ACTS(dump);
 	ZFC_ACTS_X(list_features, "ls", ZFF_ACT_DEF, "List features");
+	ZFC_ACTS_X(list_props, "lp", ZFF_ACT_DEF, "List props");
+	ZFC_ACTS_X(list_acts, "la", ZFF_ACT_DEF, "List actions");
 
 }
 

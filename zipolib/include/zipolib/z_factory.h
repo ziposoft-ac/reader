@@ -334,7 +334,7 @@ public:
 	{
 		typedef z_status(CTYPE::*funcptr)();
 		CTYPE*  cobj = reinterpret_cast<CTYPE*>(vobj);
-		z_ptr_member_func* pp = &act_addr;
+		void* pp = &act_addr;
 		funcptr fp = *(funcptr*)(pp);
 		return (cobj->*fp)();
 	}
@@ -344,7 +344,7 @@ public:
 		typedef z_status(CTYPE::*funcptr)(z_stream& s);
 		CTYPE*  cobj = reinterpret_cast<CTYPE*>(vobj);
 		// convert to pointer to func pointer
-		z_ptr_member_func_stream* pp = &act_addr;
+		void* pp = &act_addr;
 		// member func conversion magic
 		funcptr fp = *(funcptr*)(pp);
 		return (cobj->*fp)(stream);
@@ -357,7 +357,9 @@ public:
 		// convert to pointer to func pointer
 		z_ptr_member_func_json* pp = &act_addr;
 		// member func conversion magic
-		funcptr fp = *(funcptr*)(pp);
+		void* vpp=(void*)pp;
+
+		funcptr fp = *(funcptr*)(vpp);
 		return (cobj->*fp)(stream, params);
 	};
 	virtual std::type_index get_type_index() override  { 	return std::type_index(typeid(CTYPE)); 	}

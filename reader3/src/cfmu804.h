@@ -303,7 +303,7 @@ public:
 
     virtual z_status readmode_get() override;
     virtual z_status readmode_set();
-    virtual z_status info_get() override;
+    virtual z_status info_dump() override;
     virtual z_status inventory() ;
     virtual z_status inv(int session,int target) ;
     virtual z_status inventory_single() ;
@@ -343,7 +343,7 @@ public:
     	U8 data = 0;
     	if (cmd_single_byte_return(0x7a, &data)==zs_ok) {
     		_write_power = data;
-    		ZLOG("Write power set to %d\n",_write_power);
+    		ZDBG("Write power set to %d\n",_write_power);
     		return zs_ok;
     	}
     	return zs_io_error;
@@ -416,7 +416,7 @@ ZMETA_DECL(Cfmu804)
     ZACT(inventory);
 
     ZACT(exp_data_read);
-    ZACT(info_get);
+    ZACT(info_dump);
     ZACT(beep_on);
     ZACT(beep_off);
     ZACT(readmode_get);

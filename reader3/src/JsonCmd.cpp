@@ -8,6 +8,7 @@
 #include "config.h"
 
 #include "zipolib/z_time.h"
+#include "zipolib/http_status.h"
 
 
 #define CMD_POST(_NAME_) int fn_post_##_NAME_(http_request req,z_json_obj &jin);
@@ -27,12 +28,12 @@ cmd_entry_t cmd_list[]={
 
 const size_t cmd_list_size = (sizeof(cmd_list)/sizeof(cmd_entry_t));
 
-void send_command_response(http_request r,z_status status,const z_string& msg) {
-    send_json_response(r,[status,msg](z_json_stream &js)
+void send_command_response(http_request r,z_status zstatus,http_status_t http_status,const z_string& msg) {
+    send_json_response(r,[zstatus,http_status,msg](z_json_stream &js)
     {
         js.keyval("msg",msg);
-        js.keyval_int("result",status);
-
+        js.keyval_int("result",zstatus);
+        return http_status;
 
     });
 
@@ -43,6 +44,7 @@ void send_status(http_request r) {
     {
         js.key_bool("reading",root.getReader().isReading());
 
+        return HTTP_STATUS_OK;
 
     });
 
@@ -55,7 +57,8 @@ int fn_get_config(http_request r,z_string_map &vars)
 
     send_json_response(r,[](z_json_stream &js)
     {
-        root.getReader().get_json_config(js);
+        root.getReader().json_config_get(js);
+        return HTTP_STATUS_OK;
 
 
     });
@@ -64,11 +67,11 @@ int fn_get_config(http_request r,z_string_map &vars)
     return 200;
 }
 
-int fn_post_configure(http_request r,z_json_obj &o)
+int fn_post_config(http_request r,z_json_obj &o)
 {
     rfid_config_t cfg;
 
-    o.print(stdout_json);
+    //o.print(stdout_json);
     cfg.qValue=o.get_int("qValue",5);
     cfg.session=o.get_int("session",1);
     cfg.power=o.get_int("power",30);
@@ -79,16 +82,30 @@ int fn_post_configure(http_request r,z_json_obj &o)
     cfg.filterTime=o.get_int("filterTime",0);
     z_status s=root.getReader().configure(cfg);
 
+    if (s==zs_ok) {
+        send_json_response(r,[](z_json_stream &js)
+        {
+            root.getReader().json_config_get(js);
+            return HTTP_STATUS_OK;
 
-    send_command_response(r,s,"ok");
-    return 200;
+
+        });
+        return HTTP_STATUS_OK;
+
+    }
+    else {
+        send_command_response(r,s,HTTP_STATUS_INTERNAL_SERVER_ERROR,"failed");
+
+        return HTTP_STATUS_INTERNAL_SERVER_ERROR;
+
+    }
 }
 int fn_post_start(http_request r,z_json_obj &o)
 {
     root.app.start();
 
     send_status(r);
-    return 200;
+    return HTTP_STATUS_OK;
 }
 int fn_post_stop(http_request r,z_json_obj &o)
 {
@@ -96,7 +113,7 @@ int fn_post_stop(http_request r,z_json_obj &o)
 
     send_status(r);
 
-    return 200;
+    return HTTP_STATUS_OK;
 }
 
 
@@ -137,6 +154,8 @@ int fn_get_reads(http_request r,z_string_map &vars)
         if (statusOnly) {
             root.app.add_json_status(js);
         }
+        return HTTP_STATUS_OK;
+
     });
 
 
@@ -164,6 +183,8 @@ int fn_set_config(http_request r,z_string_map &vars)
     send_json_response(r,[](z_json_stream &js)
     {
         js.keyval("status","yeah boy!");
+        return HTTP_STATUS_OK;
+
     });
 
 
@@ -174,6 +195,8 @@ int fn_get_status(http_request r,z_string_map &vars)
     send_json_response(r,[](z_json_stream &js)
     {
         js.keyval("status","yeah boy!");
+        return HTTP_STATUS_OK;
+
     });
 
 
@@ -185,6 +208,8 @@ int fn_get_test(http_request r,z_string_map &vars)
     send_json_response(r,[](z_json_stream &js)
     {
         js.keyval("status","test boy!");
+        return HTTP_STATUS_OK;
+
     });
 
 

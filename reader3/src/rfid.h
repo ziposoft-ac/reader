@@ -108,6 +108,7 @@ typedef struct {
      *For FliterTime = 0, disable tag filtering function.
      */
     U8 filterTime;
+    U8 valid; // if these settings are valid
 
 } rfid_config_t;
 
@@ -192,15 +193,24 @@ public:
     virtual z_status configure(
             const rfid_config_t& config
             );
-    virtual z_status config_write(){ return zs_not_implemented;}
-    virtual z_status config_read(){ return zs_not_implemented;}
+    virtual z_status config_write() {
+        ZLOG("config_write\n");
+
+        return zs_ok;
+    }
+    virtual z_status config_read() {
+        ZLOG("config_read\n");
+        return zs_ok;
+    }
     virtual z_status config_dump();
     virtual z_status readmode_get(){ return zs_not_implemented;}
     virtual z_status readmode_set(){ return zs_not_implemented;}
-    virtual z_status info_get(){ return zs_not_implemented;}
-    int add_json_status(z_json_stream &js);
-    void get_json_config(z_json_stream &js);
-	virtual z_status freq_set(U8 low,U8 max){ return zs_not_implemented;}
+    virtual z_status info_dump(){ return zs_not_implemented;}
+
+    z_status json_status_get(z_json_stream &js);
+
+    z_status json_config_get(z_json_stream &js);
+	virtual z_status freq_set(U8 low,U8 max){ return zs_ok;}
 
 };
 
@@ -244,6 +254,9 @@ ZMETA_DECL(RfidReader)
     ZPROP_X(_antenna_config, "antenna_config", ZFF_READ_ONLY, "Ant Config");
     ZPROP_X(_antenna_detected, "antenna_detected", ZFF_READ_ONLY, "Ant Detected");
 
+
+    ZPROP(_freq_low);
+    ZPROP(_freq_high);
     ZPROP(_queue_max_depth);
     ZPROP(_antenna_mask);
     ZPROP(_session);
