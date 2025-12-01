@@ -351,7 +351,14 @@ public:
 	z_status power_set(int val)
     {
     	U8 data = val;
-    	return send_command(0x2f, &data, 1);
+
+    	z_status status= send_command(0x2f, &data, 1);
+		if (status==zs_ok)
+		{
+			_power=val;
+			ZLOG("Power set to %d\n",_power);
+		}
+		return status;
     }
 	/*
 	 *Scantime: inventory time. Reader will modify the maximum response time according to user defined value (0*100ms ~ 255*100ms),

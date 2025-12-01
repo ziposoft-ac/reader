@@ -410,7 +410,7 @@ void RfidReader::register_consumer(RfidReadConsumer *consumer) {
     if(_consumers.find(consumer)==_consumers.end()) {
 
         _consumers.insert(consumer);
-        ZLOG("Registered consumer for RfidReader\n");
+        //ZLOG("Registered consumer for RfidReader\n");
     }
 
     //_consumers.add(consumer);

@@ -62,7 +62,9 @@ z_logger_error::z_logger_error() {
     add_stream(zout);
 }
 z_logger_default::z_logger_default() {
-
+#ifdef DEBUG
+    add_stream(global_debug_stream);
+#endif
     add_stream(zout);
 }
 z_logger_error& get_error_logger() {

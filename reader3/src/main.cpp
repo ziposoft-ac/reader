@@ -45,6 +45,7 @@ int isCwdWritable()
 int main(int argc, char* argv[])
 {
 
+    std::error_code ec;
 
     srand(time(NULL));
     //testfunc(eval(1),eval(2),eval(3));
@@ -56,20 +57,21 @@ int main(int argc, char* argv[])
         zout<< "Setting CWD to home="<<res<<"\n";
     }
     printf("\n========Zipo Timer=========\nBUILD: %s\n",timestamp);
+    auto path=std::filesystem::current_path( ec );
 
+    //printf("path=%s\n",path.string().c_str());
     std::filesystem::create_directory("logs");
 
     z_string ts=z_time::getTimeStrLocal();
 
     //z_filesys_setcwd();
     z_debug_load_save_args(&argc, &argv);
-    z_string logname =
-        "logs/";
-    logname+=argv[0];
-    logname+="-"+z_time::getTimeStrLocalFsFormat()+".log";
+    z_string logname =path.string();
+    logname="logs/reader-";
+    //logname+=argv[0];
+    logname+=z_time::getTimeStrLocalFsFormat()+".log";
     z_file_out log_file(logname);
     get_default_logger().create_file_out(logname);
-    std::error_code ec;
     std::filesystem::remove("last.log",ec);
     std::filesystem::create_symlink(logname.c_str(),"last.log",ec);
 
@@ -91,5 +93,7 @@ int main(int argc, char* argv[])
 
     root.console.runapp(argc, argv, true, 0);
     root.shutdown();
-    zout << "Ztimer2 EXIT\n";
+    ZLOG("\n======== rfid reader exit LOCAL:%s =========\n",
+     z_time::getTimeStrLocal().c_str()
+     );
 }
