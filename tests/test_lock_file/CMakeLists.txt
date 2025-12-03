@@ -12,7 +12,7 @@ set(TARGET test_lock_file)
 
 
 
-file(GLOB SRC "*.c")
+file(GLOB SRC "*.cpp")
 file(GLOB HEADERS "*.h")
 
 add_executable(${TARGET}  ${SRC}  ${HEADERS} )
