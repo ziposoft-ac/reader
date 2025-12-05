@@ -51,10 +51,7 @@ void RfidReader::process_reads_thread() {
 
                 return;
             }
-            for(auto consumer :_consumers )
-            {
-                consumer->callbackRead(r);
-            }
+
 #ifdef DEBUG
             if(_debug_reads)
             {
@@ -67,17 +64,11 @@ void RfidReader::process_reads_thread() {
 
             }
 #endif
-            _queue_reads_all.push_front(r);
-            std::unique_lock<std::mutex> mlock(_queue_reads_all_mutex);
-
-            while (_queue_reads_all.size()>_queue_max_depth) {
-                RfidRead* old=_queue_reads_all.back();
-                z_string s;
-                old->getEpcString(s);
-                //ZDBG("DELETING OLD READ: %d %s\n",old->_index,s.c_str());
-                _queue_reads_all.pop_back();
-                delete old;
+            for(auto consumer :_consumers )
+            {
+                consumer->callbackRead(r);
             }
+
             //delete read;
             sched_yield();
         }
@@ -242,11 +233,22 @@ z_status RfidReader::config_dump() {
 
 void RfidReader::queueRead(U8 antnum,U8 rssi,U8* epc,size_t epc_len,U64 ts)
 {
-	//std::unique_lock<std::mutex> mlock(_queue_reads_all_mutex);
+	std::unique_lock<std::mutex> mlock(_queue_reads_all_mutex);
     _indexReads++;
     RfidRead* r=new RfidRead(_indexReads,antnum,rssi,(U8*)epc,epc_len,ts);
     _queue_reads.push(r);
+    _queue_reads_all.push_front(r);
 
+    //std::unique_lock<std::mutex> mlock(_queue_reads_all_mutex);
+
+    while (_queue_reads_all.size()>_queue_max_depth) {
+        RfidRead* old=_queue_reads_all.back();
+        z_string s;
+        old->getEpcString(s);
+        //ZDBG("DELETING OLD READ: %d %s\n",old->_index,s.c_str());
+        _queue_reads_all.pop_back();
+        delete old;
+    }
 
 }
 z_status RfidReader::dump_queue(
@@ -301,20 +303,21 @@ count: number;
 list:RfidRead[];
 }
 */
-z_status RfidReader::get_reads_since(z_json_stream &js,U32 index,bool include_reads) {
+z_status RfidReader::get_reads_since(z_json_stream &js,U32 index,bool status_only) {
 
     std::unique_lock<std::mutex> mlock(_queue_reads_all_mutex);
     bool complete=(index==0);
     int count=0;
+    int diff=_indexReads-index;
+
     js.keyval_int("last_index",_indexReads);
     js.key_bool("complete",complete);
-
-    if (include_reads) {
+    if (!status_only) {
         js.key("list");
         js.array_start();
 
         for (auto i : _queue_reads_all) {
-            if (i->_index <= index)
+            if (i->_index <= index) //skip old ones
                 break;
             i->getJsonStream(js);
             count++;
@@ -324,7 +327,11 @@ z_status RfidReader::get_reads_since(z_json_stream &js,U32 index,bool include_re
     }
 
     js.keyval_int("count",count);
+    js.keyval_int("diff",diff);
+    if (diff>0) {
+        ZDBG("get reads since %d, diff=%d count=%d status_only=%d\n",index,diff,count,status_only);
 
+    }
     return zs_ok;
 
 }

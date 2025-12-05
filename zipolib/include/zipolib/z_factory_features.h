@@ -91,7 +91,7 @@ public:
 	}
 	virtual ~zf_stat() {}
 	virtual zf_feature_type get_type() { return zf_ft_stat; }
-	static const zf_feature_type get_catagory_static() { return zf_ft_stat; }
+	static const zf_feature_type get_category_static() { return zf_ft_stat; }
 	virtual z_status evaluate_cc(zf_command_line_parser& cc);
 
 	virtual z_status get_as_string(z_string& s, void* obj) = 0;
@@ -204,7 +204,7 @@ public:
 		void* mem_ptr = (char*)obj + _offset;
 		return mem_ptr;
 	}
-	static const zf_feature_type get_catagory_static() { return zf_ft_mvar; }
+	static const zf_feature_type get_category_static() { return zf_ft_mvar; }
 	virtual zf_feature_type get_type() { return zf_ft_mvar; }
 	virtual z_factory* get_factory() { return 0; }
 	virtual z_status cfg_assign(zp_cfg_val* val, z_factory* fact, z_void_obj* obj) override;
@@ -224,7 +224,7 @@ public:
 
 
 
-	static const zf_feature_type get_catagory_static() { return zf_ft_param; }
+	static const zf_feature_type get_category_static() { return zf_ft_param; }
 	virtual zf_feature_type get_type() { return zf_ft_param; }
 
 	zf_param(z_variable_base* var, ctext id, ctext name, zf_operation_flags flags, ctext desc);
@@ -299,7 +299,7 @@ public:
 		_params = 0;
 	}
 	virtual zf_feature_type get_type() { return zf_ft_act; }
-	static const zf_feature_type get_catagory_static() { return zf_ft_act; }
+	static const zf_feature_type get_category_static() { return zf_ft_act; }
 	virtual ~zf_action() {}
 	//virtual void display(z_file& f, void* obj);
 
@@ -449,7 +449,7 @@ public:
 	virtual z_status evaluate_cc(zf_command_line_parser&cc);
 
 	virtual zf_feature_type get_type() { return zf_ft_obj; }
-	static const zf_feature_type get_catagory_static() { return zf_ft_obj; }
+	static const zf_feature_type get_category_static() { return zf_ft_obj; }
 
 	virtual void   dump(zf_operation flags, z_stream &stream, void* obj, int tab);
 	// A list is a node

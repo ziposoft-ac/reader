@@ -94,8 +94,15 @@ z_status z_log_warn_msg_t(z_status status,  ctext file, ctext func, int line, co
     get_error_logger().trace_vargs(file,func,line,pFormat,ArgList);
     return status;
 }
+void z_log_error_msg( ctext file, ctext func, int line, const char*  pFormat, ...) {
+    va_list ArgList;
+    va_start(ArgList, pFormat);
 
-z_status z_log_error_msg_t(z_status status,  ctext file, ctext func, int line, const char*  pFormat, ...) {
+    get_error_logger().trace_vargs(file,func,line,pFormat,ArgList);
+
+}
+
+z_status z_log_error_msg_return(z_status status,  ctext file, ctext func, int line, const char*  pFormat, ...) {
 	va_list ArgList;
     va_start(ArgList, pFormat);
 

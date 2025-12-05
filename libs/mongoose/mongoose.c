@@ -3215,7 +3215,8 @@ static void http_cb(struct mg_connection *c, int ev, void *ev_data) {
         // prematurely, see #2592
         MG_ERROR(("HTTP parse, %lu bytes", c->recv.len));
         c->is_draining = 1;
-        mg_hexdump(buf, c->recv.len - ofs > 16 ? 16 : c->recv.len - ofs);
+
+        //mg_hexdump(buf, c->recv.len - ofs > 16 ? 16 : c->recv.len - ofs);
         c->recv.len = 0;
         return;
       }

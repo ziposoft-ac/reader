@@ -128,8 +128,8 @@ int syswr(char* filename,char* str) {
 
 int main(void)
 {
-	syswr(PWM_CHIP,"0");
-
+	//syswr(PWM_CHIP,"0");
+	toggle_gpio23();
 	return EXIT_SUCCESS;
 }
 

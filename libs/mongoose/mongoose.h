@@ -978,10 +978,18 @@ void mg_log_set_fn(mg_pfn_t fn, void *param);
   } while (0)
 #endif
 
-#define MG_ERROR(args) MG_LOG(MG_LL_ERROR, args)
+#ifdef DEBUG
 #define MG_INFO(args) MG_LOG(MG_LL_INFO, args)
 #define MG_DEBUG(args) MG_LOG(MG_LL_DEBUG, args)
 #define MG_VERBOSE(args) MG_LOG(MG_LL_VERBOSE, args)
+#    else
+#define MG_INFO(args)
+#define MG_DEBUG(args)
+#define MG_VERBOSE(args)
+#endif
+
+#define MG_ERROR(args) MG_LOG(MG_LL_ERROR, args)
+
 
 
 

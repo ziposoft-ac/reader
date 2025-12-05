@@ -25,13 +25,14 @@ protected:
     int _flashCountMax=10;
     int _state=0;
     bool _output=false;
-
-    unsigned int _pin=0;
+    z_string _name;
     virtual void _off();
     virtual void _on();
     virtual int timer_callback(void*);
 
 public:
+    unsigned int _pin=0;
+
     GpioPin(int pin=0);
     virtual ~GpioPin(){}
     z_status flash(int count);
@@ -42,8 +43,10 @@ public:
     z_status show();
     z_status off();
     z_status on();
-    virtual void init(Gpio* chip);
+    virtual void init(Gpio* chip,ctext name);
     virtual void shutdown();
+    z_status json_config_get(z_json_stream &js);
+
 };
 class GpioPinLed : public GpioPin
 {
@@ -65,6 +68,7 @@ protected:
     virtual void _on();
 public:
     bool _quiet=false;
+    bool _enabled=false;
     void pushBeeps(std::initializer_list<Beep> const beeps);
     void beepDiminishing(Beep beep);
     GpioPinBuzzer(int pin=0) : GpioPin(pin){}
@@ -85,7 +89,7 @@ class Gpio {
     int timer_callback(void*);
 
 public:
-    z_obj_vector<GpioPin, false> _pins;
+    //z_obj_vector<GpioPin, false> _pins;
 
     Gpio();
     virtual ~Gpio();
@@ -93,17 +97,17 @@ public:
         RED=3,
         BLUE=23,
         GREEN=17,
-        YELLOW=27,
+        YELLOW=22,
     };
     //GpioPinLed ledRed=RED;
     //GpioPinLed ledBlue=BLUE;
     //GpioPinLed ledGreen=GREEN;
     GpioPinLed g2=2;
-    GpioPinLed g3=3;
+    GpioPinLed ledRed=3;
     GpioPinLed g5=5;
     GpioPinLed g6=6;
-    GpioPinLed g17=17;
-    GpioPinLed g22=22;
+    GpioPinLed ledGreen=17;
+    GpioPinLed ledYellow=22;
     GpioPinLed g23=23;
     GpioPinLed g24=24;
     //GpioPinLed ledYellow=YELLOW;
@@ -113,11 +117,13 @@ public:
     bool shutdown();
     z_status set(int gpio,int val);
     z_status dump();
+    z_status dump_pins();
     z_status beep();
     z_status takeOnMe();
     z_status takeOnMePush();
     z_status lightShow();
 	struct gpiod_chip *_chip=0;
+    z_status json_config_get(z_json_stream &js);
 
 
     struct gpiod_line_request* getPinRequest(gpiod_line_direction dir, unsigned int pin);
@@ -127,7 +133,8 @@ public:
 
     z_status addPin(int num);
 
-    z_obj_map<GpioPin, false> _pin_map;
+    //z_obj_map<GpioPin, false> _pin_map;
+    z_obj_map<GpioPinLed, false> _pin_map;
 };
 
 

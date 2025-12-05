@@ -96,7 +96,8 @@ void  z_log_msg_f(const char*  lpszFormat, ...);
 void  z_log_trace(const char* file, const char* func, int line, bool endline);
 
 z_status z_log_warn_msg_t(z_status status,  ctext file, ctext func, int line, const char*  lpszFormat, ...);
-z_status z_log_error_msg_t(z_status status,  ctext file, ctext func, int line, const char*  lpszFormat, ...);
+z_status z_log_error_msg_return(z_status status,  ctext file, ctext func, int line, const char*  lpszFormat, ...);
+void z_log_error_msg( ctext file, ctext func, int line, const char*  lpszFormat, ...);
 z_status z_log_error_t(z_status status,  ctext file, ctext func, int line);
 z_status z_log_warn_t(z_status status,  ctext file, ctext func, int line);
 z_status z_debug_warn_t(z_status status,  ctext file, ctext func, int line);

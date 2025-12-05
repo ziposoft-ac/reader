@@ -14,6 +14,8 @@
     CMD_GET(status) \
     CMD_GET(reads) \
     CMD_GET(config) \
+    CMD_GET(gpio) \
+    CMD_POST(gpio) \
     CMD_POST(config) \
     CMD_GET(delay) \
     CMD_POST(stop) \

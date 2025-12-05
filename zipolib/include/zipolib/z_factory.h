@@ -95,11 +95,11 @@ public:
 	virtual const char* get_name() const { return _name; };
 	zf_feature* add_feature(ctext key, zf_feature* feature);
 
-	template <class FTYPE> z_status get_features_type(z_obj_vector<FTYPE>& list)
+	template <class FTYPE> z_status get_features_type(z_obj_vector<FTYPE,false>& list)
 	{
 		for (auto i : _features)
 		{
-			FTYPE* p = is_catagory<FTYPE>(i.second);
+			FTYPE* p = is_category<FTYPE>(i.second);
 			if (p)
 				list.add(p);
 		}
@@ -107,10 +107,10 @@ public:
 			return zs_not_found;
 		return zs_ok;
 	}
-	template <class FTYPE> FTYPE* is_catagory(zf_feature* f)
+	template <class FTYPE> FTYPE* is_category(zf_feature* f)
 	{
 		if (!f) return 0;
-		if (f->get_type() & FTYPE::get_catagory_static())
+		if (f->get_type() & FTYPE::get_category_static())
 		{
 			FTYPE* act = static_cast<FTYPE*>(f);
 			return act;
@@ -122,10 +122,10 @@ public:
 		zf_feature* f = get_feature(key);
 		return dynamic_cast<FTYPE*>(f);
 	}
-	template <class FTYPE> FTYPE* get_feature_catagory(ctext key)
+	template <class FTYPE> FTYPE* get_feature_category(ctext key)
 	{
 		zf_feature* f = get_feature(key);
-		return is_catagory<FTYPE>(f);
+		return is_category<FTYPE>(f);
 	}
 
 	//________________________________________________________________________
@@ -394,6 +394,34 @@ template <class VTYPE> inline  zf_node create_node(VTYPE & _obj_)
 z_factory* get_factory_from_vobj(const z_void_obj* vo);
 
 #define GET_FACT(_CLASS_) z_factory_t<_CLASS_>::get_instance_static()
+
+
+
+template <class PTYPE,class CTYPE> z_status get_child_objs_type(z_factory* pf,PTYPE* parent,z_obj_map<CTYPE,false>& map)
+{
+	z_obj_vector<zf_child_obj_ptr,false> children;
+	pf->get_features_type<zf_child_obj_ptr>(children);
+
+	for (auto cp : children)
+	{
+		auto cf=cp->get_factory();
+		if (!cf) continue;
+		auto classf=GET_FACT(CTYPE);
+		if (cf!=classf) {
+			continue;
+
+		}
+		auto vo=cp->obj_ptr_get(parent);
+		CTYPE* co=reinterpret_cast<CTYPE*>(vo);
+		if (!co) continue;
+		map.add(cp->get_name(),co);
+
+
+}
+	if (map.size())
+		return zs_not_found;
+	return zs_ok;
+}
 
 #endif
 

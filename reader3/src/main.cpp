@@ -5,6 +5,7 @@
 #include <filesystem>
 
 #include "zipolib/z_log_old.h"
+#include "zipolib/lockfile.h"
 
 void ctrl_C_handler(int s) {
     root.console.quit();
@@ -44,9 +45,14 @@ int isCwdWritable()
 
 int main(int argc, char* argv[])
 {
-
+    LockFile lock_file("/tmp/rfid.lock");
     std::error_code ec;
 
+    if (!lock_file.lock()) {
+        printf("\nCannot acquire lock file\n");
+        exit(-1);
+
+    }
     srand(time(NULL));
     //testfunc(eval(1),eval(2),eval(3));
     //return 0;

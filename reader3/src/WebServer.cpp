@@ -113,7 +113,7 @@ z_status WebServer::complete_all()
     return zs_ok;
 }
 
-ctext HEADERS="HTTP/1.1 %d OK\r\nAccess-Control-Allow-Headers: Content-Type\r\nAccess-Control-Allow-Origin: *\r\n"
+ctext HEADERS="HTTP/1.1 %d OK\r\nAccess-Control-Allow-Origin: *\r\nAccess-Control-Allow-Headers: Origin, Content-Type, X-Auth-Token\r\nAccess-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS\r\n"
               "Content-Type: application/json; charset=utf-8\r\n"
               "Transfer-Encoding: chunked\r\n\r\n";
 void send_headers(struct mg_connection *c,int status) {
@@ -153,7 +153,7 @@ static int process_command(http_request req,cmd_req_type type) {
 
         }
     }
-    mg_http_reply(req.c, 404, "Content-Type:text/plain\r\nAccess-Control-Allow-Origin: *\r\n", "REQ not found\n");
+    mg_http_reply(req.c, 404, "Access-Control-Allow-Origin: *\r\nContent-Type:text/plain\r\nAccess-Control-Allow-Headers: Origin, Content-Type, X-Auth-Token\r\nAccess-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS\r\n", "REQ not found\n");
 
     return 0;
 }
@@ -192,7 +192,7 @@ void WebServer::event_handler(struct mg_connection *c, int ev, void *ev_data) {
         WS_DBG("[%d] MG_EV_WAKEUP\n",c->id);
 
         struct mg_str *data = (struct mg_str *) ev_data;
-        mg_http_reply(c, 200, "Content-Type:application/json\r\nAccess-Control-Allow-Origin: *\r\n", "%.*s\n",
+        mg_http_reply(c, 200, "Content-Type:application/json\r\nAccess-Control-Allow-Origin: *\r\nAccess-Control-Allow-Headers: Origin, Content-Type, X-Auth-Token\r\nAccess-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS\r\n", "%.*s\n",
             data->len, data->ptr);
     }
     if (ev == MG_EV_HTTP_MSG) {
