@@ -191,8 +191,14 @@ z_status RfidReader::start()
     }
     status= _read_start();
     _ts_reading_started.set_now();
-    if(status==zs_ok)
+    if(status==zs_ok) {
+
+        root.gpio.ledRed.off();
+        root.gpio.ledGreen.on();
+
         _reading=true;
+
+    }
     return status;
 
 
@@ -252,22 +258,23 @@ void RfidReader::queueRead(U8 antnum,U8 rssi,U8* epc,size_t epc_len,U64 ts)
 
 }
 z_status RfidReader::dump_queue(
-        int index
+        int since_index
 )
 {
 	std::unique_lock<std::mutex> mlock(_queue_reads_all_mutex);
-    bool complete=(index==0);
+    bool complete=(since_index==0);
     int count=0;
+    ZLOG("Queue size=%d\n",_queue_reads_all.size());
+    ZLOG("_indexReads=%d\n",_indexReads);
+    for (auto r : _queue_reads_all) {
+        if (r->_index <= since_index)
 
-    for (auto i : _queue_reads_all) {
-        if (i->_index <= index)
-            break;
-
+            continue;
         count++;
-
+        r->dump();
     }
 
-    return zs_ok;    return Z_ERROR_NOT_IMPLEMENTED;
+    return zs_ok;
 }
 #define KV(K,V)
 void RfidRead::getJson(z_string& s)
@@ -277,13 +284,21 @@ void RfidRead::getJson(z_string& s)
     getJsonStream(js);
 
 }
+void RfidRead::dump()
+{
+    z_string epc;
+    _epc.getHexString(epc);
+    ZLOG("%d: %llu %d %d %s\n",_index,_time_stamp,_antNum,_rssi,epc.c_str());
+
+
+}
 void RfidRead::getJsonStream(z_json_stream& js)
 {
 
     js.obj_start();
     //js.keyval("command","read");
     js.keyval_int("ant",_antNum);
-    js.key_bool("status",_recorded);
+    js.key_bool("recorded",_recorded);
     //ZLOG("status %d\n",_recorded);
     js.keyval_int("rssi",_rssi);
     js.keyval_int("index",_index);
@@ -303,7 +318,7 @@ count: number;
 list:RfidRead[];
 }
 */
-z_status RfidReader::get_reads_since(z_json_stream &js,U32 index,bool status_only) {
+z_status RfidReader::get_reads_since(z_json_stream &js,U32 index,bool return_reads) {
 
     std::unique_lock<std::mutex> mlock(_queue_reads_all_mutex);
     bool complete=(index==0);
@@ -312,7 +327,7 @@ z_status RfidReader::get_reads_since(z_json_stream &js,U32 index,bool status_onl
 
     js.keyval_int("last_index",_indexReads);
     js.key_bool("complete",complete);
-    if (!status_only) {
+    if (return_reads) {
         js.key("list");
         js.array_start();
 
@@ -329,7 +344,7 @@ z_status RfidReader::get_reads_since(z_json_stream &js,U32 index,bool status_onl
     js.keyval_int("count",count);
     js.keyval_int("diff",diff);
     if (diff>0) {
-        ZDBG("get reads since %d, diff=%d count=%d status_only=%d\n",index,diff,count,status_only);
+        ZDBG("get reads since %d, diff=%d count=%d return_reads=%d\n",index,diff,count,return_reads);
 
     }
     return zs_ok;
@@ -389,7 +404,8 @@ z_status RfidReader::stop()
     ZTF;
     _read_stop();
     _reading = false;
-
+    root.gpio.ledRed.on();
+    root.gpio.ledGreen.off();
     return zs_ok;
 
 }

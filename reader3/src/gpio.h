@@ -13,30 +13,26 @@
 class Gpio;
 class GpioPin
 {
+    friend z_factory_t<GpioPin>;
+
     struct gpiod_line_request *_request=nullptr;
     gpiod_line_direction _dir=GPIOD_LINE_DIRECTION_INPUT;
 protected:
     Gpio *_chip;
-    friend z_factory_t<GpioPin>;
     Timer* _timer=0;
-    int _delay_on=100;
-    int _delay_off=100;
-    int _flashCount=0;
-    int _flashCountMax=10;
-    int _state=0;
-    bool _output=false;
+
     z_string _name;
     virtual void _off();
     virtual void _on();
     virtual int timer_callback(void*);
-
+    int _state=0;
+    bool _output=true;
 public:
     unsigned int _pin=0;
 
     GpioPin(int pin=0);
     virtual ~GpioPin(){}
-    z_status flash(int count);
-    z_status toggle();
+
 
     z_status setInput();
     z_status setOutput();
@@ -48,22 +44,40 @@ public:
     z_status json_config_get(z_json_stream &js);
 
 };
+
 class GpioPinLed : public GpioPin
 {
+    friend z_factory_t<GpioPinLed>;
+
+protected:
+    virtual int timer_callback(void*);
+
+    int _delay_on=100;
+    int _delay_off=100;
+    int _flashCount=0;
+    int _flashCountMax=10;
+
 public:
     GpioPinLed(int pin=0) : GpioPin(pin){}
     virtual ~GpioPinLed(){}
+    z_status flash(int count);
+    z_status toggle();
+    virtual void init(Gpio* chip,ctext name);
 
 };
-class GpioPinBuzzer : public GpioPin
+class GpioBeep : public GpioPin
 {
+    friend z_factory_t<GpioBeep>;
+
 public:
 
     typedef std::pair<int,int> Beep;
-private:
+protected:
+    int _next_time_off=0;
+
+
     virtual int timer_callback(void*);
     z_safe_queue<Beep> _queue;
-protected:
     virtual void _off();
     virtual void _on();
 public:
@@ -71,13 +85,27 @@ public:
     bool _enabled=false;
     void pushBeeps(std::initializer_list<Beep> const beeps);
     void beepDiminishing(Beep beep);
-    GpioPinBuzzer(int pin=0) : GpioPin(pin){}
-    virtual ~GpioPinBuzzer(){}
-    z_status toneRise();
+    GpioBeep(int pin=0) : GpioPin(pin){}
+    virtual ~GpioBeep(){}
     virtual void init(Gpio* chip);
 
     virtual void shutdown(){ off(); };
-    z_status beep(int freq, int duration);
+    z_status beep(int duration);
+    z_status up();
+    z_status down();
+
+};
+class GpioBeepPWM  : public GpioBeep{
+protected:
+    virtual void _off();
+    virtual void _on();
+    virtual int timer_callback(void*);
+
+public:
+    GpioBeepPWM(int pin=0) : GpioBeep(pin){}
+    virtual ~GpioBeepPWM(){}
+    z_status buzz(int freq, int duration);
+    z_status toneRise();
 
 };
 class Gpio {
@@ -102,23 +130,24 @@ public:
     //GpioPinLed ledRed=RED;
     //GpioPinLed ledBlue=BLUE;
     //GpioPinLed ledGreen=GREEN;
-    GpioPinLed g2=2;
+    //GpioPinLed g2=2;
     GpioPinLed ledRed=3;
     GpioPinLed g5=5;
     GpioPinLed g6=6;
     GpioPinLed ledGreen=17;
     GpioPinLed ledYellow=22;
-    GpioPinLed g23=23;
+    GpioPinLed readBeep=23;
     GpioPinLed g24=24;
     //GpioPinLed ledYellow=YELLOW;
-    GpioPinBuzzer buzzer=18;
+    GpioBeep beeper=2;
+    GpioBeepPWM beepPwm=18;
     const int led_gpio[4]={RED,GREEN,YELLOW,BLUE};
     bool initialize();
     bool shutdown();
     z_status set(int gpio,int val);
     z_status dump();
     z_status dump_pins();
-    z_status beep();
+    //z_status beep();
     z_status takeOnMe();
     z_status takeOnMePush();
     z_status lightShow();
@@ -131,10 +160,10 @@ public:
     int setPinOutput(unsigned int pin,int val);
     int reconfigure_line(struct gpiod_line_request *request,unsigned int offset,gpiod_line_direction dir,enum gpiod_line_value value=GPIOD_LINE_VALUE_INACTIVE);
 
-    z_status addPin(int num);
+   // z_status addPin(int num);
 
-    //z_obj_map<GpioPin, false> _pin_map;
-    z_obj_map<GpioPinLed, false> _pin_map;
+    //z_obj_map<GpioPin, false> _led_map;
+    z_obj_map<GpioPinLed, false> _led_map;
 };
 
 

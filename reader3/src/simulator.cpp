@@ -123,7 +123,9 @@ z_status RfidSimulator::_read_stop() {
 z_status RfidSimulator::manRead(z_string hex,int ant) {
     Epc epc;
     epc.setFromHexString(hex);
-    queueRead(ant,54,(U8*)epc.get_data(),epc.get_len(),z_time::get_now());
+    U64 ts=z_time::get_now();
+    ZLOG("queueing read %llu %s\n",ts,hex.c_str());
+    queueRead(ant,54,(U8*)epc.get_data(),epc.get_len(),ts);
 
     return zs_ok;
 

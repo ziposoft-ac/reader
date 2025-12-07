@@ -6,12 +6,13 @@
 #define WEBSERVER_H
 #include "pch.h"
 #include "timers.h"
+#include "rfid.h"
 
 typedef struct delayed_request delayed_request;
 typedef struct mg_connection mg_connection;
 typedef struct http_request http_request;
 
-class WebServer {
+class WebServer: public RfidReadConsumer {
     std::thread _h_thread;
     virtual int thread();
     bool _running=false;
@@ -40,6 +41,9 @@ public:
     }
     void event_handler(struct mg_connection *c, int ev, void *ev_data);
     int get_reads(struct mg_connection *c, struct mg_http_message *hm);
+
+    virtual bool callbackRead(RfidRead* r);
+    virtual bool callbackQueueEmpty();
 };
 
 #define WEBSERV(c) (*(WebServer *) ((c)->fn_data))

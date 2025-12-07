@@ -91,6 +91,28 @@ z_status Cfmu804::measure_ant(int antnum)
     return zs_ok;
 
 }
+
+z_status Cfmu804::ant_dump() {
+    z_status status=open();
+    if(status)
+        return status;
+
+    int i;
+    U8 loss;
+    _antenna_detected=0;
+    for(i=0;i<4;i++)
+    {
+        loss=get_ant_loss(i);
+        printf("ANT#%d=%d:%s\n",i+1,loss,(loss>3?"Connected":"NOT Connected"));
+        if(loss>3)
+        {
+            _antenna_detected|=(1<<i);
+        }
+
+    }
+    printf("ANT detected: 0x%x\n",_antenna_detected);
+    return zs_ok;
+}
 z_status Cfmu804::antCheck()
 {
     z_status status=open();
@@ -370,7 +392,10 @@ struct inv_params_t
 z_status Cfmu804::config_read() {
 
     readmode_get();
-    //info_dump();
+    U8 profile;
+    profile_set_get(profile);
+    _profile=profile;
+
     write_power_get();
     antCheck();
     return zs_ok;
@@ -551,4 +576,85 @@ RfidRead* Cfmu804::program_bcd(int number,bool overwrite,bool& programmed)
         programmed=true;
     }
     return r;
+}
+/*
+8.4.31	Load/modify reader profile
+The function of this command is to modify / load the internal profile configuration of reader. The default value of profile is 1. The setting of this parameter will be preserved even reader power is down.
+
+Command frame:
+Len	Adr	Cmd	Data[]	CRC-16
+            profile
+0x05	0xXX	0x7F	0xXX	LSB	MSB
+Parameter definition
+profile: profile number configuration.
+bit7: action on profile number configuration.
+0 – load profile number;
+1 – modify profile number.
+Bit6:Power Down Save Flag (Ex10 effective)。
+        0 – save；
+        1 – not save。
+Bit5 ~ bit0: profile number configuration.
+For bit7 = 0, bit6 ~ bit0 will be ignored.
+For bit7 = 1, bit5 ~ bit0 is the new configuration of profile number.
+All other values are reserved, reader will return a parameter error status in the response frame if other value is delivered in this field.
+Response frame:
+Len	Adr	reCmd	Status	Data[]	CRC-16
+                profile
+0x06	0xXX	0x7F	0x00	0xXX	LSB	MSB
+Parameter definition
+profile: current profile number configuration.
+bit7: reserved, default value is 0.
+bit6 ~ bit0: the current profile number of reader. The valid range of this parameter is 0 ~ 3.
+Configuration of different profiles for R2000:
+Profile0: Tari 25uS, FM0 40KHz;
+Profile1: Tari 25uS, Miller 4 250KHz (recommend configuration, system default setting)
+Profile2: Tari 25uS, Miller 4 300KHz;
+Profile3: Tari 6.25uS, FM0 400KHz.
+
+Configuration of different profiles for Ex10:
+Profile11:  640kHZ,  FM0  ,Tari 7.5 us
+Profile1:   640kHZ,  Miller2,Tari 7.5 us
+Profile15:  640kHZ,  Miller4,Tari 7.5 us
+Profile12:  320kHZ,  Miller2,Tari 15 us
+Profile3:   320kHZ,  Miller2,Tari 20 us
+Profile5:   320kHZ,  Miller4,Tari 20 us
+Profile7:   250kHZ,  Miller4,Tari 20 us
+Profile13:  160kHZ,  Miller8,Tari 20 us
+Profile50:  640kHZ,  FM0  ,Tari 6.25 us
+Profile51:  640kHZ,  Miller2,Tari 6.25 us
+Profile52:  426kHZ,  FM0  ,Tari 15 us
+Profile53:  640kHZ,  Miller4,Tari 7.5 us
+*/
+
+z_status Cfmu804::profile_set_get(U8 &profile_return,U8 profile_set)
+{
+    profile_return=0;
+    cfmu_status_code return_code=0;
+
+    if (profile_set>0) {
+        profile_set=profile_set|0xc0; // enable setting and saving
+    }
+    z_status status=send_command(0x7f,&profile_set,1,2000,&return_code,&profile_return,1);
+    if (status==zs_ok) {
+        ZLOG("Current profile=%d\n",profile_return);
+        _profile=profile_return;
+    }
+    else {
+        Z_ERROR_LOG("Error getting/setting profile (ret code=%d)\n",return_code);
+    }
+    if (return_code) {
+        print_cfmu_error(get_default_logger(),return_code);
+    }
+    return status;
+}
+z_status Cfmu804::profile_set(int val)
+{
+    U8 profile_return=0;
+
+    return profile_set_get(profile_return,val);
+}
+z_status Cfmu804::profile_dump()
+{
+    U8 profile_return=0;
+    return profile_set_get(profile_return,0);
 }

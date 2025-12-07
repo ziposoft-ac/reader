@@ -63,7 +63,7 @@ z_status Gpio::takeOnMePush()
         // determine the duration of the notes that the computer understands
         // divide 1000 by the value, so the first note lasts for 1000/8 milliseconds
         int duration = 1000/ durations[thisNote];
-        buzzer.pushBeeps( {
+        beepPwm.pushBeeps( {
             {melody[thisNote],duration*.8},
             {0,duration*0.6},
                           });

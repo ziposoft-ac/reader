@@ -52,7 +52,7 @@ const cfmu_cmd_t cfmu_cmd_table[] = {
 0x2f	Modify RF power
 0x33	LED/Buzzer control
 0x3f	Setup antenna multiplexing
-0x40	Enable/disable buzzer
+0x40	Enable/disable beepPwm
 0x46	GPIO control
 0x47	Obtain GPIO state
 0x4c	Obtain the reader unique serial number

@@ -299,7 +299,8 @@ public:
 
     int get_temperature_cmd();
     virtual z_status config_write();
-    virtual z_status config_read();
+	virtual z_status config_read();
+    virtual z_status ant_dump();
 
     virtual z_status readmode_get() override;
     virtual z_status readmode_set();
@@ -309,11 +310,10 @@ public:
     virtual z_status inventory_single() ;
     virtual RfidRead* read_single() ;
     virtual z_status exp_data_read() ;
-	z_status profile_load(int val)
-	{
-		U8 data = val;
-		return send_command(0x7f,&data,1);
-	}
+
+	z_status profile_set_get(U8 &profile_return,U8 profile_set=0);
+	z_status profile_set(int val);
+	z_status profile_dump();
     z_status set_return_loss(int val)
     {
         U8 data = val;
@@ -418,7 +418,7 @@ ZMETA_DECL(Cfmu804)
     ZPROP(_port_name);
     ZACT(badcmd);
     ZACT(inventory_single);
-    ZACT(antCheck);
+    ZACT(ant_dump);
 
     ZACT(inventory);
 
@@ -435,9 +435,10 @@ ZMETA_DECL(Cfmu804)
 	ZCMD(write_power_set, ZFF_CMD_DEF, "write_power_set",
 		 ZPRM(int, number, 10, "number", ZFF_PARAM)
 	);
-	ZCMD(profile_load, ZFF_CMD_DEF, "profile_load",
+	ZCMD(profile_set, ZFF_CMD_DEF, "profile_set",
 		 ZPRM(int, number, 13, "number", ZFF_PARAM)
 	);
+    ZACT(profile_dump);
 
 
 	ZCMD(inv, ZFF_CMD_DEF, "inv",

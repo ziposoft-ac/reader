@@ -41,7 +41,7 @@ public:
 
     z_string _record_file_name = "record_live.csv";
 
-    bool _buzzer=true;
+    bool _beepPwm=true;
     bool is_reading() { return _reading; }
     bool is_recording() { return _recording; }
     virtual z_status open();
@@ -71,7 +71,7 @@ ZMETA_DECL(App) {
     ZPROP(_record_file_name);
     ZPROP(_file_path_record);
     //ZPROP(_file_path_complete);
-    ZPROP(_buzzer);
+    ZPROP(_beepPwm);
     ZPROP(_file_flush_seconds);
     ZPROP(_min_split_time);
     ZPROP(_recording);

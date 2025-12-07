@@ -39,7 +39,7 @@ int  ProcessRunner::timer_callback(void*)
             if (missing_time>_missing_count_time) {
                 tag->_counted=true;
                 zout << "COUNTED because it was missing:" << i.first <<":"<<missing_time<<"\n";
-            root.gpio.buzzer.pushBeeps({{1400,100}});
+            root.gpio.beepPwm.pushBeeps({{1400,100}});
 
             }
         }
@@ -147,8 +147,8 @@ bool ProcessRunner::callbackRead(RfidRead* read)
                 break;
             }
             pTag->_counted=true;
-            //root.gpio.buzzer.beepDiminishing({2000,500});
-            root.gpio.buzzer.pushBeeps({{1400,100}});
+            //root.gpio.beepPwm.beepDiminishing({2000,500});
+            root.gpio.beepPwm.pushBeeps({{1400,100}});
 
             zout << "COUNTED moving away:" << epc <<"\n";
             zout.flush();

@@ -63,8 +63,8 @@ z_status App::open()
     //root.gpio.ledRed.on();
 
     _open=true;
-    if(_buzzer)
-        root.gpio.buzzer.pushBeeps(
+    if(_beepPwm)
+        root.gpio.beepPwm.pushBeeps(
                 {{1000,50},{1200,50},{1400,50},{0,80}
                  });
 
@@ -75,7 +75,7 @@ z_status App::close()
 {
     if(!_open)
         return zs_ok;
-    root.gpio.buzzer.pushBeeps(
+    root.gpio.beepPwm.pushBeeps(
             {{1500,50},{1000,50},{500,50},{0,50},
             });
     stop();
@@ -243,7 +243,7 @@ z_string App::createJsonStatus(int status, ctext msg,bool ack)
               (ack? "reader_ack" : "status_reader"));
     js.keyval("reads_filename",_record_file_name);
     js.keyval("reads_path",_file_path_record);
-    js.key_bool("beeps",_buzzer);
+    js.key_bool("beeps",_beepPwm);
     js.key_bool("reading",root.app.is_reading());
     js.key_bool("recording",root.app.is_recording());
     js.keyval_int("power",root.getReader()._power);
@@ -279,7 +279,7 @@ bool App::callbackRead(RfidRead* read)
         //root.gpio.ledYellow.flash(1);
         if(_record_file.is_open())
             _record_file << timestamp << ','<< read->_antNum << ',' <<  read->_rssi <<',' << epc<< '\n';
-        root.web_server.complete_all();
+        //root.web_server.complete_all();
     }
     catch(...)
     {
@@ -310,9 +310,9 @@ bool App::callbackRead(RfidRead* read)
             pTag->_count++;
             read->_recorded=true;
             //root.gpio.ledYellow.flash(1);
-            if(_buzzer)
+            if(_beepPwm)
             {
-                root.gpio.buzzer.beepDiminishing({2000,100});
+                root.gpio.beepPwm.beepDiminishing({2000,100});
             }
             if(_write_to_file)
             {

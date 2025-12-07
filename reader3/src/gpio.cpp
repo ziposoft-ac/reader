@@ -17,18 +17,10 @@ const int led_gpio[]={RED,GREEN,YELLOW,BLUE};
 const int num_leds=sizeof(led_gpio)/sizeof(int);
 ZMETA(GpioPin)
 {
-    ZPROP(_delay_on);
-    ZPROP(_state);
-    ZPROP(_output);
-    ZPROP(_delay_off);
-    ZPROP(_flashCountMax);
+
     ZPROP_F(_pin,ZFF_READ_ONLY);
-    ZPROP_F(_flashCount,ZFF_READ_ONLY);
-    ZCMD(flash, ZFF_CMD_DEF, "flash",
-         ZPRM(int, count, 1, "count", ZFF_PARAM)
-         );
+
     ZACT(off);
-    ZACT(toggle);
     ZACT(setOutput);
     ZACT(setInput);
     ZACT(show);
@@ -37,50 +29,83 @@ ZMETA(GpioPin)
 ZMETA(GpioPinLed)
 {
     ZBASE(GpioPin);
-
+    ZPROP(_delay_on);
+    ZPROP(_state);
+    ZPROP(_output);
+    ZPROP(_delay_off);
+    ZPROP(_flashCountMax);
+    ZACT(toggle);
+    ZPROP_F(_flashCount,ZFF_READ_ONLY);
+    ZCMD(flash, ZFF_CMD_DEF, "flash",
+         ZPRM(int, count, 1, "count", ZFF_PARAM)
+         );
 };
-ZMETA(GpioPinBuzzer)
+ZMETA(GpioBeep)
 {
     ZBASE(GpioPin);
-    ZACT(toneRise);
     ZPROP(_quiet);
     ZPROP(_enabled);
+    ZACT(up);
+    ZACT(down);
+
     ZCMD(beep, ZFF_CMD_DEF, "beep",
+         ZPRM(int, duration, 100, "duration", ZFF_PARAM)
+         );
+};
+ZMETA(GpioBeepPWM)
+{
+    ZBASE(GpioBeep);
+    ZACT(toneRise);
+
+    ZCMD(buzz, ZFF_CMD_DEF, "buzz",
          ZPRM(int, freq, 2000, "freq", ZFF_PARAM),
          ZPRM(int, duration, 100, "duration", ZFF_PARAM)
          );
 };
+ZMETA(Gpio)
+{
+    ZOBJ(g5);
+    ZOBJ(g6);
+    ZOBJ_X(ledGreen,"green",ZFF_PROP_DEF,"Green LED, pin#17");
+    ZOBJ_X(ledRed,"red",ZFF_PROP_DEF,"Red LED, pin#3");
+    ZOBJ_X(ledYellow,"yellow",ZFF_PROP_DEF,"Yellow LED, pin#22");
+    ZOBJ_X(readBeep,"readBeep",ZFF_PROP_DEF,"Beep on read enable, pin#23");
+    ZOBJ(g24);
+    ZOBJ(beeper);
+    ZOBJ(beepPwm);
+    ZCMD(set, ZFF_CMD_DEF, "set",
+         ZPRM(int, gpio, 0, "gpio", ZFF_PARAM),
+         ZPRM(int, val, 0, "val", ZFF_PARAM)
+         );
+    /*
+    ZCMD(addPin, ZFF_CMD_DEF, "addPin",
+         ZPRM(int, num, 0, "num", ZFF_PARAM)
+         );*/
+    ZACT(dump);
+    ZACT(takeOnMe);
+    ZACT(takeOnMePush);
+    //ZACT(beep);
+    ZACT(lightShow);
+    ZACT(dump_pins);
+};
+/**************************************************************************************
+ *
+ *   GpioPin
+ *
+ */
 GpioPin::GpioPin(int pin)
 {
     _pin=pin;
 }
 int GpioPin::timer_callback(void *)
 {
-    if(!_flashCount)
-        return 0;
-
-    if(_state)
-    {
-        _state=false;
-        _off();
-        _flashCount--;
-        return _delay_off;
-
-    }
-    else
-    {
-        _state=true;
-        _on();
-        return _delay_on;
-
-    }
+    return 0;
 }
 
 void GpioPin::init(Gpio* chip,ctext name)
 {
     Z_ASSERT(!_timer);
     _name=name;
-    _flashCount=0;
     _chip=chip;
     if(!_timer)
         _timer=root.timerService.create_timer_t(this,&GpioPin::timer_callback,0    );
@@ -114,27 +139,7 @@ void GpioPin::_off()
     gpiod_line_request_set_value(_request, _pin, (gpiod_line_value)_state);
 
 }
-z_status GpioPin::toggle()
-{
-    if(!root.gpio.initialize())
-        return zs_io_error;
-    _timer->stop();
-   _flashCount=100000;
-   _timer->start(1,true);
 
-    return zs_ok;
-}
-z_status GpioPin::flash(int count)
-{
-    if(!root.gpio.initialize())
-        return zs_io_error;
-    if(!_flashCount)
-        _timer->start(1,false);
-    _flashCount+=count;
-    if(_flashCount>_flashCountMax)
-        _flashCount=_flashCountMax;
-    return zs_ok;
-}
 z_status GpioPin::setInput()
 {
     if (!_request)
@@ -216,6 +221,202 @@ z_status GpioPin::on()
     _on();
     return zs_ok;
 }
+/**************************************************************************************
+ *
+ *   GpioPinLed
+ *
+ */
+
+z_status GpioPinLed::toggle()
+{
+    if(!root.gpio.initialize())
+        return zs_io_error;
+    _timer->stop();
+    _flashCount=100000;
+    _timer->start(1,true);
+
+    return zs_ok;
+}
+z_status GpioPinLed::flash(int count)
+{
+    if(!root.gpio.initialize())
+        return zs_io_error;
+    if(!_flashCount)
+        _timer->start(1,false);
+    _flashCount+=count;
+    if(_flashCount>_flashCountMax)
+        _flashCount=_flashCountMax;
+    return zs_ok;
+}
+int GpioPinLed::timer_callback(void *)
+{
+    if(!_flashCount)
+        return 0;
+
+    if(_state)
+    {
+        _state=false;
+        _off();
+        _flashCount--;
+        return _delay_off;
+
+    }
+    else
+    {
+        _state=true;
+        _on();
+        return _delay_on;
+
+    }
+}
+void GpioPinLed::init(Gpio* chip,ctext name)
+{
+    _flashCount=0;
+    GpioPin::init(chip,name);
+}
+
+/**************************************************************************************
+ *
+ *   GpioBeep
+ *
+ */
+void GpioBeep::init(Gpio* chip)
+{
+    Z_ASSERT(!_timer);
+    _state=1; //SET OFF
+    GpioPin::init(chip,"beep");
+
+
+}
+void GpioBeep::_off()
+{
+    // Reverse it
+    GpioPin::_on();
+}
+void GpioBeep::_on()
+{
+    // Reverse it
+    GpioPin::_off();
+}
+int GpioBeep::timer_callback(void *)
+{
+    int delay=0;
+
+    if (_next_time_off) {
+        _off();
+        delay=_next_time_off;
+        _next_time_off=0;
+        return delay;
+    }
+
+
+    Beep beep;
+    if(_queue.pop(beep))
+    {
+        delay=beep.first;
+        _next_time_off=beep.second;
+        if(delay>3000)
+        {
+            Z_WARN_MSG(zs_bad_parameter,"Beep Delay Too Long");
+            delay=100;
+        }
+        if(!delay)
+            delay=1;
+    }
+    else {
+        _off();
+        return 0;
+    }
+    if (_enabled)
+        if(!_quiet) {
+            _on();
+        }
+    return delay;
+}
+z_status GpioBeep::down() {
+
+    if (!_enabled)    return zs_not_open;
+
+    if(!_chip->initialize())
+        return zs_io_error;
+    pushBeeps({{200,200},{100,100},{50,0}});
+    return zs_ok;
+}
+z_status GpioBeep::up() {
+
+    if (!_enabled)    return zs_not_open;
+
+    if(!_chip->initialize())
+        return zs_io_error;
+    pushBeeps({{50,50},{100,100},{200,0}});
+    return zs_ok;
+}
+z_status GpioBeep::beep( int duration) {
+
+    if (!_enabled)    return zs_not_open;
+
+    if(!_chip->initialize())
+        return zs_io_error;
+    pushBeeps({{duration,0}});
+    return zs_ok;
+}
+/**
+ *
+ * Dont even know what this is
+ *
+ * @param beep
+ */
+void GpioBeep::beepDiminishing(Beep beep)
+{
+#ifdef NOGPIO
+    return;
+#endif
+    if (!_timer)
+        return;
+    if (!_enabled)    return ;
+
+    int count=_queue.get_count();
+    if(count>10)
+        return;
+    if(count)
+        beep.second=beep.second-(beep.second/10)*count;
+
+    if(beep.second<10)
+        beep.second=10;
+    _queue.push( beep);
+    beep.first=0;
+    _queue.push( beep);
+    _timer->start(1,false);
+
+}
+
+void GpioBeep::pushBeeps(std::initializer_list<Beep> const beeps)
+{
+    if (!_enabled)    return ;
+
+    if (!_timer) {
+        Z_ERROR_MSG(zs_not_open,"Buzzer not initialized");
+        return;
+    }
+#ifdef NOGPIO
+    return;
+#endif
+    if(_queue.get_count()>10)
+        return;
+    for(auto i : beeps)
+    {
+        _queue.push(i);
+    }
+    _timer->start(1,false);
+}
+
+
+
+/**************************************************************************************
+ *
+ *   GpioBeepPWM
+ *
+ */
 #define PWM_PATH "/sys/class/pwm/pwmchip0/pwm0/" // Adjust for pwmchip1/pwm1 if needed
 #define PWM_CHIP  "/sys/class/pwm/pwmchip0/export"
 
@@ -227,8 +428,8 @@ int syswr(ctext filename,int i) {
     FILE* fd = fopen(filename, "wb");
     if (!fd) {
 
-        perror("Failed to open export file");
-        return Z_ERROR_MSG(zs_io_error,"GPIO Error writing %d to %s\n",i,filename);
+        //perror("Failed to open export file");
+        return Z_ERROR_MSG(zs_io_error,"PWM Error writing %d to %s\n",i,filename);
     }
     fwrite(s.c_str(), s.size(),1,fd); // Export PWM channel 0
     //ZLOG("Writing %s:%s\n",filename,s.c_str());
@@ -255,37 +456,12 @@ int setPwmFreq(int freq) {
     return 0;
 
 }
-
-void GpioPinBuzzer::init(Gpio* chip)
-{
-    Z_ASSERT(!_timer);
-
-    _chip=chip;
-    if (!_enabled)
-        return;
-    if (syswr(PWM_CHIP,0)) {
-        Z_ERROR_LOG("Error setting up PWM, disabling PWM beep");
-        _enabled=false;
-        return;
-    }
-
-    if(!_timer)
-        _timer=root.timerService.create_timer_t(this,&GpioPinBuzzer::timer_callback,0    );
-
-}
-
-void GpioPinBuzzer::_off()
+void GpioBeepPWM::_off()
 {
     if (_enabled)
         setPwmFreq(0);
 }
-void GpioPinBuzzer::_on()
-{
-    if(_quiet) return;
-    if (_enabled)
-        setPwmFreq(50000);
-}
-int GpioPinBuzzer::timer_callback(void *)
+int GpioBeepPWM::timer_callback(void *)
 {
     Beep beep;
     int delay=0;
@@ -306,34 +482,25 @@ int GpioPinBuzzer::timer_callback(void *)
         if(!_quiet) {
             setPwmFreq(freq);
 
-    }
+        }
     return delay;
 }
 
-void GpioPinBuzzer::beepDiminishing(Beep beep)
+void GpioBeepPWM::_on()
 {
-#ifdef NOGPIO
-    return;
-#endif
-    if (!_timer)
-        return;
-    if (!_enabled)    return ;
-
-    int count=_queue.get_count();
-    if(count>10)
-        return;
-    if(count)
-        beep.second=beep.second-(beep.second/10)*count;
-
-    if(beep.second<10)
-        beep.second=10;
-    _queue.push( beep);
-    beep.first=0;
-    _queue.push( beep);
-    _timer->start(1,false);
-
+    if(_quiet) return;
+    if (_enabled)
+        setPwmFreq(50000);
 }
-z_status GpioPinBuzzer::beep(int freq, int duration) {
+z_status GpioBeepPWM::toneRise()
+{
+    if (!_enabled)    return zs_not_open;
+
+    pushBeeps({{500,20},{800,20},{1100,20}});
+    return zs_ok;
+}
+
+z_status GpioBeepPWM::buzz(int freq, int duration) {
 
     if (!_enabled)    return zs_not_open;
 
@@ -343,105 +510,32 @@ z_status GpioPinBuzzer::beep(int freq, int duration) {
     return zs_ok;
 }
 
-void GpioPinBuzzer::pushBeeps(std::initializer_list<Beep> const beeps)
-{
-    if (!_enabled)    return ;
+/**************************************************************************************
+ *
+ *   Gpio
+ *
+ */
 
-    if (!_timer) {
-        Z_ERROR_MSG(zs_not_open,"Buzzer not initialized");
-        return;
-    }
-#ifdef NOGPIO
-    return;
-#endif
-    if(_queue.get_count()>10)
-        return;
-    for(auto i : beeps)
-    {
-        _queue.push(i);
-    }
-    _timer->start(1,false);
-}
-
-z_status GpioPinBuzzer::toneRise()
-{
-    if (!_enabled)    return zs_not_open;
-
-    pushBeeps({{500,20},{800,20},{1100,20}});
-    return zs_ok;
-}
-ZMETA(Gpio)
-{
-
-    ZOBJ(g2);
-    ZOBJ(g5);
-    ZOBJ(g6);
-    ZOBJ_X(ledGreen,"green",ZFF_PROP_DEF,"Green LED, pin#17");
-    ZOBJ_X(ledRed,"red",ZFF_PROP_DEF,"Red LED, pin#3");
-    ZOBJ_X(ledYellow,"yellow",ZFF_PROP_DEF,"Yellow LED, pin#22");
-    ZOBJ(g23);
-    ZOBJ(g24);
-    /*
-    ZOBJ(ledGreen);
-    ZOBJ(ledBlue);
-    ZOBJ(ledYellow);
-
-    */
-    ZOBJ(buzzer);
-
-    ZCMD(set, ZFF_CMD_DEF, "set",
-         ZPRM(int, gpio, 0, "gpio", ZFF_PARAM),
-         ZPRM(int, val, 0, "val", ZFF_PARAM)
-         );
-    ZCMD(addPin, ZFF_CMD_DEF, "addPin",
-         ZPRM(int, num, 0, "num", ZFF_PARAM)
-         );
-    ZACT(dump);
-    ZACT(takeOnMe);
-    ZACT(takeOnMePush);
-    ZACT(beep);
-    ZACT(lightShow);
-    ZACT(dump_pins);
-    //ZMAP(_pin_map);
-    //ZVECT(_pins);
-};
+/*
 z_status Gpio::addPin(int num)
 {
     auto pin=new GpioPin(num);
     z_string name="pin"+num;
     //_pins.push_back(pin);
-    //_pin_map.add(name,pin);
+    //_led_map.add(name,pin);
     return zs_not_implemented;
     return zs_ok;
 }
-bool Gpio::shutdown()
+*/
+Gpio::Gpio()
 {
-    if(!_open) return false;
-
-    setPwmFreq(0);
-
-    for(auto p : _pin_map)
-    {
-        p.second->shutdown();
-    }
-
-    return false;
+    auto fact=GET_FACT(Gpio);
+    get_child_objs_type(fact,this,_led_map);
 }
-z_status Gpio::json_config_get(z_json_stream &js) {
-
-    js.set_pretty_print(true);
-    js.obj_val_start("gpio");
-
-    for(auto pin: _pin_map) {
-        GpioPinLed* led=pin.second;
-        js.obj_val_start(pin.first);
-        led->json_config_get(js);
-
-        js.obj_end();
-    }
-    js.obj_end();
-
-    return zs_ok;
+Gpio::~Gpio()
+{
+    if (_chip)
+        gpiod_chip_close(_chip);
 }
 
 bool Gpio::initialize() {
@@ -463,13 +557,45 @@ bool Gpio::initialize() {
         return false;
     }
     _open=true;
-    for(auto p : _pin_map)
+    for(auto p : _led_map)
     {
         p.second->init(this,p.first);
     }
-    buzzer.init(this);
+    beeper.init(this);
+    beepPwm.init(this);
     return _open;
 }
+bool Gpio::shutdown()
+{
+    if(!_open) return false;
+
+    setPwmFreq(0);
+
+    for(auto p : _led_map)
+    {
+        p.second->shutdown();
+    }
+
+    return false;
+}
+z_status Gpio::json_config_get(z_json_stream &js) {
+
+    js.set_pretty_print(true);
+    js.obj_val_start("gpio");
+
+    for(auto pin: _led_map) {
+        GpioPinLed* led=pin.second;
+        js.obj_val_start(pin.first);
+        led->json_config_get(js);
+
+        js.obj_end();
+    }
+    js.obj_end();
+
+    return zs_ok;
+}
+
+
 z_status Gpio::set(int gpio, int val) {
     if(!initialize())
         return zs_io_error;
@@ -500,15 +626,16 @@ z_status Gpio::dump() {
     }
     return zs_ok;
 }
+/*
 z_status Gpio::beep()
 {
     if(!initialize())
         return zs_io_error;
-    buzzer.pushBeeps({{500,50}});
-    //root.gpio.buzzer.pushBeeps({{2000,500}});
+    beepPwm.pushBeeps({{500,50}});
+    //root.gpio.beepPwm.pushBeeps({{2000,500}});
 
     return zs_ok;
-}
+}*/
 z_status Gpio::lightShow()
 {
     if(!initialize())
@@ -532,28 +659,7 @@ int Gpio::timer_callback(void *)
         index=0;
     return 100;
 }
-Gpio::Gpio()
-{
-/*
-    _pins.push_back(&ledRed);
-    _pins.push_back(&ledGreen);
-    _pins.push_back(&ledBlue);
-    _pins.push_back(&ledYellow);
-*/
 
-    auto fact=GET_FACT(Gpio);
-    get_child_objs_type(fact,this,_pin_map);
-
-
-
-}
-Gpio::~Gpio()
-{
-
-    if (_chip)
-	    gpiod_chip_close(_chip);
-
-}
 
 int Gpio::setPinDirection(gpiod_line_direction dir, unsigned int pin) {
     struct gpiod_line_request *request = getPinRequest(dir,pin);

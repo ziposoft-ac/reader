@@ -282,6 +282,8 @@ z_status WebServer::start() {
         _req_timer=root.timerService.create_timer_t(this,&WebServer::timer_callback_req_wait_expire,0 );
 
     }
+    root.getReader().register_consumer(this);
+
     _req_timer->start(200);
     return zs_ok;
 }
@@ -292,7 +294,17 @@ z_status WebServer::set_log_level(int ll) {
 
     return zs_ok;
 }
+bool WebServer::callbackQueueEmpty()
+{
+    complete_all();
 
+    return true;
+}
+
+bool WebServer::callbackRead(RfidRead* read)
+{
+    return true;
+}
 //static const char *s_http_addr = "http://0.0.0.0:8000";    // HTTP port
 char s_http_addr[40];
 static void http_callback(struct mg_connection *c, int ev, void *ev_data) {

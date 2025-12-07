@@ -35,6 +35,7 @@ public:
         return _time_stamp;
     }
     void getJson(z_string& s);
+    void dump();
     void getJsonStream(z_json_stream& s);
     RfidRead(U32 index,U8 antnum,U8 rssi,U8* epc,size_t epc_len,U64 ts)
     {
@@ -125,7 +126,6 @@ class RfidReader
 
     std::set<RfidReadConsumer*> _consumers;
     bool _reading=false;
-    U64 _indexReads=0;
     z_safe_queue<RfidRead*> _queue_reads;
     std::deque<RfidRead*> _queue_reads_all;
     std::mutex _queue_reads_all_mutex;
@@ -148,6 +148,9 @@ protected:
 
 
 public:
+    U64 _indexReads=0;
+
+    // Configuration
     int _power=30;
     int _write_power=10;
     int _pause_read_time=0;
@@ -156,10 +159,14 @@ public:
     int _filter_time=5;
     int _antenna_config=0xf;
     int _antenna_mask=0xf;
-    int _antenna_detected=0;
     int _freq_low=0;
     int _freq_high=3;
     int _inventory_offtime=500;
+    int _profile=0;
+
+
+    // Status
+    int _antenna_detected=0;
 
     int cached_read_count() {
         return _queue_reads_all.size();
@@ -255,6 +262,10 @@ ZMETA_DECL(RfidReader)
     ZPROP_X(_antenna_detected, "antenna_detected", ZFF_READ_ONLY, "Ant Detected");
 
 
+
+    ZPROP(_indexReads);
+
+
     ZPROP(_freq_low);
     ZPROP(_freq_high);
     ZPROP(_queue_max_depth);
@@ -263,6 +274,7 @@ ZMETA_DECL(RfidReader)
     ZPROP(_pause_read_time);
     ZPROP(_write_power);
     ZPROP(_power);
+    ZPROP(_profile);
     ZPROP(_filter_time);
     ZPROP(_qvalue);
     ZSTAT(cached_read_count);
