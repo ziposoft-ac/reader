@@ -122,9 +122,28 @@ int fn_post_stop(http_request r,z_json_obj &o)
 
     return HTTP_STATUS_OK;
 }
+int fn_post_beepon(http_request r,z_json_obj &o)
+{
+    bool beep;
 
+    o.get_bool("beep",beep,false);
+    root.gpio.readBeep.off();
+    ZLOG("fn_post_beepon");
+    send_status(r);
+    return HTTP_STATUS_OK;
+}
 
+int fn_post_beepoff(http_request r,z_json_obj &o)
+{
+    bool beep;
 
+    o.get_bool("beep",beep,false);
+        root.gpio.readBeep.on();
+    ZLOG("fn_post_beepoff");
+
+    send_status(r);
+    return HTTP_STATUS_OK;
+}
 int fn_get_reads(http_request r,z_string_map &vars)
 {
     RfidReader &reader = root.getReader();

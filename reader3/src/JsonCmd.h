@@ -20,6 +20,8 @@
     CMD_GET(delay) \
     CMD_POST(stop) \
     CMD_POST(start) \
+    CMD_POST(beepon) \
+    CMD_POST(beepoff) \
     CMD_GET(test)
 
 
