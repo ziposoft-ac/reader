@@ -28,7 +28,7 @@ public:
     int _max_interval=3000;
     int _interval=1000;
     int _seq_max=10;
-    z_string _mode;
+    z_string _mode=MODE_SEQ;
     virtual z_status _read_start()  ;
     virtual z_status _read_stop()  ;
     z_string _source_file = "simulate.csv";

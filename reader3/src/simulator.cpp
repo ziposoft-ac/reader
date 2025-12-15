@@ -1,3 +1,4 @@
+
 //
 // Created by ac on 8/25/21.
 //
@@ -89,7 +90,7 @@ z_status RfidSimulator::_read_start() {
 int RfidSimulator::timer_callback(void *) {
 
     Epc epc;
-
+    epc.set_bcd_from_int(_index);
     if (_mode==MODE_RANDOM) {
         U8 d[Epc::_max_len];
 
