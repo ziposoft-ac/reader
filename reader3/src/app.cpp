@@ -278,7 +278,7 @@ bool App::callbackRead(RfidRead* read)
         read->_recorded=true;
         //root.gpio.ledYellow.flash(1);
         if(_record_file.is_open())
-            _record_file << timestamp << ','<< read->_antNum << ',' <<  read->_rssi <<',' << epc<< '\n';
+            _record_file << read->_index << ','<<  timestamp << ','<< read->_antNum << ',' <<  read->_rssi <<',' << epc<< '\n';
         //root.web_server.complete_all();
     }
     catch(...)
