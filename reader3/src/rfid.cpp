@@ -129,26 +129,20 @@ RfidReader::~RfidReader() noexcept {
         delete r;
     }
 }
-z_status RfidReader::remote_start(
-        z_string timestamp,
-        z_string id,
-        z_string newfile,
-        z_string num_ant,
-        z_string powerlvl
-)
-{
-    return Z_ERROR_NOT_IMPLEMENTED;
-}
+
 int RfidReader::stat_timer_callback(void* context)
 {
 	static U64 last_bytes_read=0;
 
     static U64 last_read_index=0;
-    if (last_read_index != _indexReads) {
-        ZDBG("Reads per second:%d (%d bytes)\n",_indexReads-last_read_index,_total_bytes_read-last_bytes_read);
-        last_read_index=_indexReads;
-        last_bytes_read=_total_bytes_read;
+    if (last_read_index) {
+        if (last_read_index != _indexReads) {
+            ZDBG("Reads per second:%d (%d bytes)\n",_indexReads-last_read_index,_total_bytes_read-last_bytes_read);
+
+        }
     }
+    last_read_index=_indexReads;
+    last_bytes_read=_total_bytes_read;
 
 
     return 1000;
@@ -213,6 +207,7 @@ z_status RfidReader::configure(
     z_status status=freq_set(c.freqLow,c.freqHigh);
     if (status)
         return status;
+    _profile=c.profile;
     _power=c.power;
     _pause_read_time=c.pauseTime;
     _filter_time=c.filterTime;
@@ -344,7 +339,7 @@ z_status RfidReader::get_reads_since(z_json_stream &js,U32 index,bool return_rea
     js.keyval_int("count",count);
     js.keyval_int("diff",diff);
     if (diff>0) {
-        ZDBG("get reads since %d, diff=%d count=%d return_reads=%d\n",index,diff,count,return_reads);
+        //ZDBG("get reads since %d, diff=%d count=%d return_reads=%d\n",index,diff,count,return_reads);
 
     }
     return zs_ok;
@@ -360,17 +355,22 @@ z_status RfidReader::json_config_get(z_json_stream &js) {
 
     z_status status=config_read();
     if (status==zs_ok) {
+        js.keyval_int("antMask",_antenna_mask);
+        js.keyval_int("qValue",_qvalue);
+        js.keyval_int("power",_power);
+        js.keyval_int("freqLow",_freq_low);
+        js.keyval_int("freqHigh",_freq_high);
+        js.keyval_int("session",_session);
+        js.keyval_int("pauseTime",_pause_read_time);
+        js.keyval_int("filterTime",_filter_time);
+        js.keyval_int("beepEnable",_filter_time);
+
+
         js.key_bool("valid",true);
         js.key_bool("reading",_reading);
-        js.keyval_int("power",_power);
-        js.keyval_int("ant_config",_antenna_config);
-        js.keyval_int("ant_mask",_antenna_mask);
-        js.keyval_int("qValue",_qvalue);
-        js.keyval_int("session",_session);
-        js.keyval_int("filter_time",_filter_time);
+        js.keyval_int("profile",_profile);
         js.keyval_int("pause_read_time",_pause_read_time);
-        js.keyval_int("freq_low",_freq_low);
-        js.keyval_int("freq_high",_freq_high);
+
     }
     else {
         js.key_bool("valid",false);

@@ -169,7 +169,7 @@ z_status Cfmu804::config_write(        )
         if (_info_get(&info) == zs_ok) {
         }
     }
-
+    profile_set(_profile);
     return zs_ok;
 }
 

@@ -87,6 +87,7 @@ int fn_post_config(http_request r,z_json_obj &o)
     cfg.freqLow=o.get_int("freqLow",0);
     cfg.freqHigh=o.get_int("freqHigh",3);
     cfg.filterTime=o.get_int("filterTime",0);
+    cfg.profile=o.get_int("profile",1);
     z_status s=root.getReader().configure(cfg);
 
     if (s==zs_ok) {

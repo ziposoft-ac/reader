@@ -109,6 +109,8 @@ typedef struct {
      *For FliterTime = 0, disable tag filtering function.
      */
     U8 filterTime;
+
+    U8 profile;
     U8 valid; // if these settings are valid
 
 } rfid_config_t;
@@ -190,13 +192,7 @@ public:
     z_status close();
     z_status start();
     z_status dump_queue(int index);
-    z_status remote_start(
-            z_string timestamp,
-            z_string id,
-            z_string newfile,
-            z_string num_ant,
-            z_string powerlvl
-    );
+
     virtual z_status configure(
             const rfid_config_t& config
             );
@@ -247,13 +243,7 @@ ZMETA_DECL(RfidReader)
     ZCMD(dump_queue, ZFF_CMD_DEF, "dump_reads_since",
          ZPRM(int, index, 0, "index", ZFF_PARAM)
     );
-    ZCMD(remote_start, ZFF_CMD_DEF, "start",
-         ZPRM(z_string, timestamp, 0, "timestamp", ZFF_PARAM),
-         ZPRM(z_string, id, "default", "id", ZFF_PARAM),
-         ZPRM(z_string, newfile, 0, "newfile", ZFF_PARAM),
-         ZPRM(z_string, num_ant, 2, "num_ant", ZFF_PARAM),
-         ZPRM(z_string, powerlvl, 3000, "powerlvl", ZFF_PARAM)
-    );
+
     //ZPROP(_fixed_lap_time_seconds);
     ZPROP(_debug_reads);
     ZPROP_X(_reading, "Running", ZFF_READ_ONLY, "Reader is started");

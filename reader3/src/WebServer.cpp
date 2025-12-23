@@ -296,7 +296,7 @@ z_status WebServer::set_log_level(int ll) {
 }
 bool WebServer::callbackQueueEmpty()
 {
-    ZTF;
+    //ZTF;
     complete_all();
 
     return true;
