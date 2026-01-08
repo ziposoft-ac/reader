@@ -4,7 +4,6 @@
 
 #include "gpio.h"
 #include "root.h"
-#include <gpiod.h>
 
 const int RED=03;
 const int BLUE=22;
@@ -348,7 +347,7 @@ z_status GpioBeep::up() {
 
     if(!_chip->initialize())
         return zs_io_error;
-    pushBeeps({{50,50},{100,100},{200,0}});
+    pushBeeps({{50,50},{100,100},{200,50}});
     return zs_ok;
 }
 z_status GpioBeep::beep( int duration) {
@@ -357,7 +356,7 @@ z_status GpioBeep::beep( int duration) {
 
     if(!_chip->initialize())
         return zs_io_error;
-    pushBeeps({{duration,0}});
+    pushBeeps({{duration,50}});
     return zs_ok;
 }
 /**

@@ -84,7 +84,6 @@ int main(int argc, char* argv[])
 #ifndef ARM
     //get_zlog().add_stdout();
 #endif
-
     ZLOG("\n========Zipo Timer=========\nLOCAL:%s\nGMT:%s\nBUILD: %s\n",
          z_time::getTimeStrLocal().c_str(),
          z_time::getTimeStrGmt().c_str(),

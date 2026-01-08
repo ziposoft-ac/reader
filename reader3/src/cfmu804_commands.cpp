@@ -5,8 +5,58 @@
 
 #include <numeric>
 
+const U8 US_band_range=48;
+
+struct write_epc_t
+{
+    U8 len;
+    U32 pwd;
+    U8 epc[Epc::_max_len];
+}__attribute__((__packed__)) ;
+#define FREQ_BAND_US1 902.75
+#define FREQ_BAND_US3 902
+double getFreqBand(double base,int n) {
+    return base+n*0.5;
+}
 
 
+struct inv_params_t
+{
+    U8 QValue;
+    U8 Session;
+    U8 MaskMem;
+    U16 MaskAdr;
+    U8 MaskLen;
+    U8 AdrTID;
+    U8 LenTID;
+    U8 target;
+    U8 ant;
+    U8 scan;
+
+}  __attribute__((__packed__)) ;
+
+struct params_read_chip_t
+{
+    U8 epc_len;
+    U8 epc[16];
+    U8 mem;
+    U8 wordptr;
+    U8 num;
+    U32 pwd;
+
+
+
+}  __attribute__((__packed__)) ;
+
+struct inv_params2_t
+{
+    U8 QValue;
+    U8 Session;
+    U8 target;
+    U8 ant;
+    U8 scan;
+
+}  __attribute__((__packed__)) ;
 RfidRead*  Cfmu804::read_single()
 {
     open();
@@ -41,7 +91,6 @@ RfidRead*  Cfmu804::read_single()
 
     return r;
 }
-const U8 US_band_range=48;
 
 z_status Cfmu804::freq_set(U8 low,U8 hi)
 {
@@ -210,12 +259,6 @@ z_status Cfmu804::_info_get(reader_info_t* pi)
     return status;
 
 }
-struct write_epc_t
-{
-    U8 len;
-    U32 pwd;
-    U8 epc[Epc::_max_len];
-}__attribute__((__packed__)) ;
 
 cfmu_status_code Cfmu804::program_epc(Epc& epc)
 {
@@ -250,11 +293,7 @@ z_status Cfmu804::write_bcd(int number)
     return zs_ok;
 }
 
-#define FREQ_BAND_US1 902.75
-#define FREQ_BAND_US3 902
-double getFreqBand(double base,int n) {
-    return base+n*0.5;
-}
+
 
 z_status Cfmu804::info_dump()
 {
@@ -374,20 +413,7 @@ z_status Cfmu804::readmode_get()
     return zs_ok;
 }
 
-struct inv_params_t
-{
-    U8 QValue;
-    U8 Session;
-    U8 MaskMem;
-    U16 MaskAdr;
-    U8 MaskLen;
-    U8 AdrTID;
-    U8 LenTID;
-    U8 target;
-    U8 ant;
-    U8 scan;
 
-}  __attribute__((__packed__)) ;
 
 z_status Cfmu804::config_read() {
 
@@ -401,15 +427,7 @@ z_status Cfmu804::config_read() {
     return zs_ok;
 
 }
-struct inv_params2_t
-{
-    U8 QValue;
-    U8 Session;
-    U8 target;
-    U8 ant;
-    U8 scan;
 
-}  __attribute__((__packed__)) ;
 z_status  Cfmu804::inventory()
 {
     inv_params_t params=
@@ -434,34 +452,23 @@ z_status  Cfmu804::inventory()
     return status;
 
 }
-z_status  Cfmu804::inv(int session,int target)
+z_status  Cfmu804::inv(int session,int target,int scantime)
 {
     inv_params2_t params2=
     {
-        4,(U8)session,(U8)target,0x80,10
+        4,(U8)session,(U8)target,0x80 /*ant #1*/,(U8)scantime
     };
     //09 00 01 04 fd 00 80 32 4d 9b
 
     //return send_command(1, (U8*)&params,sizeof(params),0,&data,data_len,&retlen);
     z_status status= send_command(1, (U8*)&params2,sizeof(params2),3000);
-    zout<<"STATUS:"<<status<<"\n";
+    //zout<<"STATUS:"<<status<<"\n";
 
     //if (status)
     return status;
 
 }
-struct params_read_chip_t
-{
-    U8 epc_len;
-    U8 epc[16];
-    U8 mem;
-    U8 wordptr;
-    U8 num;
-    U32 pwd;
 
-
-
-}  __attribute__((__packed__)) ;
 z_status  Cfmu804::exp_data_read()
 {
 //    params_read_chip_t params={2,0,0,0,4,3,0,20,0   };
@@ -632,7 +639,8 @@ z_status Cfmu804::profile_set_get(U8 &profile_return,U8 profile_set)
     cfmu_status_code return_code=0;
 
     if (profile_set>0) {
-        profile_set=profile_set|0xc0; // enable setting and saving
+        profile_set=profile_set|0x80; // enable setting
+        profile_set=profile_set&0xbf; // enable saving
     }
     z_status status=send_command(0x7f,&profile_set,1,2000,&return_code,&profile_return,1);
     if (status==zs_ok) {

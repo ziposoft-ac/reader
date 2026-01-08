@@ -306,7 +306,7 @@ public:
     virtual z_status readmode_set();
     virtual z_status info_dump() override;
     virtual z_status inventory() ;
-    virtual z_status inv(int session,int target) ;
+    virtual z_status inv(int session,int target,int scantime) ;
     virtual z_status inventory_single() ;
     virtual RfidRead* read_single() ;
     virtual z_status exp_data_read() ;
@@ -443,7 +443,8 @@ ZMETA_DECL(Cfmu804)
 
 	ZCMD(inv, ZFF_CMD_DEF, "inv",
 		 ZPRM(int, session, 0, "session", ZFF_PARAM),
-		 ZPRM(int, target, 0, "target", ZFF_PARAM)
+		 ZPRM(int, target, 0, "target", ZFF_PARAM),
+		 ZPRM(int, scantime, 0, "scantime", ZFF_PARAM)
 	);
 
     ZCMD(write_bcd, ZFF_CMD_DEF, "write_bcd",

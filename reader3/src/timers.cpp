@@ -42,7 +42,12 @@ int Timer::update(int ms_elapsed)
     {
         _ms_left-=ms_elapsed;
     } else{
+        U64 start=z_time::get_now_ms();
         _ms_left=invoke_callback();
+       if (z_time::get_now_ms()-start > 200) {
+           ZDBG("Timer callback took more than 200 milliseconds\n");
+       }
+
         if (!_ms_left)
             _running=false;
     }

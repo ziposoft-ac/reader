@@ -35,16 +35,16 @@ class TestTimer : public Test {
 
     Timer* _timer=0;
 public:
-    int _time_on=20;
-    int _time_off=1000;
-    int _state=0;
+    int _interval=20;
+    //int _time_off=1000;
+    //int _state=0;
     int _iterations=10;
     int _count=0;
     virtual z_status stop();
     virtual z_status start();
     virtual int onCallback(void*)
     {
-        return 0;
+        return 0;//return next interval value, 0 to stop
     }
     virtual z_status onStop()
     {
@@ -60,7 +60,7 @@ class TestThread : public Test {
     void _thread() {
         thread();
     }
-
+protected:
     bool _quit=false;
 public:
     virtual z_status stop();
@@ -110,6 +110,8 @@ public:
 
 class ReaderTest : public TestTimer{
 public:
+    int _time_off=1000;
+    int _time_on=1000;
     virtual z_status onStart();
     virtual z_status onStop();
     virtual int onCallback(void*);
@@ -125,16 +127,24 @@ public:
     int _max_temp_shutoff=50;
 
 };
-class Inventory : public TestTimer{
+class Inventory : public TestThread{
 public:
+    int _target=0;
+    int _session=1;
+    bool _send_stop=false;
+    int _scan_time=0;
+    int _backoff=0;
     virtual z_status onStart();
     virtual z_status onStop();
-    virtual int onCallback(void*);
+    virtual void thread();
 
 };
 class TestGpioOnOff : public TestTimer{
 public:
     int _gpioNum=20;
+    int _time_off=1000;
+    int _time_on=1000;
+    int _state=0;
     virtual z_status onStop();
     int onCallback(void*);
 
@@ -155,6 +165,7 @@ public:
     TestTimers timer;
     TestPipe pipe;
     TestThread thread;
+    Inventory inv;
     //ReadPipe readPipe;
 };
 
@@ -165,9 +176,8 @@ ZMETA_DECL(Test) {
 }
 ZMETA_DECL(TestTimer) {
     ZBASE(Test);
+    ZPROP(_interval);
 
-    ZPROP(_time_on);
-    ZPROP(_time_off);
     ZPROP(_iterations);
 }
 ZMETA_DECL(TestThread) {

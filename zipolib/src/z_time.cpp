@@ -84,6 +84,12 @@ z_time::~z_time()
 
 
 }
+z_time::z_time(U64 i)
+{
+
+	_t = i;
+
+}
 bool z_time::is_not_a_date_time() const
 {
 
@@ -250,6 +256,12 @@ z_status z_time::string_format(z_string & s, ctext format,bool local) const
 bool z_time::operator >(const z_time& t2) const
 {
 	return _t > t2.get_t();
+}
+
+z_time & z_time::operator = (U64 val)
+{
+	_t=val;
+	return *this;
 }
 
 U32 z_time::get_fract_ms() const

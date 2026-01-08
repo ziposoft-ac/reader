@@ -8,14 +8,18 @@
 #include "epc.h"
 #include "timers.h"
 
+#define ENABLE_PHASE 1
+
 class RfidTag
 {
 public:
     RfidTag()
     {
     }
-    U64   _last_time_seen = 0;
+    z_time   _ts_last_time_seen ;
+    z_time   _ts_rssi_high ;
     U8 _last_rssi=0;
+    U8 _rssi_high=0;
     int _count = 0;
     bool _counted=false;
 };
@@ -26,6 +30,8 @@ public:
     U8 _rssi=0;
     U64  _time_stamp;
     U32 _index=0;
+    U16 phase1=0;
+    U16 phase2=0;
 public:
     bool _recorded=false;
 
@@ -138,6 +144,7 @@ class RfidReader
 protected:
     bool _open=false;
     bool _debug_reads=false;
+    bool _read_stats=false;
 	U64 _total_bytes_read=0;
 
     U32 _queue_max_depth=1000;
@@ -146,7 +153,11 @@ protected:
     virtual z_status _read_stop()  {   return zs_ok;  }
     virtual z_status _hw_open()  {   return zs_ok;  }
     virtual z_status _hw_close()  {   return zs_ok;  }
-    void queueRead(U8 antnum,U8 rssi,U8* epc,size_t epc_len,U64 ts);
+    void queueRead(U8 antnum,U8 rssi,U8* epc,size_t epc_len,U64 ts
+#ifdef  ENABLE_PHASE
+    ,int16_t phase1,int16_t phase2
+#endif
+        );
 
 
 public:
@@ -218,17 +229,6 @@ public:
 };
 
 
-class RfidLogFile {
-    int _write_count=0;
-public:
-    virtual bool callbackRead(RfidRead* r);
-    virtual bool callbackQueueEmpty();
-    z_file_out _record_file;
-    z_string _record_file_name = "record_live.csv";
-    z_obj_map<RfidTag> _tags;
-    int _min_split_time = 6;
-
-};
 
 ZMETA_DECL(RfidReader)
 {
@@ -238,6 +238,8 @@ ZMETA_DECL(RfidReader)
     ZACT(close);
     ZACT(start);
     ZACT(config_write);
+    ZACT_X(config_write,"cw",ZFF_ACT_DEF,"config write");
+    ZACT_X(config_dump,"cd",ZFF_ACT_DEF,"config_dump");
     ZACT(config_dump);
     ZACT(config_read);
     ZCMD(dump_queue, ZFF_CMD_DEF, "dump_reads_since",
@@ -246,6 +248,8 @@ ZMETA_DECL(RfidReader)
 
     //ZPROP(_fixed_lap_time_seconds);
     ZPROP(_debug_reads);
+    ZPROP(_read_stats);
+
     ZPROP_X(_reading, "Running", ZFF_READ_ONLY, "Reader is started");
     ZCMD(power_set, ZFF_CMD_DEF, "power_set", ZPRM(int, val, 30, "val", ZFF_PARAM));
     ZPROP_X(_antenna_config, "antenna_config", ZFF_READ_ONLY, "Ant Config");
@@ -266,7 +270,8 @@ ZMETA_DECL(RfidReader)
     ZPROP(_power);
     ZPROP(_profile);
     ZPROP(_filter_time);
-    ZPROP(_qvalue);
+    ZPROP_X(_qvalue, "qvalue", ZFF_PROP_DEF|ZFF_HEX, "Q Value");
+
     ZSTAT(cached_read_count);
 };
 #endif //ZIPOSOFT_RFID_H

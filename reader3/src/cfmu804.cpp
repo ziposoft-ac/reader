@@ -187,8 +187,8 @@ z_status Cfmu804::send_command(U8 code, U8* tx_data,
     delete resp;
     if(return_code>3)
     {
-        z_string err_msg;
-        print_cfmu_error(err_msg,return_code);
+        //z_string err_msg;
+        print_cfmu_error(ZDBGS,return_code);
         status=zs_failed_on_device;
 
         //Z_THROW_MSG(zs_io_error,err_msg);
@@ -294,6 +294,10 @@ void  Cfmu804::rx_thread()
                 break; // Probably are quiting
             }
             Response* cmdResponse=0;
+            #ifdef  ENABLE_PHASE
+            U16 phase1=0;
+            U16 phase2=0;
+            #endif
             ResponseFrame::framebuff_t &buff=p_frame->buff;
             U8 cmd_code=p_frame->get_cmd();
             U8 status=p_frame->get_status();
@@ -317,14 +321,19 @@ void  Cfmu804::rx_thread()
                     U8 rssi=buff.frame.data[epclen+2];
 
                     if (phase) {
-                        U16 phase1=*(U16*)(buff.frame.data+epclen+3);
-                        U16 phase2=*(U16*)(buff.frame.data+epclen+5);
+                        phase1=*(U16*)(buff.frame.data+epclen+3);
+                        phase2=*(U16*)(buff.frame.data+epclen+5);
                         //ZDBG_HEX(epc,epclen);
                        // ZDBGS << rssi << '\t' << phase1 << '\t' << phase2 <<'\n';
+                       // ZDBGS.format_append("%d %d %*s\n",phase1,phase2,epclen,epc);
 
                         //ignore phase for now
                     }
-                    queueRead(ant,rssi,epc,epclen,z_time::get_now());
+                    queueRead(ant,rssi,epc,epclen,z_time::get_now()
+                    #ifdef  ENABLE_PHASE
+                        ,phase1,phase2
+                    #endif
+                        );
                     p_frame->reset();
                     break;
 
@@ -342,7 +351,11 @@ void  Cfmu804::rx_thread()
                         U8* epc=(U8*)(buff.frame.data+3);
                         U8 rssi=buff.frame.data[epclen+3];
 
-                        queueRead(ant,rssi,epc,epclen,z_time::get_now());
+                        queueRead(ant,rssi,epc,epclen,z_time::get_now()
+                        #ifdef  ENABLE_PHASE
+                        ,phase1,phase2
+                        #endif
+                        );
                         p_frame->reset();
                         break;
                     }

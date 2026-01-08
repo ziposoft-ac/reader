@@ -15,10 +15,11 @@ ZMETA(Root)
     ZOBJ(tests);
     ZOBJ(cfmu804);
     ZOBJ(timerService);
-    ZOBJ(processRunner);
+    //ZOBJ(processRunner);
     ZOBJ(web_server);
     //ZOBJ(server);
     ZOBJ(app);
+    ZOBJ(app0);
     ZACT(heat_test);
     ZACT(dump_ports);
     ZACT(run_app);

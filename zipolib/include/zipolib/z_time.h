@@ -19,6 +19,7 @@ class z_time
 private:
 	U64 _t;// milliseconds past the
 public:
+	z_time(U64 init);
 	z_time();
 	~z_time();
 
@@ -85,7 +86,8 @@ public:
 	z_time operator+(const z_time_duration& t2) const;
 	friend std::ostream & operator<<(std::ostream &os, const z_time& td);
 	friend z_stream & operator<<(z_stream &os, const z_time& td);
-    z_time & operator = (U64 val);
+	z_time & operator = (U64 val);
+    bool operator == (U64 val);
 
 };
 class z_time_duration

@@ -21,6 +21,7 @@ ZMETA(Tests)
     //ZOBJ(wsBlast);
     ZOBJ(timer);
     ZOBJ(thread);
+    ZOBJ(inv);
     //ZOBJ(thread2);
     ZOBJ(pipe);
     ZACT(shutdown);
@@ -28,7 +29,8 @@ ZMETA(Tests)
 };
 ZMETA(ReaderTest) {
     ZBASE(TestTimer);
-
+    ZPROP(_time_on);
+    ZPROP(_time_off);
     ZPROP(_read_pause_time);
     ZPROP(_session);
 }
@@ -61,11 +63,24 @@ z_status Tests::shutdown()
 ZMETA(TestTimers)
 {
     ZBASE(TestTimer);
+
 };
 ZMETA(TestGpioOnOff)
 {
     ZBASE(TestTimer);
+
+    ZPROP(_time_on);
+    ZPROP(_time_off);
     ZPROP(_gpioNum);
+};
+ZMETA(Inventory)
+{
+    ZBASE(TestThread);
+
+    ZPROP(_session);
+    ZPROP(_send_stop);
+    ZPROP(_scan_time);
+    ZPROP(_backoff);
 };
 ZMETA(TestLedFlash)
 {
@@ -158,7 +173,6 @@ z_status TestTimer::stop()
 z_status TestTimer::start()
 {
     _count=0;
-    _state=0;
     z_status status=onStart();
     if(status!=zs_ok) {
         Z_ERROR_MSG(status,"start timer failed");
@@ -166,13 +180,13 @@ z_status TestTimer::start()
 
     }
 
-    bool res=onCallback(0);
-    if(!res)
+    int next=onCallback(0);
+    if(!next)
         return zs_ok;
 
     if(!_timer)
         _timer=root.timerService.create_timer_t(this,&TestTimer::timer_callback,0    );
-    _timer->start(_time_off);
+    _timer->start(next);
     return zs_ok;
 }
 
@@ -195,7 +209,7 @@ z_status TestHeatTest::onStart() {
     if (root.cfmu804.configure(conf))
         return zs_io_error;
     root.cfmu804.config_dump();
-    ZLOG("STARTING HEAT TEST: intvl=%d maxtemp=%d pause=%d\n",_time_off,_max_temp_shutoff,_read_pause_time);
+    ZLOG("STARTING HEAT TEST: intvl=%d maxtemp=%d pause=%d\n",_interval,_max_temp_shutoff,_read_pause_time);
 
     root.cfmu804.start();
 
@@ -266,19 +280,50 @@ z_status Inventory::onStart() {
 }
 z_status Inventory::onStop() {
 
-    root.cfmu804.cmd(0x93);
+    //root.cfmu804.cmd(0x93);
 
     return zs_ok;
 
 }
 
-int Inventory::onCallback(void* context)
+void Inventory::thread()
 {
-    if(root.shuttingDown()) {
-        return 0;
+    U64 last_dbg=z_time::get_now_ms();
+    U64 last_count=0;
+    U64 count=0;
+    while (!_quit) {
+        if(root.shuttingDown()) {
+            _quit=true;
+            break;
+
+        }
+
+        z_status status=root.cfmu804.inv(
+            _session,
+            _target,
+            _scan_time
+            );
+        ZDBG("inventory status=%d\n",status);
+        count++;
+        _target=(_target?0:1);
+        if (status) {
+            Z_ERROR_MSG(status,"inv failed: %d\n");
+            break;
+        }
+        if (_quit)
+            break;
+        if (_backoff)
+            std::this_thread::sleep_for(std::chrono::milliseconds(_backoff));
+        U64 now=z_time::get_now_ms();
+        U64 elapsed=now-last_dbg;
+        if (elapsed > 1000) {
+            ZDBG("inv per second: %lf",(count-last_count)*1000/elapsed);
+            last_count=count;
+            last_dbg=now;
+        }
 
     }
-    return _time_on;
+
 }
 
 
@@ -291,7 +336,7 @@ z_status TestGpioOnOff::onStop()
 z_status TestHeatTest::onStop() {
     root.cfmu804.stop();
 
-    ZLOG("STOPPING HEAT TEST: intvl=%d maxtemp=%d pause=%d\n",_time_off,_max_temp_shutoff,_read_pause_time);
+    ZLOG("STOPPING HEAT TEST: intvl=%d maxtemp=%d pause=%d\n",_interval,_max_temp_shutoff,_read_pause_time);
     ZLOG("TIME STOP:",z_time::getTimeStrLocal().c_str());
 
 
@@ -320,7 +365,7 @@ int TestHeatTest::onCallback(void* context)
     if(root.shuttingDown())
         return 0;
     root.cfmu804.start();
-    return _time_off;
+    return _interval;
 }
 
 
@@ -371,12 +416,12 @@ int  TestTimers::onCallback(void*)
     // zout <<  "TestWsBlast::onCallback\n";
     _iterations++;
     _count++;
-    if(_count*_time_off>5000)
+    if(_count*_interval>5000)
     {
         _count=0;
         zout << "timertest:"<< _iterations<< "\n";
 
     }
 
-    return _time_off;
+    return _interval;
 }

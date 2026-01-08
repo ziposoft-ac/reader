@@ -6,7 +6,12 @@
 #include "root.h"
 
 ZMETA_DEFV(RfidReader);
+#ifdef  ENABLE_PHASE
+#define PHASE_FORMAT ",%d,%d,%d"
+#else
+#define PHASE_FORMAT
 
+#endif
 void RfidRead::getEpcString(z_string& s)
 {
 
@@ -14,10 +19,34 @@ void RfidRead::getEpcString(z_string& s)
     _epc.getHexString(s);
 
 }
+int RfidReader::stat_timer_callback(void* context)
+{
+    static U64 last_bytes_read=0;
+    static U64 last_call=0;
+
+    U64 now=z_time::get_now_ms();
+
+
+    static U64 last_read_index=0;
+    if (last_read_index) {
+        if (last_read_index != _indexReads) {
+            ZDBG("Reads per second:%d (%d bytes)\n",_indexReads-last_read_index,_total_bytes_read-last_bytes_read);
+
+        }
+    }
+    last_read_index=_indexReads;
+    last_bytes_read=_total_bytes_read;
+
+    // TODO disable for now
+    return 0;
+}
 
 
 void RfidReader::process_reads_thread() {
     _queue_reads.wait_enable();
+    U64 stats_report_last_index=0;
+    U64 stats_report_last_bytes=0;
+    U64 stats_report_last_ts=z_time::get_now_ms();
 
     int write_count = 0;
     U64 ts_last=0;
@@ -55,12 +84,52 @@ void RfidReader::process_reads_thread() {
 #ifdef DEBUG
             if(_debug_reads)
             {
-                int queue=_queue_reads.get_count();
+
                 U64 ts=r->_time_stamp - _ts_reading_started.get_t();
                 U64 diff=r->_time_stamp - ts_last;
                 ts_last=r->_time_stamp;
+                z_string epc;
+                r->_epc.getHexString(epc);
                 //ZDBGS << r->_index<<'\t'<< ts << '\t'<< diff << '\t' <<queue<<'\t'<< r->_antNum  << '\t' << r->_rssi<< '\t' << r->_epc<<"\n";
-                ZDBGS << r->_index<<'\t'<< '\t' <<queue<<'\t'<< r->_antNum  << '\t' << r->_rssi<< '\t' << r->_epc<<"\n";
+
+                I32 phase_diff=r->phase2;
+                //if (r->phase1>r->phase2)              phase_diff+=0x10000;
+                phase_diff=phase_diff-r->phase1;
+                if (phase_diff<-32768)
+                    phase_diff+=0x10000;
+                if (phase_diff>32768)
+                    phase_diff-=0x10000;
+
+                ZDBGS.format_append("%6u %6u.%03u %6u.%03u %2u %3u %s " PHASE_FORMAT ,r->_index,ts/1000,ts%1000,diff/1000,diff%1000,r->_antNum,r->_rssi,epc.c_str()
+#ifdef  ENABLE_PHASE
+                ,r->phase1,r->phase2,phase_diff
+#endif
+
+                );
+                if ((phase_diff<3000)&&(phase_diff>-3000))
+                    ZDBGS.format_append(" STILL\n");
+                if (phase_diff<-3000)
+                    ZDBGS.format_append(" TOWARDS\n");
+                if (phase_diff>3000)
+                    ZDBGS.format_append(" AWAY\n");
+                //ZDBGS << <<'\t'<< '\t' <<queue<<'\t'<< r->_antNum  << '\t' << r->_rssi<< '\t' << r->_epc<<"\n";
+
+            }
+            if (_read_stats) {
+                U64 now=z_time::get_now_ms();
+                if (stats_report_last_index != _indexReads) {
+                    U64 elap=now - stats_report_last_ts;
+                    if (elap> 1000) {
+                        U64 reads=(_indexReads-stats_report_last_index)*1000;
+                        U64 bytes=(_total_bytes_read-stats_report_last_bytes)*1000;
+                        ZDBG("Reads per second:%d (%d bytes)\n",reads/elap,bytes/elap);
+                        stats_report_last_bytes=_total_bytes_read;
+                        stats_report_last_index=_indexReads;
+                        stats_report_last_ts=now;
+                    }
+
+                }
+
 
             }
 #endif
@@ -80,48 +149,6 @@ void RfidReader::process_reads_thread() {
     }
 }
 
-bool RfidLogFile::callbackQueueEmpty()
-{
-    _record_file.flush();
-    return true;
-}
-bool RfidLogFile::callbackRead(RfidRead* read)
-{
-    try {
-        ZT("process_reads_thread:");
-        z_string line;
-
-        z_string epc;
-        read->getEpcString(epc);
-
-        RfidTag *pTag = _tags.getobj(epc);
-        if (!pTag) {
-            pTag = z_new RfidTag();
-            _tags.add(epc, pTag);
-        }
-        U64 timestamp = read->get_ms_epoch();
-        U64 missing_time_ms = timestamp - pTag->_last_time_seen;
-        pTag->_last_time_seen = timestamp;
-        if (missing_time_ms > (_min_split_time * 1000)) {
-            pTag->_count++;
-            _record_file << timestamp << ',' << read->_antNum << ',' << epc << '\n';
-            if (_write_count++ > 100) {
-                _write_count = 0;
-                _record_file.flush();
-            }
-
-
-        }
-    }
-    catch(...)
-    {
-        Z_THROW_MSG(zs_internal_error,"Exception writing to read log file");
-    }
-
-
-
-    return true;
-}
 
 RfidReader::~RfidReader() noexcept {
     close();
@@ -130,23 +157,6 @@ RfidReader::~RfidReader() noexcept {
     }
 }
 
-int RfidReader::stat_timer_callback(void* context)
-{
-	static U64 last_bytes_read=0;
-
-    static U64 last_read_index=0;
-    if (last_read_index) {
-        if (last_read_index != _indexReads) {
-            ZDBG("Reads per second:%d (%d bytes)\n",_indexReads-last_read_index,_total_bytes_read-last_bytes_read);
-
-        }
-    }
-    last_read_index=_indexReads;
-    last_bytes_read=_total_bytes_read;
-
-
-    return 1000;
-}
 
 z_status RfidReader::open()
 {
@@ -222,21 +232,29 @@ z_status RfidReader::config_dump() {
 
 
     printf("ReadPauseTime=%d\n", _pause_read_time);
-    printf("Antenna=%x\n", _antenna_detected);
+    printf("Antenna=%b\n", _antenna_detected);
     printf("FilterTime=%d\n", _filter_time);
-    printf("QValue=%d\n", _qvalue);
-    printf("Session=%d\n", _session);
+    printf("QValue=%02x\n", _qvalue);
+    printf("Session=%02x\n", _session);
     printf("Power=%d\n", _power);
     printf("Write Power=%d\n", _write_power);
     return zs_ok;
 }
 
 
-void RfidReader::queueRead(U8 antnum,U8 rssi,U8* epc,size_t epc_len,U64 ts)
+void RfidReader::queueRead(U8 antnum,U8 rssi,U8* epc,size_t epc_len,U64 ts
+    #ifdef  ENABLE_PHASE
+    ,int16_t phase1,int16_t phase2
+    #endif
+    )
 {
 	std::unique_lock<std::mutex> mlock(_queue_reads_all_mutex);
     _indexReads++;
     RfidRead* r=new RfidRead(_indexReads,antnum,rssi,(U8*)epc,epc_len,ts);
+#ifdef  ENABLE_PHASE
+    r->phase1=phase1;
+    r->phase2=phase2;
+#endif
     _queue_reads.push(r);
     _queue_reads_all.push_front(r);
 

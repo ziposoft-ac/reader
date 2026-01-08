@@ -103,7 +103,11 @@ int RfidSimulator::timer_callback(void *) {
     if (_mode==MODE_SEQ) {
         epc.set_bcd_from_int(_index);
     }
-    queueRead(1,54,epc.get_data(),epc.get_len(),z_time::get_now());
+    queueRead(1,54,epc.get_data(),epc.get_len(),z_time::get_now()
+#ifdef  ENABLE_PHASE
+        ,0,0
+#endif
+        );
     if (_seq_max) {
         if (_index++ >=_seq_max)
             return 0;
@@ -126,7 +130,7 @@ z_status RfidSimulator::manRead(z_string hex,int ant) {
     epc.setFromHexString(hex);
     U64 ts=z_time::get_now();
     ZLOG("queueing read %llu %s\n",ts,hex.c_str());
-    queueRead(ant,54,(U8*)epc.get_data(),epc.get_len(),ts);
+    queueRead(ant,54,(U8*)epc.get_data(),epc.get_len(),ts,0,0);
 
     return zs_ok;
 
@@ -151,7 +155,7 @@ int RfidSimulator::timer_callback_file(void *) {
     Epc epc;
     epc.setFromHexString(row[2]);
 
-    queueRead(ant,54,epc.get_data(),epc.get_len(),adj_ts);
+    queueRead(ant,54,epc.get_data(),epc.get_len(),adj_ts,0,0);
     _index++;
     if(_index>=_data.size())
         return 0;

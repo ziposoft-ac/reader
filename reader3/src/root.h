@@ -15,7 +15,8 @@
 #include "gpio.h"
 #include "WebServer.h"
 #include "app.h"
-#include "processRunner.h"
+#include "app0.h"
+//#include "processRunner.h"
 
 class Root
 {
@@ -38,10 +39,11 @@ public:
     // server;
     Gpio gpio;
     App app;
+    App0 app0;
     Tests tests;
     WebServer web_server;
     TimerService timerService;
-    ProcessRunner processRunner;
+    //ProcessRunner processRunner;
 
     int _test_count=0;
     void wait_for_quit()

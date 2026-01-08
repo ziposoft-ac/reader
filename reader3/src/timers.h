@@ -34,6 +34,8 @@ public:
     void stop();
     void start(int ms,bool reset=true);
     void restart(int ms);
+    int get_ms_left() {return _ms_left;}
+    void set_ms_left(int val) { _ms_left=val; }
 
 };
 

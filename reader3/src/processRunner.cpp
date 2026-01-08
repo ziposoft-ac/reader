@@ -6,8 +6,9 @@
 #include <filesystem>
 //#include <openssl/ossl_typ.h>
 
-ZMETA_DEF(ProcessRunner);
 
+#if 0
+ZMETA_DEF(ProcessRunner);
 
 ProcessRunner::ProcessRunner()
 {
@@ -21,13 +22,13 @@ int  ProcessRunner::timer_callback(void*)
 
     for (auto i: _tags) {
         auto tag=i.second;
-        if (tag->_last_time_seen ==0)
+        if (tag->_ts_last_time_seen ==0)
             continue;
 
-        U64 missing_time=now.get_t() - tag->_last_time_seen;
+        U64 missing_time=now.get_t() - tag->_ts_last_time_seen;
         if (tag->_counted) {
             if (missing_time > _min_split_time*1000) {
-                tag->_last_time_seen=0;
+                tag->_ts_last_time_seen=0;
                 tag->_counted=false;
                 zout << "removing old:" << i.first <<"\n";
 
@@ -114,9 +115,9 @@ bool ProcessRunner::callbackRead(RfidRead* read)
                 _tags.add(epc, pTag);
 
             }
-            if (pTag->_last_time_seen==0) {
+            if (pTag->_ts_last_time_seen==0) {
                 pTag->_last_rssi=read->_rssi;
-                pTag->_last_time_seen = timestamp;
+                pTag->_ts_last_time_seen = timestamp;
                 break;
 
             }
@@ -124,12 +125,12 @@ bool ProcessRunner::callbackRead(RfidRead* read)
 
             if (pTag->_counted) {
                 //ZLOG("Ignoring counted tag %s\n",epc.c_str());
-                pTag->_last_time_seen = timestamp;
+                pTag->_ts_last_time_seen = timestamp;
 
                 break; //ignore
 
             }
-            U64 missing_time_ms = timestamp - pTag->_last_time_seen;
+            U64 missing_time_ms = timestamp - pTag->_ts_last_time_seen;
 
             if (missing_time_ms>_missing_count_time) {
                 //let timer handle this
@@ -143,7 +144,7 @@ bool ProcessRunner::callbackRead(RfidRead* read)
                 //ZLOG("tag  getting closer %s\n",epc.c_str());
 
                 pTag->_last_rssi=read->_rssi;
-                pTag->_last_time_seen = timestamp;
+                pTag->_ts_last_time_seen = timestamp;
                 break;
             }
             pTag->_counted=true;
@@ -169,3 +170,4 @@ bool ProcessRunner::callbackRead(RfidRead* read)
 }
 
 
+#endif

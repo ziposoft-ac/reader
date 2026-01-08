@@ -7,7 +7,23 @@
 #include "pch.h"
 #include "timers.h"
 
+#ifndef NO_GPIO
 #include <gpiod.h>
+#else
+
+enum gpiod_line_direction {
+    GPIOD_LINE_DIRECTION_AS_IS = 1,
+    GPIOD_LINE_DIRECTION_INPUT,
+    GPIOD_LINE_DIRECTION_OUTPUT,
+};
+struct gpiod_line_request;
+enum gpiod_line_value {
+    GPIOD_LINE_VALUE_ERROR = -1,
+    GPIOD_LINE_VALUE_INACTIVE = 0,
+    GPIOD_LINE_VALUE_ACTIVE = 1,
+};
+#endif
+
 
 
 class Gpio;
@@ -15,8 +31,11 @@ class GpioPin
 {
     friend z_factory_t<GpioPin>;
 
+
+
     struct gpiod_line_request *_request=nullptr;
     gpiod_line_direction _dir=GPIOD_LINE_DIRECTION_INPUT;
+
 protected:
     Gpio *_chip;
     Timer* _timer=0;
