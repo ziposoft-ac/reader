@@ -199,6 +199,9 @@ z_status GpioPin::json_config_get(z_json_stream &js) {
 
     return zs_ok;
 }
+z_status GpioPin::setOutputState(bool state) {
+    return (state?on():off());
+}
 
 z_status GpioPin::off()
 {
@@ -577,6 +580,32 @@ bool Gpio::shutdown()
 
     return false;
 }
+z_status Gpio::led_json_config_set(z_json_obj &jo) {
+
+    ZTF;
+    z_json_obj *gpio_cfg=jo.get_child("gpio");
+    if (! gpio_cfg)
+        return zs_bad_parameter;
+    z_json_stream s(ZDBGS,true);
+    jo.print(s);
+    for(auto pin: _led_map) {
+        GpioPinLed* led=pin.second;
+        z_json_obj *cfg;
+
+        if (cfg=gpio_cfg->get_child(pin.first))
+        {
+            I64 i;
+            if (cfg->get_int_val("val",i)) {
+                led->setOutputState(i);
+            }
+        }
+    }
+
+    return zs_ok;
+}
+
+
+
 z_status Gpio::json_config_get(z_json_stream &js) {
 
     js.set_pretty_print(true);
@@ -618,11 +647,8 @@ z_status Gpio::dump_pins() {
 z_status Gpio::dump() {
     if(!initialize())
         return zs_io_error;
-    int i;
-    for ( i=0; i<54; i++)
-    {
-        //printf("gpio=%d  mode=%d level=%d\n",    i,  gpioGetMode(i), gpioRead(i));
-    }
+
+
     return zs_ok;
 }
 /*

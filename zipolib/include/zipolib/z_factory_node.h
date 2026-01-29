@@ -54,6 +54,7 @@ enum zf_user_level
 	zf_ul_user,
 	zf_ul_admin,
 	zf_ul_debug,
+	zf_ul_experimental,
 
 };
 
@@ -110,7 +111,7 @@ enum zf_feature_type
 #define ZFF_ALL    	    0xFFFFFFFF
 
 #define ZFF_USER_LEVEL_MASK 0x0F000000
-#define ZFF_UL_USER         0x01000000
+#define ZFF_EXP (zf_ul_experimental<<24)
 
 extern ctext ZFF_PARSE_STRING;
 

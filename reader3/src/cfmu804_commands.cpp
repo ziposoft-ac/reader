@@ -35,6 +35,15 @@ struct inv_params_t
 
 }  __attribute__((__packed__)) ;
 
+struct inv_params_short_t
+{
+    U8 QValue;
+    U8 Session;
+
+
+}  __attribute__((__packed__)) ;
+
+
 struct params_read_chip_t
 {
     U8 epc_len;
@@ -49,6 +58,15 @@ struct params_read_chip_t
 }  __attribute__((__packed__)) ;
 
 struct inv_params2_t
+{
+    U8 QValue;
+    U8 Session;
+    U8 target;
+    U8 ant;
+    U8 scan;
+
+}  __attribute__((__packed__)) ;
+struct membuf_epc_return_t
 {
     U8 QValue;
     U8 Session;
@@ -195,7 +213,10 @@ z_status Cfmu804::config_write(        )
 
 
     working_mode_t mode;
-    _readmode_get(mode);
+    if (status = _readmode_get(mode))
+        return status;
+
+
     if(mode.ReadMode)
     {
         _read_stop();
@@ -206,6 +227,8 @@ z_status Cfmu804::config_write(        )
     mode.Session=_session;
     mode.FilterTime=_filter_time;
     _readmode_set(mode);
+    if (status = _readmode_set(mode))
+        return status;
 
     antCheck();
     _antenna_config=_antenna_mask&_antenna_detected;
@@ -417,13 +440,18 @@ z_status Cfmu804::readmode_get()
 
 z_status Cfmu804::config_read() {
 
-    readmode_get();
+
+    if (readmode_get())
+        return zs_read_error;
     U8 profile;
-    profile_set_get(profile);
+    if (profile_set_get(profile))
+        return zs_read_error;
     _profile=profile;
 
-    write_power_get();
-    antCheck();
+    if (write_power_get())
+        return zs_read_error;
+    if (antCheck())
+        return zs_read_error;
     return zs_ok;
 
 }
@@ -468,7 +496,48 @@ z_status  Cfmu804::inv(int session,int target,int scantime)
     return status;
 
 }
+z_status Cfmu804::membuf_clear()
+{
+    return cmd(0x73);
+}
+z_status  Cfmu804::mb_inv(int session,int target,int scantime)
+{
+    inv_params_t params=
+    {
+        4,(U8)session,
+        1,0,0,0,0,
+        (U8)target,0x80 /*ant #1*/,(U8)scantime
+    };
+    inv_params_short_t p2={4,(U8)session};
+    z_status status= send_command(0x18, (U8*)&p2,sizeof(p2),3000);
 
+    if (status==zs_ok) {
+        U16 count=0;
+        status=  send_command(0x74, (U8*)&count, 2);
+        ZDBG("count=%d",count);
+
+    }
+
+    return status;
+
+}
+z_status  Cfmu804::membuf_get()
+{
+    const int data_len=100;
+    char data[data_len];
+    int retlen=0;
+    z_status status= send_command(2, 0,0,2000,0,&data,data_len, &retlen);
+
+    return status;
+
+}
+z_status  Cfmu804::membuf_dump()
+{
+
+
+    return membuf_get();
+
+}
 z_status  Cfmu804::exp_data_read()
 {
 //    params_read_chip_t params={2,0,0,0,4,3,0,20,0   };

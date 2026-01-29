@@ -13,7 +13,7 @@ ZMETA(Root)
     ZOBJ(simulator);
     ZOBJ(gpio);
     ZOBJ(tests);
-    ZOBJ(cfmu804);
+    ZOBJ_X(cfmu804,"rfid",ZFF_PROP_DEF,"cf-804 module");
     ZOBJ(timerService);
     //ZOBJ(processRunner);
     ZOBJ(web_server);

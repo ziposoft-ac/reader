@@ -300,7 +300,12 @@ public:
     int get_temperature_cmd();
     virtual z_status config_write();
 	virtual z_status config_read();
-    virtual z_status ant_dump();
+	virtual z_status ant_dump();
+	virtual z_status membuf_clear();
+	//virtual z_status membuf_len_set();
+	virtual z_status membuf_get();
+	virtual z_status membuf_dump();
+    virtual z_status mb_inv(int session,int target,int scantime) ;
 
     virtual z_status readmode_get() override;
     virtual z_status readmode_set();
@@ -403,6 +408,9 @@ public:
 
 
 };
+
+#define EXPERIMENTAL
+//#undef  EXPERIMENTAL
 ZMETA_DECL(Cfmu804)
 {
     ZBASE(RfidReader);
@@ -438,8 +446,14 @@ ZMETA_DECL(Cfmu804)
 	ZCMD(profile_set, ZFF_CMD_DEF, "profile_set",
 		 ZPRM(int, number, 13, "number", ZFF_PARAM)
 	);
-    ZACT(profile_dump);
-
+    ZACT_X(membuf_dump,"mb_dump",ZFF_ACT_DEF,"mem dump");
+    ZACT_X(membuf_get,"mb_get",ZFF_ACT_DEF,"mem get");
+    ZACT_X(membuf_clear,"mb_clear",ZFF_ACT_DEF,"mem clear");
+	ZCMD(mb_inv, ZFF_CMD_DEF, "mb_inv",
+		 ZPRM(int, session, 0, "session", ZFF_PARAM),
+		 ZPRM(int, target, 0, "target", ZFF_PARAM),
+		 ZPRM(int, scantime, 0, "scantime", ZFF_PARAM)
+	);
 
 	ZCMD(inv, ZFF_CMD_DEF, "inv",
 		 ZPRM(int, session, 0, "session", ZFF_PARAM),
@@ -460,9 +474,7 @@ ZMETA_DECL(Cfmu804)
     ZCMD(readtime, ZFF_CMD_DEF, "readtime",
          ZPRM(int, time_sec, 0, "time_sec", ZFF_PARAM)
     );
-    ZCMD(fast_read, ZFF_CMD_DEF, "fast_read",
-     ZPRM(int, time_sec, 0, "time_sec", ZFF_PARAM)
-    );
+
     ZCMD(cmd, ZFF_CMD_DEF, "cmd",
          ZPRM(int, cmd, 0, "code", ZFF_PARAM)
     );
@@ -473,7 +485,7 @@ ZMETA_DECL(Cfmu804)
 	ZCMD(freq_set, ZFF_CMD_DEF, "freq_set",
 	 ZPRM(int, low, 0, "low quad", ZFF_PARAM),
 	 ZPRM(int, hi, 3, "hi quad", ZFF_PARAM)
-);
+	);
     ZCMD(set_return_loss, ZFF_CMD_DEF, "set_return_loss", ZPRM(int, val, 0, "val", ZFF_PARAM));
     ZCMD(ant_check_set, ZFF_CMD_DEF, "ant_check_set", ZPRM(int, val, 0, "val", ZFF_PARAM));
     ZCMD(ant_cfg_set, ZFF_CMD_DEF, "ant_cfg_set", ZPRM(int, val, 0, "val", ZFF_PARAM));
@@ -484,6 +496,13 @@ ZMETA_DECL(Cfmu804)
  *Valid setting of Scantime is 0x00 ~ 0xff (corresponding to 3*100ms ~ 255*100ms).
  */
     ZCMD(scan_time_set, ZFF_CMD_DEF, "scan_time_set", ZPRM(int, val, 0x14, "val", ZFF_PARAM));
+#ifdef EXPERIMENTAL
+	ZCMD(fast_read, ZFF_CMD_DEF, "fast_read",
+	 ZPRM(int, time_sec, 0, "time_sec", ZFF_PARAM)
+	);
+
+#endif
+
 };
 
 

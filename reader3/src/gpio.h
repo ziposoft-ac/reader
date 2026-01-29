@@ -54,6 +54,7 @@ public:
 
 
     z_status setInput();
+    z_status setOutputState(bool state);
     z_status setOutput();
     z_status show();
     z_status off();
@@ -172,6 +173,7 @@ public:
     z_status lightShow();
 	struct gpiod_chip *_chip=0;
     z_status json_config_get(z_json_stream &js);
+    z_status led_json_config_set(z_json_obj &jo);
 
 
     struct gpiod_line_request* getPinRequest(gpiod_line_direction dir, unsigned int pin);

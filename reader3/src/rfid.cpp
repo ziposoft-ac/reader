@@ -91,28 +91,34 @@ void RfidReader::process_reads_thread() {
                 z_string epc;
                 r->_epc.getHexString(epc);
                 //ZDBGS << r->_index<<'\t'<< ts << '\t'<< diff << '\t' <<queue<<'\t'<< r->_antNum  << '\t' << r->_rssi<< '\t' << r->_epc<<"\n";
+                if (r->phase1 || r->phase2) {
+                    I32 phase_diff=r->phase2;
+                    //if (r->phase1>r->phase2)              phase_diff+=0x10000;
+                    phase_diff=phase_diff-r->phase1;
+                    if (phase_diff<-32768)
+                        phase_diff+=0x10000;
+                    if (phase_diff>32768)
+                        phase_diff-=0x10000;
 
-                I32 phase_diff=r->phase2;
-                //if (r->phase1>r->phase2)              phase_diff+=0x10000;
-                phase_diff=phase_diff-r->phase1;
-                if (phase_diff<-32768)
-                    phase_diff+=0x10000;
-                if (phase_diff>32768)
-                    phase_diff-=0x10000;
+                    ZDBGS.format_append("%6u %6u.%03u %6u.%03u %2u %3u %s " PHASE_FORMAT ,r->_index,ts/1000,ts%1000,diff/1000,diff%1000,r->_antNum,r->_rssi,epc.c_str()
+    #ifdef  ENABLE_PHASE
+                    ,r->phase1,r->phase2,phase_diff
+    #endif
 
-                ZDBGS.format_append("%6u %6u.%03u %6u.%03u %2u %3u %s " PHASE_FORMAT ,r->_index,ts/1000,ts%1000,diff/1000,diff%1000,r->_antNum,r->_rssi,epc.c_str()
-#ifdef  ENABLE_PHASE
-                ,r->phase1,r->phase2,phase_diff
-#endif
+                    );
+                    if ((phase_diff<3000)&&(phase_diff>-3000))
+                        ZDBGS.format_append(" STILL\n");
+                    if (phase_diff<-3000)
+                        ZDBGS.format_append(" TOWARDS\n");
+                    if (phase_diff>3000)
+                        ZDBGS.format_append(" AWAY\n");
+                    //ZDBGS << <<'\t'<< '\t' <<queue<<'\t'<< r->_antNum  << '\t' << r->_rssi<< '\t' << r->_epc<<"\n";
+                }
+                else {
+                    ZDBGS.format_append("%6u %6u.%03u %6u.%03u %2u %3u %s\n"  ,r->_index,ts/1000,ts%1000,diff/1000,diff%1000,r->_antNum,r->_rssi,epc.c_str());
 
-                );
-                if ((phase_diff<3000)&&(phase_diff>-3000))
-                    ZDBGS.format_append(" STILL\n");
-                if (phase_diff<-3000)
-                    ZDBGS.format_append(" TOWARDS\n");
-                if (phase_diff>3000)
-                    ZDBGS.format_append(" AWAY\n");
-                //ZDBGS << <<'\t'<< '\t' <<queue<<'\t'<< r->_antNum  << '\t' << r->_rssi<< '\t' << r->_epc<<"\n";
+                }
+
 
             }
             if (_read_stats) {
@@ -397,7 +403,7 @@ z_status RfidReader::json_config_get(z_json_stream &js) {
 
     js.obj_end();
 
-    return zs_ok;
+    return status;
 }
 
 z_status RfidReader::json_status_get(z_json_stream &js) {

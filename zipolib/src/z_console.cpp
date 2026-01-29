@@ -11,6 +11,7 @@ ZMETA(z_console)
 	//ZACT(list_features);
 
 	ZACT(act_exit);
+	ZPROP_X(_user_level, "interface_level", ZFF_PROP_DEF, "Interface Level");
 	ZPROP_X(_show_duration, "show_time", ZFF_PROP_DEF, "Show elapsed time of command");
 	ZPROP_X(_dump_cmd_line,"dump_cmdline",ZFF_PROP_DEF,"Dump the parsed command line contents");
 	ZPROP_X(_param_path,"path",ZFF_PROP_DEF,"Current path");
@@ -235,8 +236,9 @@ z_status z_console::_ExecuteLineInternal(ctext text)
 		// TODO only if it is a parse error
 		//cmd_line.print_context(zout);
 	}
-	if (_show_duration)
-		_out << "\n" << time.get_elapsed_ms() << "ms\n";
+	if (_show_duration) {
+		_out.format_append("\n%s(%d) %dms\n",zs_get_status_text(status),status, time.get_elapsed_ms());
+	}
 	return status;
 
 }

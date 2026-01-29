@@ -53,23 +53,46 @@ int fn_get_gpio(http_request r,z_string_map &vars)
 {
     send_json_response(r,[](z_json_stream &js)
     {
-        //root.gpio.json_config_get(js);
-        return HTTP_STATUS_OK;
+        z_status status=root.gpio.json_config_get(js);
+        return (status?HTTP_STATUS_SERVICE_UNAVAILABLE: HTTP_STATUS_OK);
     });
     return 200;
 }
 int fn_post_gpio(http_request r,z_json_obj &o)
 {
 
+    z_status status=root.gpio.led_json_config_set(o);
+    send_json_response(r,[status](z_json_stream &js)
+    {
+        root.gpio.json_config_get(js);
+        return (status?HTTP_STATUS_INTERNAL_SERVER_ERROR: HTTP_STATUS_OK);
+    });
     send_status(r);
+
     return HTTP_STATUS_OK;
 }
 int fn_get_config(http_request r,z_string_map &vars)
 {
     send_json_response(r,[](z_json_stream &js)
     {
-        root.getReader().json_config_get(js);
-        return HTTP_STATUS_OK;
+        z_status status=root.getReader().json_config_get(js);
+        return (status?HTTP_STATUS_SERVICE_UNAVAILABLE: HTTP_STATUS_OK);
+    });
+    return 200;
+}
+
+
+int fn_get_beep(http_request r,z_string_map &vars)
+{
+
+    int dur=vars.get_as("dur",25);
+    int count=vars.get_as("count",2);
+    while (count--)
+        root.gpio.beeper.pushBeeps({{dur,25}});
+    send_json_response(r,[](z_json_stream &js)
+    {
+
+        return  HTTP_STATUS_OK;
     });
     return 200;
 }
@@ -77,7 +100,7 @@ int fn_get_config(http_request r,z_string_map &vars)
 int fn_post_config(http_request r,z_json_obj &o)
 {
     rfid_config_t cfg;
-
+    ZDBG("Setting config\n");
     //o.print(stdout_json);
     cfg.qValue=o.get_int("qValue",5);
     cfg.session=o.get_int("session",1);
