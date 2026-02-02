@@ -319,7 +319,7 @@ void  Cfmu804::rx_thread()
                     epclen&=0x3f;
                     U8* epc=(U8*)(buff.frame.data+2);
                     U8 rssi=buff.frame.data[epclen+2];
-
+#ifdef ENABLE_PHASE
                     if (phase) {
                         phase1=*(U16*)(buff.frame.data+epclen+3);
                         phase2=*(U16*)(buff.frame.data+epclen+5);
@@ -329,6 +329,7 @@ void  Cfmu804::rx_thread()
 
                         //ignore phase for now
                     }
+#endif
                     queueRead(ant,rssi,epc,epclen,z_time::get_now()
                     #ifdef  ENABLE_PHASE
                         ,phase1,phase2

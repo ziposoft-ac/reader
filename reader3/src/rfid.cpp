@@ -90,6 +90,8 @@ void RfidReader::process_reads_thread() {
                 ts_last=r->_time_stamp;
                 z_string epc;
                 r->_epc.getHexString(epc);
+    #ifdef  ENABLE_PHASE
+
                 //ZDBGS << r->_index<<'\t'<< ts << '\t'<< diff << '\t' <<queue<<'\t'<< r->_antNum  << '\t' << r->_rssi<< '\t' << r->_epc<<"\n";
                 if (r->phase1 || r->phase2) {
                     I32 phase_diff=r->phase2;
@@ -101,9 +103,7 @@ void RfidReader::process_reads_thread() {
                         phase_diff-=0x10000;
 
                     ZDBGS.format_append("%6u %6u.%03u %6u.%03u %2u %3u %s " PHASE_FORMAT ,r->_index,ts/1000,ts%1000,diff/1000,diff%1000,r->_antNum,r->_rssi,epc.c_str()
-    #ifdef  ENABLE_PHASE
                     ,r->phase1,r->phase2,phase_diff
-    #endif
 
                     );
                     if ((phase_diff<3000)&&(phase_diff>-3000))
@@ -114,7 +114,10 @@ void RfidReader::process_reads_thread() {
                         ZDBGS.format_append(" AWAY\n");
                     //ZDBGS << <<'\t'<< '\t' <<queue<<'\t'<< r->_antNum  << '\t' << r->_rssi<< '\t' << r->_epc<<"\n";
                 }
-                else {
+                else
+    #endif
+
+                {
                     ZDBGS.format_append("%6u %6u.%03u %6u.%03u %2u %3u %s\n"  ,r->_index,ts/1000,ts%1000,diff/1000,diff%1000,r->_antNum,r->_rssi,epc.c_str());
 
                 }

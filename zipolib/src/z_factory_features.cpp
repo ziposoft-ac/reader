@@ -151,7 +151,13 @@ void  zf_action::dump(zf_operation oper, z_stream &stream, void* obj, int tab)
             stream << param->get_name() << '=' << val;
         }
 
-	stream << ")\n";
+	stream << ")";
+	if (oper&ZFF_LIST) {
+	stream << "\t-"<<get_desc();
+
+	}
+	stream << "\n";
+
 };
 
 z_status zf_action::load_params(zf_command_line_parser& cc)

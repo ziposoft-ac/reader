@@ -290,9 +290,9 @@ int  App0::timer_callback(void*)
         }
         U64 rssi_age=(now - tag->_ts_rssi_high).total_milliseconds() ;
         if ( rssi_age>= _peak_window_ms) {
-            if (!tag->_counted) {
-                ZDBGS <<"COUNTING: "<<  epc << " - "<< tag->_rssi_high << " - " <<  tag->_ts_rssi_high.to_string_ms()<<"\n";
-                tag->_counted=true;
+            if (!tag->_ts_arrived) {
+                ZDBGS <<"ARRIVED: "<<  epc << " - "<< tag->_rssi_high << " - " <<  tag->_ts_rssi_high.to_string_ms()<<"\n";
+                tag->_ts_arrived=now;
                 //printf("\a");
                 root.gpio.beeper.beep(100);
             }
@@ -335,8 +335,8 @@ bool App0::callbackRead(RfidRead* read)
         if (pTag->_rssi_high < read->_rssi) {
             z_time ts=read->_time_stamp;
             //ts.set_ptime_ms();
-            ZDBGS << epc << " - "<< read->_rssi <<" - " <<  ts.to_string_ms()<<" - " << pTag->_counted<<"\n";
-            if (pTag->_counted) {
+            ZDBGS << epc << " - "<< read->_rssi <<" - " <<  ts.to_string_ms()<<" - " << pTag->_ts_arrived<<"\n";
+            if (pTag->_ts_arrived) {
                 root.gpio.beeper.beep(50);
 
             }

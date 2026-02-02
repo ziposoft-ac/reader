@@ -8,8 +8,8 @@
 #include "epc.h"
 #include "timers.h"
 
-#define ENABLE_PHASE 1
-
+#define ENABLE_PHASE 0
+#undef ENABLE_PHASE
 class RfidTag
 {
 public:
@@ -21,7 +21,8 @@ public:
     U8 _last_rssi=0;
     U8 _rssi_high=0;
     int _count = 0;
-    bool _counted=false;
+    z_time _ts_arrived;
+    z_time _ts_left;
 };
 class RfidRead {
 public:
@@ -30,8 +31,10 @@ public:
     U8 _rssi=0;
     U64  _time_stamp;
     U32 _index=0;
+#if ENABLE_PHASE
     U16 phase1=0;
     U16 phase2=0;
+#endif
 public:
     bool _recorded=false;
 
@@ -155,7 +158,7 @@ protected:
     virtual z_status _hw_close()  {   return zs_ok;  }
     void queueRead(U8 antnum,U8 rssi,U8* epc,size_t epc_len,U64 ts
 #ifdef  ENABLE_PHASE
-    ,int16_t phase1,int16_t phase2
+    ,int16_t phase1=0,int16_t phase2=0
 #endif
         );
 

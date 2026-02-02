@@ -57,7 +57,8 @@ public:
 	bool _show_duration;
 	bool _dump_cmd_line;
 	bool _param_script_step;
-	zf_user_level _user_level=zf_ul_anon;
+	//zf_user_level _user_level=zf_ul_anon;
+	int _user_level=zf_ul_anon;
 
 	z_status get_config_file_path(z_string& path);
 
