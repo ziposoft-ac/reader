@@ -39,7 +39,7 @@ public:
             U8 filterTime,
             U8 qValue
     );
-    virtual z_status manRead(z_string epc,int ant) ;
+    virtual z_status manRead(z_string epc,int rssi,int ant) ;
 
     virtual z_status setRandomMode() {
         _mode=MODE_RANDOM;

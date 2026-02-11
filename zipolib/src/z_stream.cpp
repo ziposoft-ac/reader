@@ -198,7 +198,11 @@ z_stream & z_stream::dump_hex(U8* data,size_t len) {
 
 }
 
+void  z_stream::time_mark(U64 elap_ms)
+{
+	format_append("%6u.%03u "  ,elap_ms/1000,elap_ms%1000);
 
+}
 
 void  z_stream::trace(ctext file, ctext func, int line, bool endline)
 {
@@ -435,7 +439,8 @@ z_status z_file_out::write_str(const char* data, size_t len)
 }
 void z_file_out::flush()
 {
-    fflush(_file);
+	if (_file)
+		fflush(_file);
 }
 
 void z_stream_debug::flush()

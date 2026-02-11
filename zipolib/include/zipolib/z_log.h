@@ -71,6 +71,7 @@ z_logger_debug& get_debug_logger();
 
 #define ZDBGS get_debug_logger()
 #define	ZDBG(...) get_debug_logger().format_append(__VA_ARGS__)
+#define	ZDBG_LINE(...) get_debug_logger().format_append(__VA_ARGS__)
 #define	ZDBG_HEX(data,len) get_debug_logger().dump_hex(data,len)
 #endif
 

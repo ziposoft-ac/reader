@@ -8,6 +8,11 @@
 
 ZMETA_DEF(App0);
 
+z_time ts_start;
+#define DBGL(...) { z_time now; now.set_now();get_debug_logger().time_mark(now-ts_start);get_debug_logger().format_append(__VA_ARGS__); ZDBGS<<'\n';   }
+
+#undef DBGL
+#define DBGL(...)
 
 App0::App0()
 {
@@ -42,13 +47,6 @@ z_status App0::open()
     if(_open)
         return zs_ok;
 
-    _record_file_fullname=_file_path_record+"/"+_record_file_name;
-
-    std::error_code ec;
-    std::filesystem::create_directory(_file_path_record.c_str(),ec);
-    if (ec.value()) {
-        Z_ERROR_MSG(zs_bad_parameter,"Could not create directory record file!");
-    }
     root.getReader().register_consumer(this);
 
     if(!_timer)
@@ -77,26 +75,18 @@ z_status App0::run()
 }
 z_status App0::stop()
 {
-    if(_open)
-    {
-        if(_reading)
-        {
-        }
-        _timer->stop();
-
-        root.getReader().stop();
-        _reading=false;
-
-        if (_recording) {
-            _recording=false;
-            _record_file.close();
-            _close_copy_file();
-
-        }
+    if(!_open)
+        return zs_ok;
+    _timer->stop();
+    root.getReader().stop();
 
 
 
-    }
+    _reading=false;
+    _file_raw.close_copy();
+    _file_filtered.close_copy();
+    std::unique_lock<std::mutex> mlock(_mutex_tags);
+
     _tags.delete_all();
     //root.gpio.ledRed.on();
     //root.gpio.ledGreen.off();
@@ -125,24 +115,6 @@ z_status App0::setup_reader_live(z_json_obj &settings)
 
 
 }
-z_status App0::_start_new_file()
-{
-    bool restart=_reading;
-    stop();
-    z_string time_str;
-    z_time time_now = z_time::get_now();
-    time_now.string_format(time_str, "-%Y_%m_%d_%H_%M_%S",true);
-    if (!_file_path_record) {
-        return Z_ERROR_MSG(zs_bad_parameter,"Record path not set");
-
-    }
-    _record_file_name = "live-"+  std::to_string(time_now.get_t()) + time_str + ".txt";
-    _record_file_fullname=_file_path_record+"/"+_record_file_name;
-    //_write_to_file=true;
-    root.console.savecfg();
-
-    return zs_ok;
-}
 
 z_status App0::start()
 {
@@ -154,23 +126,13 @@ z_status App0::start()
 
     _t_started.set_now();
     z_status s=zs_ok;
-    if (_write_to_file) {
-        s=_start_new_file();
-        if (s)
-            return s;
-        //z_string fullname =  _file_path_record+_record_file_name;
-
-
-        s = _record_file.open(_record_file_fullname, "ab");
-        if (s)
-        {
-            msg= "Could not open record file!";
-            Z_ERROR_MSG(s,"Could not open record file: \"%s\" : %s ",_record_file_fullname.c_str(),zs_get_status_text(s));
-
-        }
+    if (_record_raw) {
+        s=_file_raw.open_new(_file_path_record,"raw",_t_started);
     }
 
-
+    if (_record_filtered) {
+        s=_file_filtered.open_new(_file_path_record,"filter",_t_started);
+    }
 
     if (s==zs_ok)
     {
@@ -179,11 +141,12 @@ z_status App0::start()
         {
             _reading=true;
             _recording=true;
-            _timer->start(_tag_cleanup_timer_ms, true);
+            _timer->start(_default_timer_period, true);
             msg="reading started";
+            _t_started=root.getReader().getTimeReadingStart();
         }
     }
-
+    ts_start=_t_started;
     // update server with status
     if (s)
     {
@@ -192,30 +155,6 @@ z_status App0::start()
     return s;
 }
 
-z_status App0::_close_copy_file()
-{
-    stop();
-    if (!_write_to_file)
-        return zs_ok;
-    z_string time_str;
-    z_time time_now = z_time::get_now();
-    _recording=false;
-    _t_started.string_format(time_str, "%Y_%m_%d_%H_%M_%S-",true);
-    z_string new_name =_file_path_record+"/reads-"+time_str +  std::to_string(_t_started.get_t()) +"-" + std::to_string(time_now.get_t())  + "-.txt";
-    try {
-        // Copy the file
-        std::error_code ec;
-        std::filesystem::rename(_record_file_fullname.c_str(), new_name.c_str(),ec);
-        if (ec.value()) {
-            ZT("Error moving file %s",ec.message().c_str());
-        }
-
-    } catch (const std::filesystem::filesystem_error& e) {
-    }
-    root.console.savecfg();
-
-    return zs_ok;
-}
 
 int App0::add_json_status(z_json_stream &js) {
     js.keyval("reads_filename",_record_file_name);
@@ -235,13 +174,7 @@ z_string App0::createJsonStatus(int status, ctext msg,bool ack)
     js.keyval("reads_filename",_record_file_name);
     js.keyval("reads_path",_file_path_record);
     js.key_bool("beeps",_beep);
-    js.key_bool("reading",root.app.is_reading());
     js.key_bool("recording",root.app.is_recording());
-    js.keyval_int("power",root.getReader()._power);
-    js.keyval_int("ant_config",root.getReader()._antenna_config);
-    js.keyval_int("ant_mask",root.getReader()._antenna_mask);
-    js.keyval_int("ant_detected",root.getReader()._antenna_detected);
-    js.keyval_int("qValue",root.getReader()._qvalue);
     js.keyval_int("session",root.getReader()._session);
     js.keyval("status", zs_get_status_text((z_status)status));
     js.key_bool("error",status!=zs_ok );
@@ -255,12 +188,138 @@ z_string App0::createJsonStatus(int status, ctext msg,bool ack)
 
 bool App0::callbackQueueEmpty()
 {
-    if(_record_file.is_open())
-        _record_file.flush();
+    _file_raw.flush();
+    _file_filtered.flush();
     root.web_server.complete_all();
 
     return true;
 }
+z_time RfidTag::processRead(RfidRead *r, RfidReadConsumer& rc) {
+
+    _ts_last_time_seen=r->_time_stamp;
+    if (!_ts_first_time_seen)
+        _ts_first_time_seen=_ts_last_time_seen;
+    _ant_mask|=r->_antNum;
+    _count++;
+     z_time ts=r->_time_stamp;
+
+
+    if (_rssi_high < r->_rssi) {
+        _rssi_high = r->_rssi;
+        _ts_rssi_high =r->_time_stamp;
+        if (_state==fr_type_arrived) {
+            _ts_next_check_required=ts + (U64)rc._minimum_log_time_ms;
+
+
+        }
+        if (_state==fr_type_new) {
+            _ts_next_check_required=ts + (U64)rc._peak_window_ms;
+
+
+        }
+
+    }
+    else {
+        if (_state>fr_type_new) {
+            _ts_next_check_required=ts + (U64)rc._presence_window_s*1000;
+        }
+    }
+    DBGL("READ %s at %llu  check in is %llu\n",_epc.c_str(),ts.get_t(),_ts_next_check_required.get_t());
+
+    return _ts_next_check_required;
+
+}
+bool RfidTag::processCheck( RfidReadConsumer& rc,z_time now) {
+
+    U64 diff=now - _ts_last_time_seen;
+    DBGL("CHECK %s  last seen %llu ms\n",_epc.c_str(),diff);
+
+    if (diff>= rc._presence_window_s*1000) {
+        // write out exit
+
+        if ( // if has been more than X ms since last time logged
+            (_ts_last_time_seen-_ts_time_logged > rc._minimum_log_time_ms) ||
+            (// if tag has been present more than X seconds
+             (_ts_last_time_seen-_ts_first_time_seen) > rc._start_detection_s*1000
+            ))
+            _state=fr_type_departed;
+        else
+            _state=fr_type_delete;
+
+
+        return true;
+    }
+    if (_state==fr_type_new) {
+        if (now-_ts_rssi_high >=rc._peak_window_ms) {
+            _state=fr_type_arrived;
+            return true;
+
+        }
+        return false;
+    }
+
+    if (_state>=fr_type_arrived) {
+        if (_rssi_high_logged<_rssi_high) {
+            if (now - _ts_time_logged > rc._minimum_log_time_ms) {
+                _state=fr_type_higher_rssi;
+
+                return true;
+            }
+        }
+    }
+    _ts_next_check_required=now+(rc._presence_window_s*1000- diff);
+    DBGL("SET NEXT CHECK %s   to %llu \n",_epc.c_str(),_ts_next_check_required.get_t());
+
+    return false;
+}
+void RfidTag::writeOut(z_stream& s,z_time base,bool debug) {
+
+    z_time ts;
+    if (_state==fr_type_departed)
+        ts=_ts_last_time_seen;
+    else
+        ts=_ts_rssi_high;
+
+
+
+    if (0) {
+        U64 elap=ts-base;
+        s.format_append("%6u.%03u,"  ,elap/1000,elap%1000);
+
+    }
+    s<<_index;
+    s,ts.to_string_ms(true);
+
+
+
+
+    s, ts.get_t() , _ant_mask , _count, _rssi_high, _epc;
+
+    switch (_state) {
+        case fr_type_arrived:
+            s,"ARR";
+            break;
+        case fr_type_departed:
+            s,"DEP";
+
+            break;
+        default:
+            s,"HI";
+
+            break;
+    }
+
+    s<<'\n';
+    _count=0;
+    _rssi_high_logged=_rssi_high;
+    _ant_mask=0;
+    _ts_time_logged=_ts_rssi_high;
+}
+void App0::beep() {
+    if (_beep)
+        root.gpio.beeper.beep(50);
+}
+
 int  App0::timer_callback(void*)
 {
     z_time now;
@@ -275,35 +334,55 @@ int  App0::timer_callback(void*)
     }
     ZDBG("\n");
     */
+    DBGL("timer callback ");
+
     auto it = _tags.start();
-    int next_callback=_tag_cleanup_timer_ms;
+    int next_callback=_default_timer_period;
     while (it!=_tags.end()) {
-        RfidTag* tag=it->second;
+        RfidTag* t=it->second;
         z_string epc=it->first;
-        if (now - tag->_ts_last_time_seen > _min_split_time_s*1000) {
 
-            ZDBGS <<"DONE: "<<  epc << " - "<< tag->_rssi_high << " - " <<  tag->_ts_rssi_high.to_string_ms()<<"\n";
+        if (t->processCheck(*this,now)) {
+            if (t->_state>fr_type_delete) {
+                t->_index=_index++;
+                if (_debug_reads)
+                    t->writeOut( ZDBGS,_t_started,true);
+                if (_record_filtered)
+                    t->writeOut( _file_filtered._file,_t_started,true);
 
-            //ZDBG("erasing old tag: %s\n",epc.c_str());
-            it=_tags.erase(it);
-            continue;
-        }
-        U64 rssi_age=(now - tag->_ts_rssi_high).total_milliseconds() ;
-        if ( rssi_age>= _peak_window_ms) {
-            if (!tag->_ts_arrived) {
-                ZDBGS <<"ARRIVED: "<<  epc << " - "<< tag->_rssi_high << " - " <<  tag->_ts_rssi_high.to_string_ms()<<"\n";
-                tag->_ts_arrived=now;
-                //printf("\a");
-                root.gpio.beeper.beep(100);
+                beep();
+
+
             }
+
+            if (t->isDeparted()) {
+                //Z_ERROR_LOG("deleting: %s ",t->_epc.c_str());
+                it=_tags.erase(it);
+
+                continue;
+
+            }
+            t->_ts_next_check_required=t->_ts_rssi_high + (U64) _presence_window_s*1000;
+            DBGL("set %s check in to %llu",t->_epc.c_str(),t->_ts_next_check_required.get_t());
+
+        }
+        U64 next=next_callback;
+        if (now > t->_ts_next_check_required) {
+            Z_ERROR_LOG("Next check required is past for: %s, now=%llu ts=%llu\n",t->_epc.c_str(),now.get_t(),t->_ts_next_check_required.get_t());
+            next=1000;
         }
         else {
-            if (rssi_age && (next_callback>rssi_age))
-                next_callback=rssi_age;
+            next=t->_ts_next_check_required-now;
+
         }
+        if (next<next_callback)
+            next_callback=next;
 
-
-        it++;
+        ++it;
+    }
+    if (next_callback<=0) {
+        Z_ERROR_LOG("callback time ? %d ",next_callback);
+        next_callback=1;
     }
     return next_callback;
 }
@@ -311,43 +390,32 @@ int  App0::timer_callback(void*)
 bool App0::callbackRead(RfidRead* read)
 {
     std::unique_lock<std::mutex> mlock(_mutex_tags);
-    U64 now=z_time::get_now_ms();
+    z_time now=z_time::get_now_ms();
 
     try {
         z_string epc;
         read->getEpcString(epc);
-        if (_single_tag_test) {
-            if (_test_tag != epc)
-                return true;
+
+
+        if (_record_raw) {
+            _file_raw.writeRfidRead(read, epc);
         }
-        if(_print_reads)
+        if(_debug_reads)
         {
            // ZDBGS << read->get_ms_epoch() << ":" << read->_antNum << ":" << read->_rssi << ":" << epc <<"\n";
         }
         RfidTag *pTag = _tags.getobj(epc);
         if (!pTag) {
             pTag = z_new RfidTag();
-            //ZDBG("adding new tag: %s\n",epc.c_str());
-
+            pTag->_epc=epc;
             _tags.add(epc, pTag);
         }
-        pTag->_ts_last_time_seen=read->_time_stamp;
-        if (pTag->_rssi_high < read->_rssi) {
-            z_time ts=read->_time_stamp;
-            //ts.set_ptime_ms();
-            ZDBGS << epc << " - "<< read->_rssi <<" - " <<  ts.to_string_ms()<<" - " << pTag->_ts_arrived<<"\n";
-            if (pTag->_ts_arrived) {
-                root.gpio.beeper.beep(50);
 
-            }
-            else {
-                if (_timer->get_ms_left()> _peak_window_ms)
-                    _timer->set_ms_left(_peak_window_ms);
-            }
-            pTag->_rssi_high = read->_rssi;
-            pTag->_ts_rssi_high =read->_time_stamp;
-            return true;
-        }
+        U64 needs_check_in= pTag->processRead(read,*this)-now;
+
+
+        _timer->set_minimum_ms_left(needs_check_in);
+        DBGL("needs_check_in=%d",needs_check_in);
 
     }
     catch(...)

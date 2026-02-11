@@ -36,6 +36,10 @@ public:
     void restart(int ms);
     int get_ms_left() {return _ms_left;}
     void set_ms_left(int val) { _ms_left=val; }
+    void set_minimum_ms_left(int val) {
+        if (val<_ms_left)
+            _ms_left=val;
+    }
 
 };
 

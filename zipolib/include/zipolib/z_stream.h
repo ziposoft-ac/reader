@@ -43,7 +43,7 @@ public:
 	z_stream & operator << (double x);
 	z_stream & dump_hex(U8* data,size_t len);
 	z_stream & format_append(ctext pFormat, ...);
-	z_stream & format_line(ctext pFormat, ...);
+	z_stream & format_line_with_time(ctext pFormat, ...);
 	bool format_args(ctext pFormat, va_list ArgList);
 	int try_format_args(int buff_size, ctext pFormat, va_list ArgList);
 
@@ -52,7 +52,8 @@ public:
 	template<class T> z_stream& operator , (T x)
 	{
 		*this << ',';
-		*this << '\"' << x << '\"';
+		// TODO // *this << '\"' << x << '\"';
+		*this  << x ;
 		return *this;
 	}
 	z_stream & operator , (double x);
@@ -62,6 +63,7 @@ public:
 	void trace(ctext file, ctext func, int line, bool endline);
 	void trace_v(ctext file, ctext func, int line,  ctext pFormat, ...);
 	void trace_vargs(ctext file, ctext func, int line, ctext pFormat, va_list ArgList);
+	void time_mark(U64 elap_ms);
 
 
 	virtual void flush() {}
@@ -122,8 +124,10 @@ public:
 class z_stream_debug: public z_stream
 {
     int _fPipe=0;
+	bool _add_time_mark=true;
     z_status open();
 public:
+
     virtual z_status write(const char* data, size_t len);
     virtual void flush();
 };

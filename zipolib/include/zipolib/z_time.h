@@ -81,9 +81,11 @@ public:
 	U64 get_elapsed_ms() const;
 
 	bool operator > (const z_time& t2) const;
+	bool operator < (const z_time& t2) const;
 	z_time_duration operator-(const z_time& t2) const;
 	z_time operator-(const z_time_duration& t2) const;
 	z_time operator+(const z_time_duration& t2) const;
+	z_time operator+(U64 ms) const;
 	friend std::ostream & operator<<(std::ostream &os, const z_time& td);
 	friend z_stream & operator<<(z_stream &os, const z_time& td);
 	z_time & operator = (U64 val);

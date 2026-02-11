@@ -10,20 +10,7 @@
 
 #define ENABLE_PHASE 0
 #undef ENABLE_PHASE
-class RfidTag
-{
-public:
-    RfidTag()
-    {
-    }
-    z_time   _ts_last_time_seen ;
-    z_time   _ts_rssi_high ;
-    U8 _last_rssi=0;
-    U8 _rssi_high=0;
-    int _count = 0;
-    z_time _ts_arrived;
-    z_time _ts_left;
-};
+
 class RfidRead {
 public:
     U8 _antNum=0;
@@ -66,8 +53,17 @@ public:
 
     }
 };
+
+
+
+
 class RfidReadConsumer {
 public:
+    int _presence_window_s = 5;
+    int _start_detection_s = 5;
+    int _minimum_log_time_ms = 1000;
+    int _peak_window_ms = 500;
+
     virtual bool callbackRead(RfidRead* r)
     {
         zout << r->_epc << "\n";
@@ -76,6 +72,7 @@ public:
     virtual bool callbackQueueEmpty(){
         return true;
     }
+
 };
 
 typedef struct {
@@ -155,6 +152,7 @@ protected:
     virtual z_status _read_start()  {   return zs_ok;  }
     virtual z_status _read_stop()  {   return zs_ok;  }
     virtual z_status _hw_open()  {   return zs_ok;  }
+    virtual z_status _hw_init()  {   return zs_ok;  }
     virtual z_status _hw_close()  {   return zs_ok;  }
     void queueRead(U8 antnum,U8 rssi,U8* epc,size_t epc_len,U64 ts
 #ifdef  ENABLE_PHASE
@@ -199,6 +197,7 @@ public:
     void remove_consumer(RfidReadConsumer* consumer);
 
     U32 getReadIndex(){return _indexReads;}
+    z_time getTimeReadingStart(){return _ts_reading_started;}
     bool isReading(){return _reading;}
     void process_reads_thread();
     z_status stop();

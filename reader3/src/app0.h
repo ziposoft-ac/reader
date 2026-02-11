@@ -9,6 +9,7 @@
 #include "timers.h"
 #include "rfid.h"
 
+#include "recordFile.h"
 
 
 class App0 : public RfidReadConsumer{
@@ -20,28 +21,22 @@ class App0 : public RfidReadConsumer{
 
     int timer_callback(void*);
     Timer* _timer=0;
-    z_file_out _record_file;
-    z_string _record_file_fullname;
     std::mutex _mutex_tags;
 
     z_obj_map<RfidTag> _tags;
     //PROPS
-    int _peak_window_ms = 500;
     int _min_rssi = 70;
-    int _purge_ms = 500;
-    int _min_split_time_s = 1;
+    int _index = 0;
     int _filter_epc = true;
-    const int _tag_cleanup_timer_ms = 1000;
-    int _tag_missing_cleanup_ms = 5000;
-    bool _print_reads=true;
+    const int _default_timer_period = 5000;
+    bool _debug_reads=true;
     bool _beep=true;
-    bool _single_tag_test=true;
-    bool _write_to_file=false;
-    z_string _test_tag="0082";
-    //bool _write_to_file=true;
+    bool _record_raw=true;
+    bool _record_filtered=true;
     bool _recording=false;
-    z_status _start_new_file();
-    z_status _close_copy_file();
+    RecordFile _file_raw;
+    RecordFile _file_filtered;
+    bool _record_tod=true;
 
 public:
     App0();
@@ -62,7 +57,7 @@ public:
     virtual z_status start();
     z_string createJsonStatus(int status, ctext msg,bool ack);
 
-
+    void beep();
     virtual bool callbackRead(RfidRead* r);
     virtual bool callbackQueueEmpty();
 
@@ -75,20 +70,24 @@ public:
 
 ZMETA_DECL(App0) {
 
-    ZPROP(_record_file_name);
     ZPROP(_file_path_record);
     //ZPROP(_file_path_complete);
     ZPROP(_beep);
     ZPROP(_peak_window_ms);
-    ZPROP(_tag_missing_cleanup_ms);
-    ZPROP(_min_split_time_s);
+    ZPROP(_presence_window_s);
+    ZPROP(_record_tod);
+    ZPROP(_record_raw);
+    ZPROP(_record_filtered);
+    ZPROP(_start_detection_s);
+    ZPROP(_minimum_log_time_ms);
     ZPROP(_min_rssi);
-    ZPROP(_test_tag);
+   // ZPROP(_test_tag);
     ZPROP(_filter_epc);
-    ZPROP(_single_tag_test);
+    //ZPROP(_single_tag_test);
     ZPROP(_recording);
+    ZPROP(_index);
     //ZPROP(_broadcast);
-    ZPROP(_print_reads);
+    ZPROP(_debug_reads);
     //#define ZACT(_ACT_) ZACT_X(_ACT_,#_ACT_,ZFF_ACT_DEF,"")
     ZACT_X(stop,"stop",ZFF_ACT_DEF,"stop reading");
     ZACT(start);

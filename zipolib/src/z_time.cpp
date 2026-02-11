@@ -257,6 +257,10 @@ bool z_time::operator >(const z_time& t2) const
 {
 	return _t > t2.get_t();
 }
+bool z_time::operator <(const z_time& t2) const
+{
+	return _t < t2.get_t();
+}
 
 z_time & z_time::operator = (U64 val)
 {
@@ -516,7 +520,12 @@ z_time_duration z_time::operator-( const z_time& t2) const
 	ztd._d = _t - t2._t;
 	return ztd;
 }
-
+z_time z_time::operator+(U64 ms) const
+{
+	z_time ztd;
+	ztd._t = _t  + ms;
+	return ztd;
+}
 
 std::ostream & operator<<(std::ostream &os, const z_time_duration& td)
 {

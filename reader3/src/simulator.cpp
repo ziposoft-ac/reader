@@ -19,6 +19,7 @@ ZMETA(RfidSimulator)
     ZACT(setManMode);
     ZCMD(manRead, ZFF_CMD_DEF, "manRead",
          ZPRM(z_string, epc, "0001", "epc", ZFF_PARAM),
+         ZPRM(int, rssi, 50, "rssi", ZFF_PARAM),
          ZPRM(int, ant, 1, "ant", ZFF_PARAM)
     );
     ZCMD(setSeqMode, ZFF_CMD_DEF, "setSeqMode",
@@ -125,12 +126,12 @@ z_status RfidSimulator::_read_stop() {
     return zs_ok;
 
 }
-z_status RfidSimulator::manRead(z_string hex,int ant) {
+z_status RfidSimulator::manRead(z_string hex,int rssi,int ant) {
     Epc epc;
     epc.setFromHexString(hex);
     U64 ts=z_time::get_now();
     ZLOG("queueing read %llu %s\n",ts,hex.c_str());
-    queueRead(ant,54,(U8*)epc.get_data(),epc.get_len(),ts
+    queueRead(ant,rssi,(U8*)epc.get_data(),epc.get_len(),ts
 #ifdef  ENABLE_PHASE
         ,0,0
 #endif

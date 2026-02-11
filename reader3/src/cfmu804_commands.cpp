@@ -167,7 +167,7 @@ z_status Cfmu804::ant_dump() {
     int i;
     U8 loss;
     _antenna_detected=0;
-    for(i=0;i<4;i++)
+    for(i=0;i<_num_ports;i++)
     {
         loss=get_ant_loss(i);
         printf("ANT#%d=%d:%s\n",i+1,loss,(loss>3?"Connected":"NOT Connected"));
@@ -189,7 +189,7 @@ z_status Cfmu804::antCheck()
     int i;
     U8 loss;
     _antenna_detected=0;
-    for(i=0;i<4;i++)
+    for(i=0;i<_num_ports;i++)
     {
         ZDBGS<< "ANT#" << i+1;
         loss=get_ant_loss(i);
@@ -234,7 +234,7 @@ z_status Cfmu804::config_write(        )
     _antenna_config=_antenna_mask&_antenna_detected;
     ZDBGS<< "_antenna_config:"<<_antenna_config<<"\n";
 
-    ant_cfg_set(_antenna_config);
+    ant_mask_set(_antenna_config);
     if(_antenna_config)
     {
         reader_info_t info;
@@ -330,7 +330,7 @@ z_status Cfmu804::info_dump()
         ZOUT("dminfre=%x\n", info.dminfre);
         ZOUT("Power=%d\n", info.Power);
         ZOUT("CheckAnt=%d\n", info.CheckAnt);
-        ZOUT("Ant=%d\n", info.Ant);
+        ZOUT("Ant MASK=%d\n", info.Ant);
         ZOUT("Scntm=%d\n", info.Scntm);
 
         if (((info.dmaxfre&0xc0) ==0 )&&((info.dminfre&0xc0) ==0x80 )) {

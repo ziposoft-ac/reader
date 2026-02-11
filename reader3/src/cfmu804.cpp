@@ -148,9 +148,10 @@ z_status Cfmu804::send_command(U8 code, U8* tx_data,
                                int max_rx_len, int* ret_len)
 {
     z_status status=zs_timeout;
-    std::unique_lock<std::mutex> mlock(_mutex_command);
     if(open()!=zs_ok)
         return zs_not_open;
+    std::unique_lock<std::mutex> mlock(_mutex_command);
+
     auto prev=_responses.pop(code); // remove previous response if there
     delete prev;
 
@@ -188,7 +189,7 @@ z_status Cfmu804::send_command(U8 code, U8* tx_data,
     if(return_code>3)
     {
         //z_string err_msg;
-        print_cfmu_error(gz_stream_error,return_code);
+        print_cfmu_error(get_error_logger(),return_code);
         status=zs_failed_on_device;
 
         //Z_THROW_MSG(zs_io_error,err_msg);
@@ -204,7 +205,40 @@ z_status Cfmu804::send_command(U8 code, U8* tx_data,
 
 }
 
+z_status Cfmu804::_hw_init() {
 
+
+    //IS IT CURRENTLY READING??? STOP IT?
+    //GET HW VERSION/CONTEXT_PORT_NO_LISTEN_SERVER
+
+
+    //TODO check if we are currently reading!!
+    _read_stop();
+    reader_info_t info;
+    if (_info_get(&info)==zs_ok) {
+        _model=(Model)info.Type;
+        switch (_model) {
+            case model_e714:
+                _num_ports=4;
+                ZLOG("E714 4 port reader \n");
+
+                break;
+            case model_e718:
+                _num_ports=8;
+                ZLOG("E718 8 port reader \n");
+
+                break;
+            default:
+                _num_ports=4;
+                Z_ERROR_LOG("Unknown reader type=%x", _model);
+
+                break;
+
+        }
+
+    }
+    return zs_ok;
+}
 
 z_status Cfmu804::_hw_open()
 {
@@ -222,12 +256,18 @@ z_status Cfmu804::_hw_open()
         serial::Timeout to = serial::Timeout::simpleTimeout(100);
         _port.setTimeout(to);
 
-        _rx_thread_start();
+        if (_rx_thread_start()) {
 
+
+            return zs_io_error;
+
+        }
+        //DO NOT CALL ANY COMMANDS HERE
+        //will cause a recursive open
 
 
     }
-    //TODO check if we are currently reading!!
+
     catch (std::system_error & e) {
         zout << "System error: " << e.what() << '\n';
         return zs_could_not_open_file;
@@ -238,6 +278,7 @@ z_status Cfmu804::_hw_open()
     }
     return zs_ok;
 }
+
 bool  Cfmu804::_rx_frame(ResponseFrame* frame )
 {
     try

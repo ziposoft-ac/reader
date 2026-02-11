@@ -16,8 +16,8 @@ App::App()
 }
 int  App::timer_callback(void*)
 {
-    if(_record_file.is_open())
-        _record_file.flush();
+    if(_file.is_open())
+        _file.flush();
 
     //NOT USED
     return _file_flush_seconds;
@@ -49,13 +49,6 @@ z_status App::open()
     if(_open)
         return zs_ok;
 
-    _record_file_fullname=_file_path_record+"/"+_record_file_name;
-
-    std::error_code ec;
-    std::filesystem::create_directory(_file_path_record.c_str(),ec);
-    if (ec.value()) {
-        Z_ERROR_MSG(zs_bad_parameter,"Could not create directory record file!");
-    }
     root.getReader().register_consumer(this);
 
     if(!_timer)
@@ -101,8 +94,7 @@ z_status App::stop()
 
         if (_recording) {
             _recording=false;
-            _record_file.close();
-            _close_copy_file();
+            _file.close_copy();
 
         }
 
@@ -139,28 +131,9 @@ z_status App::setup_reader_live(z_json_obj &settings)
 
 
 }
-z_status App::_start_new_file()
-{
-    bool restart=_reading;
-    stop();
-    z_string time_str;
-    z_time time_now = z_time::get_now();
-    time_now.string_format(time_str, "-%Y_%m_%d_%H_%M_%S",true);
-    if (!_file_path_record) {
-        return Z_ERROR_MSG(zs_bad_parameter,"Record path not set");
-
-    }
-    _record_file_name = "live-"+  std::to_string(time_now.get_t()) + time_str + ".txt";
-    _record_file_fullname=_file_path_record+"/"+_record_file_name;
-    //_write_to_file=true;
-    root.console.savecfg();
-
-    return zs_ok;
-}
 
 z_status App::start()
 {
-    ctext msg="error";
     open();
     if(_reading)
         return zs_already_open;
@@ -168,66 +141,31 @@ z_status App::start()
 
     _t_started.set_now();
 
-    z_status s=_start_new_file();
+    z_status s=_file.open_new(_file_path_record,"raw",_t_started);
     if (s)
         return s;
         //z_string fullname =  _file_path_record+_record_file_name;
 
 
-    s = _record_file.open(_record_file_fullname, "ab");
-    if (s)
+    s= root.getReader().start();
+    if(s==zs_ok)
     {
-        msg= "Could not open record file!";
-        Z_ERROR_MSG(s,"Could not open record file: \"%s\" : %s ",_record_file_fullname.c_str(),zs_get_status_text(s));
-
-    }
-
-
-    if (s==zs_ok)
-    {
-        s= root.getReader().start();
-        if(s==zs_ok)
-        {
-            _reading=true;
-            _recording=true;
-            _timer->start(_file_flush_seconds, true);
-            msg="reading started";
-        }
+        _reading=true;
+        _recording=true;
+        _timer->start(_file_flush_seconds, true);
     }
 
     // update server with status
     if (s)
     {
-        return Z_ERROR_MSG(s, msg);
+        return Z_ERROR_MSG(s,"Could not start reader");
     }
     return s;
 }
 
-z_status App::_close_copy_file()
-{
-    stop();
-    z_string time_str;
-    z_time time_now = z_time::get_now();
-    _recording=false;
-    _t_started.string_format(time_str, "%Y_%m_%d_%H_%M_%S-",true);
-    z_string new_name =_file_path_record+"/reads-"+time_str +  std::to_string(_t_started.get_t()) +"-" + std::to_string(time_now.get_t())  + "-.txt";
-    try {
-        // Copy the file
-        std::error_code ec;
-        std::filesystem::rename(_record_file_fullname.c_str(), new_name.c_str(),ec);
-        if (ec.value()) {
-            ZT("Error moving file %s",ec.message().c_str());
-        }
-
-    } catch (const std::filesystem::filesystem_error& e) {
-    }
-    root.console.savecfg();
-
-    return zs_ok;
-}
 
 int App::add_json_status(z_json_stream &js) {
-    js.keyval("reads_filename",_record_file_name);
+    js.keyval("reads_filename",_file.getLiveFileName());
     js.keyval("reads_path",_file_path_record);
     js.key_bool("reading",is_reading());
     root.getReader().json_status_get(js);
@@ -241,7 +179,7 @@ z_string App::createJsonStatus(int status, ctext msg,bool ack)
     js.obj_start();
     js.keyval("command",
               (ack? "reader_ack" : "status_reader"));
-    js.keyval("reads_filename",_record_file_name);
+    js.keyval("reads_filename",_file.getLiveFileName());
     js.keyval("reads_path",_file_path_record);
     js.key_bool("beeps",_beepPwm);
     js.key_bool("reading",root.app.is_reading());
@@ -264,8 +202,8 @@ z_string App::createJsonStatus(int status, ctext msg,bool ack)
 
 bool App::callbackQueueEmpty()
 {
-    if(_record_file.is_open())
-        _record_file.flush();
+    if(_file.is_open())
+        _file.flush();
     return true;
 }
 
@@ -277,9 +215,7 @@ bool App::callbackRead(RfidRead* read)
         U64 timestamp = read->get_ms_epoch();
         read->_recorded=true;
         //root.gpio.ledYellow.flash(1);
-        if(_record_file.is_open())
-            _record_file << read->_index << ','<<  timestamp << ','<< read->_antNum << ',' <<  read->_rssi <<',' << epc<< '\n';
-        //root.web_server.complete_all();
+        _file.writeRfidRead(read,"a");
     }
     catch(...)
     {
@@ -287,47 +223,3 @@ bool App::callbackRead(RfidRead* read)
     }
     return true;
 }
-/* ORIG
-bool App::callbackRead(RfidRead* read)
-{
-    try {
-        z_string epc;
-        read->getEpcString(epc);
-        if(_print_reads)
-        {
-            zout << read->get_ms_epoch() << ":" << read->_antNum << ":" << read->_rssi << ":" << epc <<"\n";
-            zout.flush();
-        }
-        RfidTag *pTag = _tags.getobj(epc);
-        if (!pTag) {
-            pTag = z_new RfidTag();
-            _tags.add(epc, pTag);
-        }
-        U64 timestamp = read->get_ms_epoch();
-        U64 missing_time_ms = timestamp - pTag->_last_time_seen;
-        pTag->_last_time_seen = timestamp;
-        if (missing_time_ms > (_min_split_time * 1000)) {
-            pTag->_count++;
-            read->_recorded=true;
-            //root.gpio.ledYellow.flash(1);
-            if(_beepPwm)
-            {
-                root.gpio.beepPwm.beepDiminishing({2000,100});
-            }
-            if(_write_to_file)
-            {
-                if(_record_file.is_open())
-                _record_file << timestamp << ','<< read->_antNum << ',' <<  read->_rssi <<',' << epc<< '\n';
-            }
-        }
-        root.web_server.complete_all();
-    }
-    catch(...)
-    {
-        Z_THROW_MSG(zs_internal_error,"Exception writing to read log file");
-    }
-    return true;
-}
-
-
-*/

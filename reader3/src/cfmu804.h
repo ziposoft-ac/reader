@@ -170,6 +170,13 @@ struct working_mode_t {
 	U8 LenTID;
 } __attribute__((__packed__));
 
+enum Model {
+	// old model??
+	model_unknown=0,
+	model_e714=0x75,
+	model_e718=0x76,
+
+};
 
 class Cfmu804 : public RfidReader {
 	friend z_factory_t<Cfmu804>;
@@ -179,13 +186,15 @@ class Cfmu804 : public RfidReader {
 
 	int _maskMem = 0;
 	int _tagProtocol = 0;
-
+	Model _model=model_unknown;
+	int _num_ports=4;
 protected:
 	z_status _rx_thread_start();
 
 	z_status _rx_thread_stop();
 
 	z_status _hw_open();
+	z_status _hw_init();
 
 	z_status _hw_close();
 
@@ -396,10 +405,14 @@ public:
 		return send_command(0x66, &data, 1);
 	}
 
-	z_status ant_cfg_set(int val) {
-		U8 data = val;
+	z_status ant_mask_set(int mask) {
+		U8 data = mask;
 
-		return send_command(0x3f, &data, 1);
+		z_status status= send_command(0x3f, &data, 1);
+		if (status == zs_ok) {
+			_antenna_mask=mask;
+		}
+		return status;
 	}
 
 	/*
@@ -491,7 +504,7 @@ ZMETA_DECL(Cfmu804) {
 	);
 	ZCMD(set_return_loss, ZFF_CMD_DEF, "set_return_loss", ZPRM(int, val, 0, "val", ZFF_PARAM));
 	ZCMD(ant_check_set, ZFF_CMD_DEF, "ant_check_set", ZPRM(int, val, 0, "val", ZFF_PARAM));
-	ZCMD(ant_cfg_set, ZFF_CMD_DEF, "ant_cfg_set", ZPRM(int, val, 0, "val", ZFF_PARAM));
+	ZCMD(ant_mask_set, ZFF_CMD_DEF, "ant_mask_set", ZPRM(int, val, 0, "val", ZFF_PARAM));
 	/*
  *Scantime: inventory time. Reader will modify the maximum response time according to user defined value (0*100ms ~ 255*100ms),
  *and reader will apply this new setting for future inventories.

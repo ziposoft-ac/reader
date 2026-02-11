@@ -133,14 +133,29 @@ int fn_post_config(http_request r,z_json_obj &o)
 }
 int fn_post_start(http_request r,z_json_obj &o)
 {
-    root.app.start();
+    root.app0.start();
 
     send_status(r);
     return HTTP_STATUS_OK;
 }
 int fn_post_stop(http_request r,z_json_obj &o)
 {
-    root.app.stop();
+    root.app0.stop();
+
+    send_status(r);
+
+    return HTTP_STATUS_OK;
+}
+int fn_post_start_app0(http_request r,z_json_obj &o)
+{
+    root.app0.start();
+
+    send_status(r);
+    return HTTP_STATUS_OK;
+}
+int fn_post_stop_app0(http_request r,z_json_obj &o)
+{
+    root.app0.stop();
 
     send_status(r);
 
