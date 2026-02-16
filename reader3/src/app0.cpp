@@ -272,7 +272,7 @@ bool RfidTag::processCheck( RfidReadConsumer& rc,z_time now) {
 
     return false;
 }
-void RfidTag::writeOut(z_stream& s,z_time base,bool debug) {
+void RfidTag::writeOut(z_stream& s,z_time base,bool clear) {
 
     z_time ts;
     if (_state==fr_type_departed)
@@ -314,6 +314,8 @@ void RfidTag::writeOut(z_stream& s,z_time base,bool debug) {
     _rssi_high_logged=_rssi_high;
     _ant_mask=0;
     _ts_time_logged=_ts_rssi_high;
+    s.flush();
+
 }
 void App0::beep() {
     if (_beep)
@@ -345,10 +347,9 @@ int  App0::timer_callback(void*)
         if (t->processCheck(*this,now)) {
             if (t->_state>fr_type_delete) {
                 t->_index=_index++;
-                if (_debug_reads)
-                    t->writeOut( ZDBGS,_t_started,true);
+                //if (_debug_reads)                     t->writeOut( ZDBGS,_t_started,true);
                 if (_record_filtered)
-                    t->writeOut( _file_filtered._file,_t_started,true);
+                    t->writeOut( _file_filtered.get_stream(),_t_started,true);
 
                 beep();
 

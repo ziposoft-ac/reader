@@ -58,8 +58,9 @@ class RecordFile {
     z_string _fullpath;
     z_time _time_opened;
     z_string _time_opened_str;
+    z_file_out _file;
 
-
+    z_stream_multi _stream;
 
 public:
     RecordFile() {
@@ -82,7 +83,9 @@ public:
     z_status write(RfidRead* read,ctext type);
     z_status open_new(ctext path,ctext type,z_time ts);
     z_status close_copy();
-    z_file_out _file;
+    z_stream& get_stream() {
+        return _stream;
+    }
 
 };
 

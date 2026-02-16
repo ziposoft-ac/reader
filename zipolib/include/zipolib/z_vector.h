@@ -37,7 +37,14 @@ public:
 		vect::erase(vect::begin() + i);
 		return zs_ok;
 	}
+	bool contains(ITEM_CLASS* item) {
+		return std::find(vect::begin(), vect::end(), item) != vect::end();
+	}
+	void add_unique(ITEM_CLASS* item) {
+		if (!contains(item))
+			add(item);
 
+	}
 	void add_void(void* v)
 	{
 		ITEM_CLASS* i = reinterpret_cast<ITEM_CLASS*>(v);

@@ -27,6 +27,7 @@ class Root
     bool _shutting_down=false;
     bool _auto_start_server=false;
     bool _auto_start_app=false;
+    bool _init_rfid=true;
     bool _simulate=true;
     RfidReader* _reader;
 

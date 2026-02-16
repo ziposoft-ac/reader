@@ -49,6 +49,8 @@ z_status RecordFile::open_new(ctext path,ctext type,z_time ts) {
     {
         Z_ERROR_MSG(s,"Could not open record file: \"%s\" : %s ",_fullpath.c_str(),zs_get_status_text(s));
     }
+    _stream.add_stream(ZDBGS);
+    _stream.add_stream(_file);
 
     return s;
 }

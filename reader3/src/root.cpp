@@ -25,6 +25,7 @@ ZMETA(Root)
     ZACT(run_app);
     ZPROP(_auto_start_server);
     ZPROP(_auto_start_app);
+    ZPROP(_init_rfid);
     ZACT_X(run_as_service,"service", ZFF_ACT_DEF,"Run as service");
     ZPROP(_simulate);
 
@@ -77,6 +78,9 @@ z_status Root::initialize()
         app.run();
 
     }
+    if(_init_rfid) {
+        _reader->open();
+    }
     return zs_ok;
 }
 z_status Root::shutdown()
@@ -87,7 +91,7 @@ z_status Root::shutdown()
     web_server.stop();
 
     app.shutdown();
-    cfmu804.close();+
+    cfmu804.close();
 
     simulator.close();
     gpio.shutdown();

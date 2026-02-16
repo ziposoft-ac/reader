@@ -646,7 +646,11 @@ RfidRead* Cfmu804::program_bcd(int number,bool overwrite,bool& programmed)
     }
 
     delete r;
+
     r=read_single();
+    if (!r)
+        return NULL;
+
     if(r->_epc.get_bib_number() == number)
     {
         programmed=true;

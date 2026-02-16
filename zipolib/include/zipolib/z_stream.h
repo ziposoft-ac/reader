@@ -154,7 +154,7 @@ public:
 
 	void add_stream(z_stream& stream)
 	{
-		_streams.add(&stream);
+			_streams.add_unique(&stream);
 	}
 };
 
