@@ -1,14 +1,19 @@
+
 //
 // Created by ac on 11/12/20.
 //
-#include "app0.h"
+
+
+#if 0
+#include "app1.h"
 #include "root.h"
 #include <filesystem>
+
 
 #include "JsonCmd.h"
 //#include <openssl/ossl_typ.h>
 
-ZMETA_DEF(App0);
+ZMETA_DEF(App1);
 
 static z_time ts_start;
 #define DBGL(...) { z_time now; now.set_now();get_debug_logger().time_mark(now-ts_start);get_debug_logger().format_append(__VA_ARGS__); ZDBGS<<'\n';   }
@@ -16,13 +21,13 @@ static z_time ts_start;
 #undef DBGL
 #define DBGL(...)
 
-App0::App0()
+App1::App1()
 {
 
 
 }
 
-z_status App0::remote_quit()
+z_status App1::remote_quit()
 {
     // THIS IS CALLED FROM WS SERVER CONTEXT - CANNOT QUIT FROM HERE
     printf("QUIT REQUEST\n");
@@ -30,22 +35,22 @@ z_status App0::remote_quit()
     root.quit_notify();
     return zs_ok;
 }
-z_status App0::shutdown()
+z_status App1::shutdown()
 {
-    printf("App0 quiting\n");
+    printf("App1 quiting\n");
     stop();
     //
     if(_timer)
         root.timerService.remove_timer(_timer);
     return zs_ok;
 }
-z_status App0::initialize()
+z_status App1::initialize()
 {
     _index_last_notify=_index;
     return zs_ok;
 }
 
-z_status App0::open()
+z_status App1::open()
 {
     if(_open)
         return zs_ok;
@@ -53,14 +58,14 @@ z_status App0::open()
     root.getReader().register_consumer(this);
 
     if(!_timer)
-        _timer=root.timerService.create_timer_t(this,&App0::timer_callback,0    );
+        _timer=root.timerService.create_timer_t(this,&App1::timer_callback,0    );
     //root.gpio.ledRed.on();
 
     _open=true;
 
     return zs_ok;
 }
-z_status App0::close()
+z_status App1::close()
 {
     if(!_open)
         return zs_ok;
@@ -71,12 +76,12 @@ z_status App0::close()
     _open=false;
     return zs_ok;
 }
-z_status App0::run()
+z_status App1::run()
 {
 
     return open();
 }
-z_status App0::stop()
+z_status App1::stop()
 {
     if(!_open)
         return zs_ok;
@@ -90,7 +95,6 @@ z_status App0::stop()
     _file_raw.close_copy();
     _file_filtered.close_copy();
     std::unique_lock<std::mutex> mlock(_mutex_tags);
-    printf("deleting tags\n");
 
     _tags.delete_all();
 
@@ -100,7 +104,7 @@ z_status App0::stop()
     return zs_ok;
 }
 
-z_status App0::setup_reader_live(z_json_obj &settings)
+z_status App1::setup_reader_live(z_json_obj &settings)
 {
     if(root.getReader().isReading())
         return zs_access_denied;
@@ -122,7 +126,7 @@ z_status App0::setup_reader_live(z_json_obj &settings)
 
 }
 
-z_status App0::start()
+z_status App1::start()
 {
     ctext msg="error";
     open();
@@ -162,7 +166,7 @@ z_status App0::start()
 }
 
 
-int App0::add_json_status(z_json_stream &js) {
+int App1::add_json_status(z_json_stream &js) {
     js.set_pretty_print(true);
 
     js.keyval("file",_file_filtered.getLiveFileName());
@@ -177,7 +181,7 @@ int App0::add_json_status(z_json_stream &js) {
 
 }
 
-z_string App0::createJsonStatus(int status, ctext msg,bool ack)
+z_string App1::createJsonStatus(int status, ctext msg,bool ack)
 {
     z_json_str_stream js;
     js.obj_start();
@@ -197,7 +201,7 @@ z_string App0::createJsonStatus(int status, ctext msg,bool ack)
     return js.as_string();
 
 }
-void App0::signalWaitingRequests() {
+void App1::signalWaitingRequests() {
     if (_index>_index_last_notify) {
         _index_last_notify=_index;
         root.web_server.complete_req_type(DELAYED_REQUEST_READS_FILTERED);
@@ -207,7 +211,7 @@ void App0::signalWaitingRequests() {
     }
 }
 
-bool App0::callbackQueueEmpty()
+bool App1::callbackQueueEmpty()
 {
     _file_raw.flush();
     _file_filtered.flush();
@@ -215,14 +219,12 @@ bool App0::callbackQueueEmpty()
     return true;
 }
 
-
-
-void App0::beep() {
+void App1::beep() {
     if (_beep)
         root.gpio.beeper.beep(50);
 }
 
-int  App0::timer_callback(void*)
+int  App1::timer_callback(void*)
 {
     z_time now;
     now.set_now();
@@ -245,21 +247,20 @@ int  App0::timer_callback(void*)
         z_string epc=it->first;
 
         if (t->processCheck(*this,now)) {
-            _index++;
-            t->_index=_index;
-            if (_record_filtered)
-                t->writeOut( _file_filtered.get_stream(),t->_state);
+            if (t->_state>fr_type_delete) {
+                _index++;
+                t->_index=_index;
+                if (_record_filtered)
+                    t->writeOut( _file_filtered.get_stream(),_t_started,true);
 
-            if (t->_state==fr_type_peaked)
                 beep();
 
 
+            }
 
             if (t->isDeparted()) {
                 //Z_ERROR_LOG("deleting: %s ",t->_epc.c_str());
-                delete t;
                 it=_tags.erase(it);
-
 
                 continue;
 
@@ -292,13 +293,13 @@ int  App0::timer_callback(void*)
     return next_callback;
 }
 
-bool App0::callbackRead(RfidRead* read)
+bool App1::callbackRead(RfidRead* read)
 {
+    std::unique_lock<std::mutex> mlock(_mutex_tags);
     z_time now=z_time::get_now_ms();
 
     try {
         z_string epc;
-        bool newtag=false;// UGLY
         read->getEpcString(epc);
 
 
@@ -312,17 +313,12 @@ bool App0::callbackRead(RfidRead* read)
         RfidTag *pTag = _tags.getobj(epc);
         if (!pTag) {
             pTag = z_new RfidTag(read,epc);
-            pTag->_epc=epc;
             _tags.add(epc, pTag);
-            _index++;
 
-            pTag->_index=_index++;
-            newtag=true;
         }
 
         U64 needs_check_in= pTag->processRead(read,*this)-now;
-        if (newtag)
-            pTag->writeOut(_file_filtered.get_stream(),fr_type_arrived);
+
 
         _timer->set_minimum_ms_left(needs_check_in);
         DBGL("needs_check_in=%d",needs_check_in);
@@ -334,28 +330,35 @@ bool App0::callbackRead(RfidRead* read)
     }
     return true;
 }
-#if 1
+
 z_time RfidTag::processRead(RfidRead *r, RfidReadConsumer& rc) {
 
-    _last_rssi=r->_rssi;
     _ts_last_time_seen=r->_time_stamp;
-    if (!_ts_first_time_seen)
-        _ts_first_time_seen=_ts_last_time_seen;
     _ant_mask|=r->_antNum;
     _count++;
      z_time ts=r->_time_stamp;
 
-    if (_rssi_high < r->_rssi) {
-        // new RSSI high
-        _ts_next_check_required=ts + (U64)rc._peak_window_ms;
-        _rssi_high = r->_rssi;
-        _count_hi=_count;
-        _ts_rssi_high =r->_time_stamp;
-        _state=fr_type_new_peak;
 
+    if (_rssi_high < r->_rssi) {
+        _rssi_high = r->_rssi;
+        _ts_rssi_high =r->_time_stamp;
+        if (_state==fr_type_high) {
+            _ts_next_check_required=ts + (U64)rc._minimum_log_time_ms;
+
+
+        }
+        if (_state==fr_type_new) {
+            _ts_next_check_required=ts + (U64)rc._peak_window_ms;
+
+
+        }
 
     }
-
+    else {
+        if (_state>fr_type_new) {
+            _ts_next_check_required=ts + (U64)rc._presence_window_s*1000;
+        }
+    }
     DBGL("READ %s at %llu  check in is %llu\n",_epc.c_str(),ts.get_t(),_ts_next_check_required.get_t());
 
     return _ts_next_check_required;
@@ -363,34 +366,48 @@ z_time RfidTag::processRead(RfidRead *r, RfidReadConsumer& rc) {
 }
 bool RfidTag::processCheck( RfidReadConsumer& rc,z_time now) {
 
-    const z_time_duration missing_time=now - _ts_last_time_seen;
+    U64 diff=now - _ts_last_time_seen;
     DBGL("CHECK %s  last seen %llu ms\n",_epc.c_str(),diff);
-    if (_state==fr_type_arrived)
-        _state=fr_type_new_peak;
 
-    if (missing_time.total_milliseconds() >= rc._presence_window_s*1000) {
+    if (diff>= rc._presence_window_s*1000) {
         // write out exit
 
-        _state=fr_type_departed;
+        if ( // if has been more than X ms since last time logged
+            (_ts_last_time_seen-_ts_time_logged > rc._minimum_log_time_ms) ||
+            (// if tag has been present more than X seconds
+             (_ts_last_time_seen-_ts_first_time_seen) > rc._start_detection_s*1000
+            ))
+            _state=fr_type_departed;
+        else
+            _state=fr_type_delete;
+
 
         return true;
     }
-    if (_state==fr_type_new_peak) {
+    if (_state==fr_type_new) {
         if (now-_ts_rssi_high >=rc._peak_window_ms) {
-            _state=fr_type_peaked;
+            _state=fr_type_arrived;
             return true;
 
         }
         return false;
     }
-    if (_state==fr_type_peaked) {
-        _ts_next_check_required=_ts_last_time_seen+ (U64) rc._presence_window_s*1000;
-        DBGL("SET NEXT CHECK %s   to %llu \n",_epc.c_str(),_ts_next_check_required.get_t());
+
+    if (_state>=fr_type_arrived) {
+        if (_rssi_high_logged<_rssi_high) {
+            if (now - _ts_time_logged > rc._minimum_log_time_ms) {
+                _state=fr_type_higher_rssi;
+
+                return true;
+            }
+        }
     }
+    _ts_next_check_required=now+(rc._presence_window_s*1000- diff);
+    DBGL("SET NEXT CHECK %s   to %llu \n",_epc.c_str(),_ts_next_check_required.get_t());
 
     return false;
 }
-void RfidTag::writeOut(z_stream& s,FilteredReadState type) {
+void RfidTag::writeOut(z_stream& s,z_time base,bool clear) {
 
     z_time ts;
     if (_state==fr_type_departed)
@@ -400,19 +417,20 @@ void RfidTag::writeOut(z_stream& s,FilteredReadState type) {
 
 
 
+    if (0) {
+        U64 elap=ts-base;
+        s.format_append("%6u.%03u,"  ,elap/1000,elap%1000);
 
+    }
     s<<_index;
     s,ts.to_string_ms(true);
 
 
 
 
-    s, ts.get_t() , _ant_mask
-    , (_state==fr_type_peaked ? _count_hi:_count)
-    , (_state==fr_type_departed ? _last_rssi:_rssi_high)
-    , _epc.c_str();
+    s, ts.get_t() , _ant_mask , _count, _rssi_high, _epc;
 
-    switch (type) {
+    switch (_state) {
         case fr_type_arrived:
             s,"ARR";
             break;
@@ -427,9 +445,12 @@ void RfidTag::writeOut(z_stream& s,FilteredReadState type) {
     }
 
     s<<'\n';
+    _count=0;
     _rssi_high_logged=_rssi_high;
+    _ant_mask=0;
     _ts_time_logged=_ts_rssi_high;
     s.flush();
 
 }
+
 #endif

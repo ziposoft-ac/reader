@@ -123,6 +123,8 @@ public:
 };
 class z_stream_debug: public z_stream
 {
+    std::mutex _mutex;
+
     int _fPipe=0;
 	bool _add_time_mark=true;
     z_status open();
@@ -143,7 +145,10 @@ extern z_stream_stderr gz_stderr;
 
 class z_stream_multi : public z_stream
 {
+    std::mutex _mutex;
+
 public:
+
 	z_obj_vector<z_stream,false> _streams;
 	void add_stdout()
 	{

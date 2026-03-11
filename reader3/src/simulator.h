@@ -25,6 +25,10 @@ class RfidSimulator : public RfidReader,public z_parse_csv {
     int _index=0;
     U64 _time_offset=0;
 public:
+
+    RfidSimulator() {
+        _antenna_detected=3;
+    }
     int _max_interval=3000;
     int _interval=1000;
     int _seq_max=10;

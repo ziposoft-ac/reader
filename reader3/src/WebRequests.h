@@ -63,6 +63,7 @@ struct cmd_entry_t
 
 struct delayed_request {
     http_request r;
+    int type;
     cmd_entry_t* cmd;
     U64 ts_expire;
     size_t ctx1;

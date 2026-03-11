@@ -11,17 +11,19 @@
 class RecordFile;
 
 enum FilteredReadState {
-    fr_type_delete,
-    fr_type_departed,
-    fr_type_new,
     fr_type_arrived,
-    fr_type_higher_rssi,
+    fr_type_new_peak,
+    fr_type_peaked,
+    fr_type_departed,
+
 };
 class RfidTag
 {
 public:
-    RfidTag()
+    RfidTag(RfidRead* r,ctext epc_str)
     {
+
+        _epc=epc_str;
     }
     z_time   _ts_first_time_seen ;
     z_time   _ts_last_time_seen ;
@@ -35,9 +37,10 @@ public:
     U8 _rssi_high=0;
     U8 _ant_mask=0;
     int _count = 0;
+    int _count_hi = 0;
     int _index=0;
-    void writeOut(z_stream& s,z_time base,bool debug);
-    FilteredReadState _state=fr_type_new;
+    void writeOut(z_stream& s,FilteredReadState type );
+    FilteredReadState _state=fr_type_arrived;
     // return time to check next
     //
     z_time processRead (RfidRead* read,RfidReadConsumer& s);
@@ -45,7 +48,7 @@ public:
     // return true if it can be removed
     bool processCheck (RfidReadConsumer& s,z_time now);
     bool isDeparted() {
-        return _state<=fr_type_departed;
+        return _state==fr_type_departed;
     }
 
 };
@@ -75,6 +78,7 @@ public:
     }
     void flush() {
         _file.flush();
+        ZDBGS.flush();
     }
     ctext getLiveFileName() {
         return _name;

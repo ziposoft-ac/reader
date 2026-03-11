@@ -41,7 +41,7 @@ z_status RecordFile::open_new(ctext path,ctext type,z_time ts) {
     _time_opened = ts;
 
     _time_opened.string_format(_time_opened_str, "%Y_%m_%d_%H_%M_%S",true);
-    _name = "live-"+_time_opened_str+ "-"+  std::to_string(_time_opened.get_t())+"-live-" +_type  + "-.txt";
+    _name = "live-"+_time_opened_str+ "-"+  std::to_string(_time_opened.get_t())+"-live-" +_type  + "-.csv";
     _fullpath=_path+"/"+_name;
 
     z_status s = _file.open(_fullpath, "ab");
@@ -65,7 +65,7 @@ z_status RecordFile::close_copy() {
 
 
 
-    z_string new_name =_path+"/reads-"+_time_opened_str +"-" +  std::to_string(_time_opened.get_t()) +"-" + std::to_string(time_closed.get_t())+"-"  +_type  + "-.txt";
+    z_string new_name =_path+"/reads-"+_time_opened_str +"-" +  std::to_string(_time_opened.get_t()) +"-" + std::to_string(time_closed.get_t())+"-"  +_type  + "-.csv";
     try {
         // Copy the file
         std::error_code ec;

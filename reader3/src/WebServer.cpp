@@ -69,16 +69,13 @@ z_status WebServer::stop() {
 
     return zs_ok;
 }
-
 z_status WebServer::complete_by_id(unsigned long id) {
+    std::unique_lock<std::mutex> mlock(_mutex_req_list);
+
     delayed_request *dr;
     if (_outstanding_reqs.size()==0)
         return zs_ok;
-    //std::unique_lock<std::mutex> mlock(_mutex);
-
-
     WS_DBG("completing %d reqs\n",_outstanding_reqs.size());
-
     _outstanding_reqs.filter_out([id](delayed_request *dr) {
         if (dr->r.c->id == id) {
             complete_delayed_req( dr);
@@ -87,18 +84,33 @@ z_status WebServer::complete_by_id(unsigned long id) {
         return false;
 
     });
-
-
     return zs_ok;
-
 }
 
-z_status WebServer::complete_all()
+z_status WebServer::complete_req_type(int type) {
+    std::unique_lock<std::mutex> mlock(_mutex_req_list);
+
+    delayed_request *dr;
+    if (_outstanding_reqs.size()==0)
+        return zs_ok;
+    WS_DBG("completing req types %d\n",type);
+    _outstanding_reqs.filter_out([type](delayed_request *dr) {
+        if (dr->type == type) {
+            complete_delayed_req( dr);
+            return true;
+        }
+        return false;
+
+    });
+    return zs_ok;
+}
+
+z_status WebServer::complete_req_all()
 {
     delayed_request *dr;
     if (_outstanding_reqs.size()==0)
         return zs_ok;
-    std::unique_lock<std::mutex> mlock(_mutex);
+    std::unique_lock<std::mutex> mlock(_mutex_req_list);
 
 
     WS_DBG("completing %d reqs\n",_outstanding_reqs.size());
@@ -252,7 +264,7 @@ int WebServer::timer_callback_req_wait_expire(void*) {
     delayed_request *dr;
     if (_outstanding_reqs.size()==0)
         return 200;
-    std::unique_lock<std::mutex> mlock(_mutex);
+    std::unique_lock<std::mutex> mlock(_mutex_req_list);
 
     U64 now=z_time_get_ticks();
 
@@ -297,7 +309,7 @@ z_status WebServer::set_log_level(int ll) {
 bool WebServer::callbackQueueEmpty()
 {
     //ZTF;
-    complete_all();
+    complete_req_type(DELAYED_REQUEST_READS_RAW);
 
     return true;
 }

@@ -8,18 +8,23 @@
 #include "WebRequests.h"
 
 
-
+enum delayed_request_type {
+    DELAYED_REQUEST_READS_RAW,
+    DELAYED_REQUEST_READS_FILTERED,
+    DELAYED_REQUEST_TEST
+};
 
 #define CMDS \
     CMD_GET(status) \
-    CMD_GET(reads) \
+    CMD_GET(reads_raw) \
+    CMD_GET(reads_filtered) \
     CMD_GET(config) \
     CMD_GET(gpio) \
     CMD_POST(gpio) \
     CMD_POST(config) \
     CMD_GET(delay) \
-    CMD_POST(stop) \
-    CMD_POST(start) \
+    CMD_POST(stop_raw) \
+    CMD_POST(start_raw) \
     CMD_POST(stop_app0) \
     CMD_POST(start_app0) \
     CMD_GET(beep) \

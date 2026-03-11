@@ -17,23 +17,31 @@ class WebServer: public RfidReadConsumer {
     virtual int thread();
     bool _running=false;
     std::mutex _mutex;
+    std::mutex _mutex_req_list;
     Timer* _req_timer=0;
     int timer_callback_req_wait_expire(void*);
+    z_obj_list<delayed_request> _outstanding_reqs;
 
 public:
     int _log_level=0;
     int _port=8000;
     int _req_count=0;
     z_string _address;
-    z_obj_list<delayed_request> _outstanding_reqs;
 
+    z_status push_delayed_request(delayed_request* req) {
+        std::unique_lock<std::mutex> mlock(_mutex_req_list);
+
+        _outstanding_reqs.push_back(req);
+        return zs_ok;
+    }
 
     WebServer(){}
     virtual ~WebServer() {}
     z_status stop();
     z_status set_log_level(int ll);
     z_status start();
-    z_status complete_all();
+    z_status complete_req_all();
+    z_status complete_req_type(int type);
     z_status complete_by_id(unsigned long id);
     virtual z_status connect(ctext address, int port);
     bool is_running() {
@@ -56,7 +64,7 @@ ZMETA_DECL(WebServer) {
     ZPROP(_address);
     ZACT(stop);
     ZACT(start);
-    ZACT(complete_all);
+    ZACT(complete_req_all);
 
     ZCMD(set_log_level, ZFF_CMD_DEF, "set_log_level",
          ZPRM(int, ll, 0, "ll", ZFF_PARAM)

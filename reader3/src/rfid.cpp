@@ -85,7 +85,7 @@ void RfidReader::process_reads_thread() {
             if(_debug_reads)
             {
 
-                U64 ts=r->_time_stamp - _ts_reading_started.get_t();
+                U64 ts=r->_time_stamp;// - _ts_reading_started.get_t();
                 U64 diff=r->_time_stamp - ts_last;
                 ts_last=r->_time_stamp;
                 z_string epc;
@@ -205,10 +205,18 @@ z_status RfidReader::start()
     z_status status=open();
     if(status)
         return status;
-    if(_antenna_config==0)
+
+    status=config_read();
+    if(status)
+        return Z_ERROR_MSG(zs_io_error,"Config read failed");
+
+    if(_antenna_detected==0)
     {
-        return Z_ERROR_MSG(zs_io_error,"NO ANTENNA CONFIGURED");
+        return Z_ERROR_MSG(zs_io_error,"NO ANTENNA DETECTED");
     }
+    status=ant_mask_set(_antenna_detected);
+    if(status)
+        return Z_ERROR_MSG(zs_io_error,"ant_mask_set failed");
     status= _read_start();
     _ts_reading_started.set_now();
     if(status==zs_ok) {
@@ -241,11 +249,36 @@ z_status RfidReader::configure(
 }
 z_status RfidReader::config_dump() {
 
+    readmode_dump();
+    if (_reading) {
+        printf("currently reading, cannot dump rest of config");
+        return zs_ok;
+    }
+    info_dump();
     z_status status=config_read();
 
     if (status!=zs_ok)
         return status;
 
+
+    printf("ReadMode=%x\n", _reading);
+    printf("TagProtocol=%x\n", _tagProtocol);
+    printf("ReadPauseTime=%x\n", _pause_read_time);
+    printf("FilterTime=%x\n", _filter_time);
+    printf("QValue=%x\n", _qvalue);
+    printf("Session=%d\n", _session);
+    printf("Ant Return Loss=%d\n", _antenna_return_loss_threshold);
+    return zs_ok;
+}
+
+z_status RfidReader::readmode_dump() {
+
+    z_status status=readmode_get();
+
+    if (status!=zs_ok)
+        return status;
+
+    printf("IS READING=%d\n", _reading);
 
     printf("ReadPauseTime=%d\n", _pause_read_time);
     printf("Antenna=%b\n", _antenna_detected);
@@ -256,7 +289,6 @@ z_status RfidReader::config_dump() {
     printf("Write Power=%d\n", _write_power);
     return zs_ok;
 }
-
 
 void RfidReader::queueRead(U8 antnum,U8 rssi,U8* epc,size_t epc_len,U64 ts
     #ifdef  ENABLE_PHASE
@@ -379,15 +411,14 @@ z_status RfidReader::get_reads_since(z_json_stream &js,U32 index,bool return_rea
     return zs_ok;
 
 }
-
-z_status RfidReader::json_config_get(z_json_stream &js) {
+z_status RfidReader::json_readmode_get(z_json_stream &js) {
 
 
     js.key("reader_config");
 
     js.obj_start();
 
-    z_status status=config_read();
+    z_status status=readmode_get();
     if (status==zs_ok) {
         js.keyval_int("antMask",_antenna_mask);
         js.keyval_int("qValue",_qvalue);
@@ -413,6 +444,47 @@ z_status RfidReader::json_config_get(z_json_stream &js) {
 
     js.obj_end();
 
+    return status;
+}
+z_status RfidReader::json_config_add(z_json_stream &js) {
+
+
+    js.key("reader_config");
+
+    js.obj_start();
+
+        js.keyval_int("antMask",_antenna_mask);
+        js.keyval_int("qValue",_qvalue);
+        js.keyval_int("power",_power);
+        js.keyval_int("freqLow",_freq_low);
+        js.keyval_int("freqHigh",_freq_high);
+        js.keyval_int("session",_session);
+        js.keyval_int("pauseTime",_pause_read_time);
+        js.keyval_int("filterTime",_filter_time);
+        js.keyval_int("beepEnable",_filter_time);
+
+
+        js.key_bool("valid",true);
+        js.key_bool("reading",_reading);
+        js.keyval_int("profile",_profile);
+        js.keyval_int("pause_read_time",_pause_read_time);
+
+
+
+    js.obj_end();
+
+    return zs_ok;
+}
+
+z_status RfidReader::json_config_get(z_json_stream &js) {
+
+
+
+
+    z_status status=config_read();
+    if (status==zs_ok) {
+        return json_config_add(js);
+    }
     return status;
 }
 

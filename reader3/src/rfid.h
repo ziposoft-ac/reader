@@ -61,7 +61,7 @@ class RfidReadConsumer {
 public:
     int _presence_window_s = 5;
     int _start_detection_s = 5;
-    int _minimum_log_time_ms = 1000;
+    //int _minimum_log_time_ms = 1000;
     int _peak_window_ms = 500;
 
     virtual bool callbackRead(RfidRead* r)
@@ -133,7 +133,6 @@ class RfidReader
     friend z_factory_t<RfidReader>;
 
     std::set<RfidReadConsumer*> _consumers;
-    bool _reading=false;
     z_safe_queue<RfidRead*> _queue_reads;
     std::deque<RfidRead*> _queue_reads_all;
     std::mutex _queue_reads_all_mutex;
@@ -143,12 +142,17 @@ class RfidReader
 
 protected:
     bool _open=false;
+    bool _reading=false;
+
     bool _debug_reads=false;
     bool _read_stats=false;
 	U64 _total_bytes_read=0;
 
     U32 _queue_max_depth=1000;
     z_time _ts_reading_started;
+
+	virtual z_status ant_mask_set(int mask) {   _antenna_mask=mask;return zs_ok;  }
+
     virtual z_status _read_start()  {   return zs_ok;  }
     virtual z_status _read_stop()  {   return zs_ok;  }
     virtual z_status _hw_open()  {   return zs_ok;  }
@@ -173,11 +177,14 @@ public:
     int _filter_time=5;
     int _antenna_config=0xf;
     int _antenna_mask=0xf;
+    int _antenna_return_loss_threshold=7;
+
     int _freq_low=0;
     int _freq_high=3;
     int _inventory_offtime=500;
     int _profile=0;
 
+	int _tagProtocol = 0;
 
     // Status
     int _antenna_detected=0;
@@ -220,12 +227,17 @@ public:
     }
     virtual z_status config_dump();
     virtual z_status readmode_get(){ return zs_not_implemented;}
+    virtual z_status readmode_dump();
     virtual z_status readmode_set(){ return zs_not_implemented;}
     virtual z_status info_dump(){ return zs_not_implemented;}
+    virtual z_status ant_dump(){ return zs_not_implemented;}
+    virtual z_status ant_detect(bool print){ return zs_not_implemented;}
 
     z_status json_status_get(z_json_stream &js);
 
+    z_status json_config_add(z_json_stream &js);
     z_status json_config_get(z_json_stream &js);
+    z_status json_readmode_get(z_json_stream &js);
 	virtual z_status freq_set(U8 low,U8 max){ return zs_ok;}
 
 };
@@ -239,11 +251,15 @@ ZMETA_DECL(RfidReader)
     ZACT(stop);
     ZACT(close);
     ZACT(start);
+    ZACT(ant_dump);
+
     ZACT(config_write);
     ZACT_X(config_write,"cw",ZFF_ACT_DEF,"config write");
     ZACT_X(config_dump,"cd",ZFF_ACT_DEF,"config_dump");
     ZACT(config_dump);
     ZACT(config_read);
+	ZACT(readmode_dump);
+
     ZCMD(dump_queue, ZFF_CMD_DEF, "dump_reads_since",
          ZPRM(int, index, 0, "index", ZFF_PARAM)
     );

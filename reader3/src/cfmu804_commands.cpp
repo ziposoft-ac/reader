@@ -158,8 +158,7 @@ z_status Cfmu804::measure_ant(int antnum)
     return zs_ok;
 
 }
-
-z_status Cfmu804::ant_dump() {
+z_status Cfmu804::ant_detect(bool print) {
     z_status status=open();
     if(status)
         return status;
@@ -170,15 +169,21 @@ z_status Cfmu804::ant_dump() {
     for(i=0;i<_num_ports;i++)
     {
         loss=get_ant_loss(i);
-        printf("ANT#%d=%d:%s\n",i+1,loss,(loss>3?"Connected":"NOT Connected"));
+        if (print)
+             printf("ANT#%d=%d:%s\n",i+1,loss,(loss>3?"Connected":"NOT Connected"));
         if(loss>3)
         {
             _antenna_detected|=(1<<i);
         }
 
     }
-    printf("ANT detected: 0x%x\n",_antenna_detected);
+    if (print)
+        printf("ANT detected: 0x%x\n",_antenna_detected);
     return zs_ok;
+}
+z_status Cfmu804::ant_dump() {
+
+    return ant_detect(true);
 }
 z_status Cfmu804::antCheck()
 {
@@ -416,6 +421,7 @@ z_status Cfmu804::readmode_get()
     {
         return status;
     }
+    _reading=mode.ReadMode;
     _session=mode.Session;
     _qvalue=mode.QValue;
     _filter_time=mode.FilterTime;
@@ -726,6 +732,31 @@ z_status Cfmu804::profile_set_get(U8 &profile_return,U8 profile_set)
     if (return_code) {
         print_cfmu_error(get_default_logger(),return_code);
     }
+    return status;
+}
+z_status Cfmu804::ant_return_loss_set(int set){
+    U8 data=0;
+    cfmu_status_code return_code=0;
+    if (set>0 && set<=20) {
+        data=set&0x2f | 0x80;
+    }
+    z_status status=send_command(0x6e,&data,1,2000,&return_code,&data,1);
+    if (status==zs_ok) {
+        _antenna_return_loss_threshold=data;
+    }
+    else {
+        Z_ERROR_LOG("Error getting/setting ant return loss (ret code=%d)\n",return_code);
+    }
+    if (return_code) {
+        print_cfmu_error(get_default_logger(),return_code);
+    }
+    return status;
+}
+z_status Cfmu804::ant_return_loss_dump()
+{
+    z_status status= ant_return_loss_set(0);
+    if (status) return status;
+    printf("Antenna return loss set to: %d\n",_antenna_return_loss_threshold);
     return status;
 }
 z_status Cfmu804::profile_set(int val)

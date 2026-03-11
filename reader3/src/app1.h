@@ -2,8 +2,8 @@
 // Created by ac on 11/12/20.
 //
 
-#ifndef ZIPOSOFT_APP0_H
-#define ZIPOSOFT_APP0_H
+#ifndef ZIPOSOFT_APP1_H
+#define ZIPOSOFT_APP1_H
 #include "pch.h"
 
 #include "timers.h"
@@ -12,8 +12,8 @@
 #include "recordFile.h"
 
 
-class App0 : public RfidReadConsumer{
-    friend z_factory_t<App0>;
+class App1 : public RfidReadConsumer{
+    friend z_factory_t<App1>;
     int _write_count=0;
     bool _open=false;
     bool _reading=false;
@@ -39,7 +39,7 @@ class App0 : public RfidReadConsumer{
     int _index = 0;
 
 public:
-    App0();
+    App1();
 
     z_time _t_started;
 
@@ -71,7 +71,7 @@ public:
 };
 
 
-ZMETA_DECL(App0) {
+ZMETA_DECL(App1) {
 
     ZPROP(_file_path_record);
     //ZPROP(_file_path_complete);
@@ -82,7 +82,7 @@ ZMETA_DECL(App0) {
     ZPROP(_record_raw);
     ZPROP(_record_filtered);
     ZPROP(_start_detection_s);
-    //ZPROP(_minimum_log_time_ms);
+    ZPROP(_minimum_log_time_ms);
     ZPROP(_min_rssi);
    // ZPROP(_test_tag);
     ZPROP(_filter_epc);

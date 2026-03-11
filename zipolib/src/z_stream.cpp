@@ -290,6 +290,8 @@ ________________________________________________________________________*/
 
 z_status z_stream_multi::write(const char* data, size_t len)
 {
+    std::unique_lock<std::mutex> mlock(_mutex);
+
 	for (auto i : _streams)
 	{
 		i->write(data, len);
@@ -468,10 +470,14 @@ z_status z_stream_debug::open()
 }
 z_status z_stream_debug::write(const char* data, size_t len)
 {
+
 	if (_fPipe<0)
 		return zs_could_not_open_file;
     if (_fPipe==0)
         open();
+
+    std::unique_lock<std::mutex> mlock(_mutex);
+
 	if (_fPipe>0)
 		::write(_fPipe, data,len);
 

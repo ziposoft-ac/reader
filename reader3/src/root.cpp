@@ -21,6 +21,8 @@ ZMETA(Root)
     ZOBJ(app);
     ZOBJ(app0);
     ZACT(heat_test);
+    ZACT(simulate_on);
+    ZACT(simulate_off);
     ZACT(dump_ports);
     ZACT(run_app);
     ZPROP(_auto_start_server);
@@ -67,6 +69,7 @@ z_status Root::initialize()
     else
         _reader=&cfmu804;
     app.initialize();
+    app0.initialize();
     gpio.initialize();
     if(_auto_start_server) {
         web_server.start();
@@ -90,6 +93,7 @@ z_status Root::shutdown()
     timerService.stop();
     web_server.stop();
 
+    app0.shutdown();
     app.shutdown();
     cfmu804.close();
 

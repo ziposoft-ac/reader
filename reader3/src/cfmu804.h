@@ -185,7 +185,6 @@ class Cfmu804 : public RfidReader {
 	z_status __cmd_tx(U8 cmd_code, U8 *data = 0, U8 data_len = 0);
 
 	int _maskMem = 0;
-	int _tagProtocol = 0;
 	Model _model=model_unknown;
 	int _num_ports=4;
 protected:
@@ -314,6 +313,7 @@ public:
 	virtual z_status config_read();
 
 	virtual z_status ant_dump();
+	virtual z_status ant_detect(bool print);
 
 	virtual z_status membuf_clear();
 
@@ -346,10 +346,8 @@ public:
 
 	z_status profile_dump();
 
-	z_status set_return_loss(int val) {
-		U8 data = val;
-		return send_command(0x6e, &data, 1);
-	}
+	z_status ant_return_loss_set(int set=0);
+	z_status ant_return_loss_dump();
 
 	z_status beep_off() {
 		U8 data = 0;
@@ -450,14 +448,12 @@ ZMETA_DECL(Cfmu804) {
 
 	ZPROP(_port_name);
 	ZACT(inventory_single);
-	ZACT(ant_dump);
 
 	ZACT(inventory);
 
 	ZACT(info_dump);
 	ZACT(beep_on);
 	ZACT(beep_off);
-	ZACT(readmode_get);
 	ZACT(write_power_get);
 	//ZACT(set_freq);
 	ZCMD(measure_ant, ZFF_CMD_DEF, "measure_ant",
@@ -502,8 +498,10 @@ ZMETA_DECL(Cfmu804) {
 	     ZPRM(int, low, 0, "low quad", ZFF_PARAM),
 	     ZPRM(int, hi, 3, "hi quad", ZFF_PARAM)
 	);
-	ZCMD(set_return_loss, ZFF_CMD_DEF, "set_return_loss", ZPRM(int, val, 0, "val", ZFF_PARAM));
-	ZCMD(ant_check_set, ZFF_CMD_DEF, "ant_check_set", ZPRM(int, val, 0, "val", ZFF_PARAM));
+	ZACT(ant_return_loss_dump);
+
+	ZCMD(ant_return_loss_set, ZFF_CMD_DEF, "ant_return_loss_set", ZPRM(int, val, 0, "val", ZFF_PARAM));
+	ZCMD(ant_check_set, ZFF_CMD_DEF, "ant_check_set", ZPRM(int, val, 1, "val", ZFF_PARAM));
 	ZCMD(ant_mask_set, ZFF_CMD_DEF, "ant_mask_set", ZPRM(int, val, 0, "val", ZFF_PARAM));
 	/*
  *Scantime: inventory time. Reader will modify the maximum response time according to user defined value (0*100ms ~ 255*100ms),
