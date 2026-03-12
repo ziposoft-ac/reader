@@ -164,6 +164,7 @@ z_status App0::start()
 
 int App0::add_json_status(z_json_stream &js) {
     js.set_pretty_print(true);
+    js.obj_val_start("app0");
 
     js.keyval("file",_file_filtered.getLiveFileName());
     js.keyval("reads_path",_file_path_record);
@@ -171,32 +172,13 @@ int App0::add_json_status(z_json_stream &js) {
     js.key_bool("recording",is_recording());
     js.keyval_int("last_index",getReadIndex());
     js.keyval_int("ts_start",(I64)_t_started.get_ptime_ms());
+    js.obj_end();
 
-    root.getReader().json_status_get(js);
     return 0;
 
 }
 
-z_string App0::createJsonStatus(int status, ctext msg,bool ack)
-{
-    z_json_str_stream js;
-    js.obj_start();
-    js.keyval("command",
-              (ack? "reader_ack" : "status_reader"));
-    js.keyval("reads_filename",_file_filtered.getLiveFileName());
-    js.keyval("reads_path",_file_path_record);
-    js.key_bool("beeps",_beep);
-    js.key_bool("recording",is_recording());
-    js.keyval_int("session",root.getReader()._session);
-    js.keyval("status", zs_get_status_text((z_status)status));
-    js.key_bool("error",status!=zs_ok );
 
-    js.keyval("msg",msg);
-
-    js.obj_end();
-    return js.as_string();
-
-}
 void App0::signalWaitingRequests() {
     if (_index>_index_last_notify) {
         _index_last_notify=_index;

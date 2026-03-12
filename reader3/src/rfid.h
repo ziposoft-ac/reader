@@ -233,9 +233,9 @@ public:
     virtual z_status ant_dump(){ return zs_not_implemented;}
     virtual z_status ant_detect(bool print){ return zs_not_implemented;}
 
-    z_status json_status_get(z_json_stream &js);
+    z_status add_json_status(z_json_stream &js);
 
-    z_status json_config_add(z_json_stream &js);
+    z_status add_json_config(z_json_stream &js);
     z_status json_config_get(z_json_stream &js);
     z_status json_readmode_get(z_json_stream &js);
 	virtual z_status freq_set(U8 low,U8 max){ return zs_ok;}

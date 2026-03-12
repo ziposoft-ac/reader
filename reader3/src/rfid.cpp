@@ -446,10 +446,10 @@ z_status RfidReader::json_readmode_get(z_json_stream &js) {
 
     return status;
 }
-z_status RfidReader::json_config_add(z_json_stream &js) {
+z_status RfidReader::add_json_config(z_json_stream &js) {
 
 
-    js.key("reader_config");
+    js.key("rfid_config");
 
     js.obj_start();
 
@@ -483,14 +483,14 @@ z_status RfidReader::json_config_get(z_json_stream &js) {
 
     z_status status=config_read();
     if (status==zs_ok) {
-        return json_config_add(js);
+        return add_json_config(js);
     }
     return status;
 }
 
-z_status RfidReader::json_status_get(z_json_stream &js) {
+z_status RfidReader::add_json_status(z_json_stream &js) {
 
-    js.key("reader_status");
+    js.key("rfid_status");
 
     js.obj_start();
     js.key_bool("reading",_reading);

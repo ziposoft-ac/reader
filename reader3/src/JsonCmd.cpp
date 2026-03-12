@@ -137,8 +137,8 @@ int fn_post_config(http_request r,z_json_obj &o)
 http_status_t send_rfid_status(http_request r,http_status_t status=HTTP_STATUS_OK,ctext message=nullptr) {
     send_json_response(r,[status,message](z_json_stream &js)
     {
-        root.getReader().json_config_add(js);
-        root.getReader().json_status_get(js);
+        root.getReader().add_json_config(js);
+        root.getReader().add_json_status(js);
         if (message)
             js.keyval("msg", message);
         return status;

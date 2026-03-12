@@ -57,7 +57,6 @@ public:
     virtual z_status remote_quit();
     virtual z_status stop();
     virtual z_status start();
-    z_string createJsonStatus(int status, ctext msg,bool ack);
 
     void beep();
     virtual bool callbackRead(RfidRead* r);
