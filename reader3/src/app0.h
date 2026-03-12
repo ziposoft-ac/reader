@@ -46,7 +46,7 @@ public:
     z_string _file_path_record = "/zs/reader/reads";
 
     int getReadIndex() { return _index; }
-    bool is_reading() { return _reading; }
+    bool is_reading() ;
     bool is_recording() { return _recording; }
     virtual z_status open();
     virtual z_status close();
@@ -80,7 +80,7 @@ ZMETA_DECL(App0) {
     ZPROP(_record_tod);
     ZPROP(_record_raw);
     ZPROP(_record_filtered);
-    ZPROP(_start_detection_s);
+    //ZPROP(_start_detection_s);
     //ZPROP(_minimum_log_time_ms);
     ZPROP(_min_rssi);
    // ZPROP(_test_tag);

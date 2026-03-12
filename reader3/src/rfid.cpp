@@ -235,6 +235,8 @@ z_status RfidReader::start()
 z_status RfidReader::configure(
         const rfid_config_t& c
         ){
+    if (isReading())
+        return zs_device_busy;
     _qvalue=c.qValue;
     _session=c.session;
     _antenna_mask=c.antMask;
@@ -456,18 +458,16 @@ z_status RfidReader::add_json_config(z_json_stream &js) {
         js.keyval_int("antMask",_antenna_mask);
         js.keyval_int("qValue",_qvalue);
         js.keyval_int("power",_power);
+        js.keyval_int("profile",_profile);
+
         js.keyval_int("freqLow",_freq_low);
         js.keyval_int("freqHigh",_freq_high);
         js.keyval_int("session",_session);
         js.keyval_int("pauseTime",_pause_read_time);
         js.keyval_int("filterTime",_filter_time);
         js.keyval_int("beepEnable",_filter_time);
-
-
         js.key_bool("valid",true);
         js.key_bool("reading",_reading);
-        js.keyval_int("profile",_profile);
-        js.keyval_int("pause_read_time",_pause_read_time);
 
 
 

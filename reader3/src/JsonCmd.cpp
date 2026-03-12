@@ -39,6 +39,7 @@ void send_command_response(http_request r,z_status zstatus,http_status_t http_st
 
 
 }
+/*
 http_status_t send_status(http_request r,http_status_t status=HTTP_STATUS_OK,ctext message=nullptr) {
     send_json_response(r,[status,message](z_json_stream &js)
     {
@@ -50,7 +51,52 @@ http_status_t send_status(http_request r,http_status_t status=HTTP_STATUS_OK,cte
     });
 
     return status;
+}*/
+http_status_t send_app0_status(http_request r,http_status_t status=HTTP_STATUS_OK,ctext message=nullptr) {
+    send_json_response(r,[status,message](z_json_stream &js)
+    {
+        root.app0.add_json_status(js);
+        if (message)
+            js.keyval("msg", message);
+        return status;
+
+    });
+
+    return status;
 }
+http_status_t send_rfid_status(http_request r,http_status_t status=HTTP_STATUS_OK,ctext message=nullptr) {
+    send_json_response(r,[status,message](z_json_stream &js)
+    {
+        root.getReader().add_json_config(js);
+        root.getReader().add_json_status(js);
+        if (message)
+            js.keyval("msg", message);
+        return status;
+
+    });
+
+    return status;
+}
+http_status_t send_full_status(http_request r,http_status_t status=HTTP_STATUS_OK,ctext message=nullptr) {
+    send_json_response(r,[status,message](z_json_stream &js)
+    {
+        root.getReader().add_json_config(js);
+        root.getReader().add_json_status(js);
+        root.app0.add_json_status(js);
+
+        if (message)
+            js.keyval("msg", message);
+        return status;
+
+    });
+
+    return status;
+}
+int fn_get_status(http_request r,z_string_map &vars)
+{
+    return send_full_status(r);
+}
+
 int fn_get_gpio(http_request r,z_string_map &vars)
 {
     send_json_response(r,[](z_json_stream &js)
@@ -134,19 +180,7 @@ int fn_post_config(http_request r,z_json_obj &o)
     }
 }
 
-http_status_t send_rfid_status(http_request r,http_status_t status=HTTP_STATUS_OK,ctext message=nullptr) {
-    send_json_response(r,[status,message](z_json_stream &js)
-    {
-        root.getReader().add_json_config(js);
-        root.getReader().add_json_status(js);
-        if (message)
-            js.keyval("msg", message);
-        return status;
 
-    });
-
-    return status;
-}
 int fn_post_start_raw(http_request r,z_json_obj &o)
 {
     if (root.getReader().isReading()) {
@@ -162,7 +196,7 @@ int fn_post_start_raw(http_request r,z_json_obj &o)
 }
 int fn_post_stop_raw(http_request r,z_json_obj &o)
 {    if (!root.getReader().isReading()) {
-        return send_status(r,HTTP_STATUS_SERVICE_UNAVAILABLE,"is not reading");
+        return send_rfid_status(r,HTTP_STATUS_SERVICE_UNAVAILABLE,"is not reading");
 
     }
     root.getReader().stop();
@@ -174,11 +208,11 @@ int fn_post_stop_raw(http_request r,z_json_obj &o)
 int fn_post_start_app0(http_request r,z_json_obj &o)
 {
     if (root.getReader().isReading()) {
-        return send_status(r,HTTP_STATUS_SERVICE_UNAVAILABLE,"already reading");
+        return send_rfid_status(r,HTTP_STATUS_SERVICE_UNAVAILABLE,"already reading");
     }
     root.app0.start();
 
-    send_status(r);
+    send_full_status(r);
     return HTTP_STATUS_OK;
 }
 int fn_post_stop_app0(http_request r,z_json_obj &o)
@@ -186,7 +220,7 @@ int fn_post_stop_app0(http_request r,z_json_obj &o)
 
     root.app0.stop();
 
-    send_status(r);
+    send_full_status(r);
 
     return HTTP_STATUS_OK;
 }
@@ -197,7 +231,7 @@ int fn_post_beepon(http_request r,z_json_obj &o)
     o.get_bool("beep",beep,false);
     root.gpio.readBeep.off();
     ZLOG("fn_post_beepon");
-    send_status(r);
+    send_rfid_status(r);
     return HTTP_STATUS_OK;
 }
 
@@ -209,47 +243,47 @@ int fn_post_beepoff(http_request r,z_json_obj &o)
         root.gpio.readBeep.on();
     ZLOG("fn_post_beepoff");
 
-    send_status(r);
+    send_rfid_status(r);
     return HTTP_STATUS_OK;
 }
 int fn_get_reads_raw(http_request r,z_string_map &vars)
 {
     RfidReader &reader = root.getReader();
 
-    I64 req_last_index=vars.get_as("last_index",0);
+    I64 fromIndex=vars.get_as("fromIndex",0);
     bool return_reads=vars.get_as("return_reads",false);
     bool debug=vars.get_as("debug",true);
-    if (req_last_index>reader.getReadIndex()) {
-        req_last_index=0;
-        ZDBG("R#%d:RAW requested index %d greater than current, using 0\n",r.index,req_last_index);
+    if (fromIndex>reader.getReadIndex()) {
+        fromIndex=0;
+        ZDBG("R#%d:RAW requested index %d greater than current, using 0\n",r.index,fromIndex);
     }
 
-    if (reader.getReadIndex()==req_last_index) {
+    if (reader.getReadIndex()==fromIndex) {
         delayed_request *req = new delayed_request();
         req->r=r;
-        ZDBG("R#%d: RAW (%s) index %d matches, wait for reads\n",r.index,(return_reads?"reads":"stat"),req_last_index);
+        ZDBG("R#%d: RAW (%s) index %d matches, wait for reads\n",r.index,(return_reads?"reads":"stat"),fromIndex);
 
         req->ts_expire=z_time_get_ticks()+WAIT_FOR_NEW_READS_TIMEOUT;
-        req->ctx1=req_last_index;
+        req->ctx1=fromIndex;
         req->type=DELAYED_REQUEST_READS_RAW;
         req->ctx2=return_reads;
-        req->fn_complete=[](z_json_stream &js,size_t last_index,size_t return_reads) {
+        req->fn_complete=[](z_json_stream &js,size_t fromIndex,size_t return_reads) {
             //ZDBG("R#:(%s) delay complete %d to %d\n",(return_reads?"reads":"stat"),last_index,root.getReader().getReadIndex());
 
             js.set_pretty_print(true);
             RfidReader &reader = root.getReader();
-            reader.get_reads_since(js, last_index,return_reads);
+            reader.get_reads_since(js, fromIndex,return_reads);
         };
         WEBSERV(r.c).push_delayed_request(req);
         return 0;
     }
-    send_json_response(r,[r,req_last_index,return_reads](z_json_stream &js)
+    send_json_response(r,[r,fromIndex,return_reads](z_json_stream &js)
     {
-        ZDBG("R#%d:RAW(%s) returning reads from %d to %d\n",r.index,(return_reads?"reads":"stat"),req_last_index,root.getReader().getReadIndex());
+        ZDBG("R#%d:RAW(%s) returning reads from %d to %d\n",r.index,(return_reads?"reads":"stat"),fromIndex,root.getReader().getReadIndex());
 
         js.set_pretty_print(true);
         RfidReader &reader = root.getReader();
-            reader.get_reads_since(js, req_last_index,return_reads);
+            reader.get_reads_since(js, fromIndex,return_reads);
 
         //root.app0.add_json_status(js);
         return HTTP_STATUS_OK;
@@ -263,32 +297,32 @@ int fn_get_reads_filtered(http_request r,z_string_map &vars)
 {
     App0& app=root.app0;
 
-    I64 last_index=vars.get_as("last_index",0);
+    I64 fromIndex=vars.get_as("fromIndex",0);
     bool debug=vars.get_as("debug",true);
-    if (last_index>app.getReadIndex()) {
-        last_index=0;
-        ZDBG("R#%d: FLTR requested index %d greater than current, using 0\n",r.index,last_index);
+    if (fromIndex>app.getReadIndex()) {
+        fromIndex=0;
+        ZDBG("R#%d: FLTR requested index %d greater than current, using 0\n",r.index,fromIndex);
     }
 
-    if (app.getReadIndex()==last_index) {
+    if (app.getReadIndex()==fromIndex) {
         delayed_request *req = new delayed_request();
         req->r=r;
-        ZDBG("R#%d: FLTRindex %d matches, wait for reads\n",r.index,last_index);
+        ZDBG("R#%d: FLTRindex %d matches, wait for reads\n",r.index,fromIndex);
         req->type=DELAYED_REQUEST_READS_FILTERED;
 
         req->ts_expire=z_time_get_ticks()+WAIT_FOR_NEW_READS_TIMEOUT;
-        req->ctx1=last_index;
+        req->ctx1=fromIndex;
         req->ctx2=0; //unused
-        req->fn_complete=[](z_json_stream &js,size_t last_index,size_t unused) {
-            ZDBG("R#:FLTR delay complete %d to %d\n",last_index,root.app0.getReadIndex());
+        req->fn_complete=[](z_json_stream &js,size_t fromIndex,size_t unused) {
+            ZDBG("R#:FLTR delay complete %d to %d\n",fromIndex,root.app0.getReadIndex());
             root.app0.add_json_status(js);
         };
         WEBSERV(r.c).push_delayed_request(req);
         return 0;
     }
-    send_json_response(r,[r,last_index](z_json_stream &js)
+    send_json_response(r,[r,fromIndex](z_json_stream &js)
     {
-        ZDBG("R#%d:FLTR sending immediate %d to %d\n",r.index,last_index,root.app0.getReadIndex());
+        ZDBG("R#%d:FLTR sending immediate %d to %d\n",r.index,fromIndex,root.app0.getReadIndex());
 
         root.app0.add_json_status(js);
         return HTTP_STATUS_OK;
@@ -317,15 +351,6 @@ int fn_get_delay(http_request r,z_string_map &vars)
     return 200;
 }
 int fn_set_config(http_request r,z_string_map &vars)
-{
-    send_json_response(r,[](z_json_stream &js)
-    {
-        js.keyval("status","yeah boy!");
-        return HTTP_STATUS_OK;
-    });
-    return 200;
-}
-int fn_get_status(http_request r,z_string_map &vars)
 {
     send_json_response(r,[](z_json_stream &js)
     {

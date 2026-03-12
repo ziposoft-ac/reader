@@ -18,7 +18,6 @@ ZMETA(Root)
     //ZOBJ(processRunner);
     ZOBJ(web_server);
     //ZOBJ(server);
-    ZOBJ(app);
     ZOBJ(app0);
     ZACT(heat_test);
     ZACT(simulate_on);
@@ -68,17 +67,16 @@ z_status Root::initialize()
         _reader=&simulator;
     else
         _reader=&cfmu804;
-    app.initialize();
     app0.initialize();
     gpio.initialize();
     if(_auto_start_server) {
         web_server.start();
-        app.open();
+        app0.open();
 
     }
     if(_auto_start_app) {
         web_server.start();
-        app.run();
+        app0.run();
 
     }
     if(_init_rfid) {
@@ -94,7 +92,6 @@ z_status Root::shutdown()
     web_server.stop();
 
     app0.shutdown();
-    app.shutdown();
     cfmu804.close();
 
     simulator.close();

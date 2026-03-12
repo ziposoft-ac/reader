@@ -187,6 +187,7 @@ z_status Cfmu804::ant_dump() {
 }
 z_status Cfmu804::antCheck()
 {
+
     z_status status=open();
     if(status)
         return status;
@@ -212,6 +213,9 @@ z_status Cfmu804::antCheck()
 }
 z_status Cfmu804::config_write(        )
     {
+
+    if (isReading())
+        return zs_device_busy;
     z_status status=open();
     if(status)
         return status;

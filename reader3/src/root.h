@@ -14,7 +14,6 @@
 #include "simulator.h"
 #include "gpio.h"
 #include "WebServer.h"
-#include "app.h"
 #include "app0.h"
 //#include "processRunner.h"
 
@@ -39,7 +38,6 @@ public:
     RfidSimulator simulator;
     // server;
     Gpio gpio;
-    App app;
     App0 app0;
     Tests tests;
     WebServer web_server;

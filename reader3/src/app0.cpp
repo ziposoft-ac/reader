@@ -160,6 +160,9 @@ z_status App0::start()
     }
     return s;
 }
+bool App0::is_reading() {
+    return root.getReader().isReading();
+}
 
 
 int App0::add_json_status(z_json_stream &js) {
@@ -298,7 +301,7 @@ bool App0::callbackRead(RfidRead* read)
             _tags.add(epc, pTag);
             _index++;
 
-            pTag->_index=_index++;
+            pTag->_index=_index;
             newtag=true;
         }
 
