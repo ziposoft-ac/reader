@@ -48,8 +48,8 @@ z_status RfidSimulator::setupParams(
     _qvalue=qValue;
     _qvalue=qValue;
     _filter_time=filterTime;
-    _antenna_config=ant;
-    _antenna_mask=ant;
+    _antenna_enabled=ant;
+    //_antenna_mask=ant;
 
     _antenna_detected=0xf;
 

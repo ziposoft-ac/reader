@@ -25,6 +25,7 @@ ZMETA(Tests)
     //ZOBJ(thread2);
     ZOBJ(pipe);
     ZACT(shutdown);
+    ZACT(test_timestamp);
 
 };
 ZMETA(ReaderTest) {
@@ -50,7 +51,19 @@ ZMETA(TestPipe)
     ZACT(read);
 
 };
+z_status Tests::test_timestamp()
+{
+    U64 start=z_time::get_now_ms();
+    U64 dummy=0;
+    for (U64 i=0;i<1000000;i++) {
+        dummy+=z_time::get_now_ms();
+    }
+    U64 end=z_time::get_now_ms();
+    printf("%llu ms\n",(end-start));
 
+
+    return zs_ok;
+}
 z_status Tests::shutdown()
 {
     flashleds.stop();

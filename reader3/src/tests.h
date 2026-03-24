@@ -158,6 +158,7 @@ public:
 class Tests {
 public:
     z_status shutdown();
+    z_status test_timestamp();
     TestGpioOnOff gpioOnOff;
     TestLedFlash flashleds;
     TestHeatTest heatTest;

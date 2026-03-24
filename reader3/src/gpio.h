@@ -85,13 +85,14 @@ public:
     virtual void init(Gpio* chip,ctext name);
 
 };
+typedef std::pair<int,int> Beep;
+
 class GpioBeep : public GpioPin
 {
     friend z_factory_t<GpioBeep>;
 
 public:
 
-    typedef std::pair<int,int> Beep;
 protected:
     int _next_time_off=0;
 
@@ -115,18 +116,28 @@ public:
     z_status down();
 
 };
-class GpioBeepPWM  : public GpioBeep{
+class GpioBeepPWM  {
 protected:
-    virtual void _off();
-    virtual void _on();
+    virtual int _off();
+    virtual int _on();
     virtual int timer_callback(void*);
+    z_safe_queue<Beep> _queue;
+    Timer* _timer=0;
+    bool _initialized=false;
+    bool _open=false;
 
 public:
-    GpioBeepPWM(int pin=0) : GpioBeep(pin){}
-    virtual ~GpioBeepPWM(){}
-    z_status buzz(int freq, int duration);
-    z_status toneRise();
+    bool _exists=false;
+    bool _quiet=false;
+    bool _enabled=false;
+    GpioBeepPWM() {}
 
+    bool exists() {return _exists;}
+    virtual ~GpioBeepPWM(){}
+    z_status buzz(int f0,int d0,int f1,int d1,int f2,int d2);
+    z_status toneRise();
+    virtual void init();
+    void pushBeeps(std::initializer_list<Beep> const beeps);
 };
 class Gpio {
     bool _initialized=false;
@@ -160,7 +171,7 @@ public:
     GpioPinLed g24=24;
     //GpioPinLed ledYellow=YELLOW;
     GpioBeep beeper=2;
-    GpioBeepPWM beepPwm=18;
+    GpioBeepPWM beepPwm;
     const int led_gpio[4]={RED,GREEN,YELLOW,BLUE};
     bool initialize();
     bool shutdown();

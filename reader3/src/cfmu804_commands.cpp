@@ -240,15 +240,12 @@ z_status Cfmu804::config_write(        )
         return status;
 
     antCheck();
-    _antenna_config=_antenna_mask&_antenna_detected;
-    ZDBGS<< "_antenna_config:"<<_antenna_config<<"\n";
+    //_antenna_enabled=_antenna_mask&_antenna_detected;
+    ZDBGS<< "_antenna_detected:"<<_antenna_detected<<"\n";
 
-    ant_mask_set(_antenna_config);
-    if(_antenna_config)
-    {
-        reader_info_t info;
-        if (_info_get(&info) == zs_ok) {
-        }
+    ant_mask_set(_antenna_detected);
+    reader_info_t info;
+    if (_info_get(&info) == zs_ok) {
     }
     profile_set(_profile);
     return zs_ok;
@@ -278,7 +275,7 @@ z_status Cfmu804::_info_get(reader_info_t* pi)
 
         _power=pi->Power;
 
-        _antenna_config=pi->Ant;
+        _antenna_enabled=pi->Ant;
         _freq_low=(pi->dminfre & 0x7f)*4/US_band_range;
         _freq_high=(pi->dmaxfre +1)*4/US_band_range -1;
 
@@ -450,18 +447,27 @@ z_status Cfmu804::readmode_get()
 
 z_status Cfmu804::config_read() {
 
-
+    ZDBG("Full config read\n");
     if (readmode_get())
         return zs_read_error;
+    if (_reading) {
+        printf("currently reading, cannot dump rest of config");
+        return zs_ok;
+    }
+    if (antCheck())
+        return zs_read_error;
+    ant_mask_set(_antenna_detected);
+
     U8 profile;
     if (profile_set_get(profile))
         return zs_read_error;
     _profile=profile;
-
+    reader_info_t info;
+    if (_info_get(&info) == zs_ok) {
+    }
     if (write_power_get())
         return zs_read_error;
-    if (antCheck())
-        return zs_read_error;
+
     return zs_ok;
 
 }

@@ -239,7 +239,7 @@ z_status RfidReader::configure(
         return zs_device_busy;
     _qvalue=c.qValue;
     _session=c.session;
-    _antenna_mask=c.antMask;
+    //_antenna_mask=c.antMask;
     z_status status=freq_set(c.freqLow,c.freqHigh);
     if (status)
         return status;
@@ -251,25 +251,40 @@ z_status RfidReader::configure(
 }
 z_status RfidReader::config_dump() {
 
+
     readmode_dump();
     if (_reading) {
         printf("currently reading, cannot dump rest of config");
         return zs_ok;
     }
-    info_dump();
+    //info_dump();
     z_status status=config_read();
 
     if (status!=zs_ok)
         return status;
 
 
-    printf("ReadMode=%x\n", _reading);
+    printf("IS READING=%d\n", _reading);
+
     printf("TagProtocol=%x\n", _tagProtocol);
     printf("ReadPauseTime=%x\n", _pause_read_time);
     printf("FilterTime=%x\n", _filter_time);
     printf("QValue=%x\n", _qvalue);
     printf("Session=%d\n", _session);
     printf("Ant Return Loss=%d\n", _antenna_return_loss_threshold);
+
+    printf("ReadPauseTime=%d\n", _pause_read_time);
+    printf("Antenna Detected=%b\n", _antenna_detected);
+    printf("Antenna Enabled=%b\n", _antenna_enabled);
+    printf("FilterTime=%d\n", _filter_time);
+    printf("QValue=%02x\n", _qvalue);
+    printf("Session=%02x\n", _session);
+    printf("Power=%d\n", _power);
+    printf("_freq_low=%d\n", _freq_low);
+    printf("_freq_high=%d\n", _freq_high);
+
+
+
     return zs_ok;
 }
 
@@ -422,7 +437,7 @@ z_status RfidReader::json_readmode_get(z_json_stream &js) {
 
     z_status status=readmode_get();
     if (status==zs_ok) {
-        js.keyval_int("antMask",_antenna_mask);
+       // js.keyval_int("antMask",_antenna_mask);
         js.keyval_int("qValue",_qvalue);
         js.keyval_int("power",_power);
         js.keyval_int("freqLow",_freq_low);
@@ -455,7 +470,7 @@ z_status RfidReader::add_json_config(z_json_stream &js) {
 
     js.obj_start();
 
-        js.keyval_int("antMask",_antenna_mask);
+       // js.keyval_int("antMask",_antenna_mask);
         js.keyval_int("qValue",_qvalue);
         js.keyval_int("power",_power);
         js.keyval_int("profile",_profile);
@@ -494,7 +509,7 @@ z_status RfidReader::add_json_status(z_json_stream &js) {
 
     js.obj_start();
     js.key_bool("reading",_reading);
-    js.keyval_int("ant_config",_antenna_config);
+    js.keyval_int("antenna_enabled",_antenna_enabled);
     js.keyval_int("ant_detected",_antenna_detected);
     js.obj_end();
 

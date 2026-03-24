@@ -53,12 +53,16 @@ ZMETA(GpioBeep)
 };
 ZMETA(GpioBeepPWM)
 {
-    ZBASE(GpioBeep);
     ZACT(toneRise);
-
+    ZPROP(_quiet);
+    ZPROP(_enabled);
     ZCMD(buzz, ZFF_CMD_DEF, "buzz",
-         ZPRM(int, freq, 2000, "freq", ZFF_PARAM),
-         ZPRM(int, duration, 100, "duration", ZFF_PARAM)
+         ZPRM(int, f0, 8000, "freq0", ZFF_PARAM),
+         ZPRM(int, d0, 100, "duration0", ZFF_PARAM),
+         ZPRM(int, f1, 800, "freq1", ZFF_PARAM),
+         ZPRM(int, d1, 100, "duration1", ZFF_PARAM),
+         ZPRM(int, f2, 800, "freq2", ZFF_PARAM),
+         ZPRM(int, d2, 100, "duration2", ZFF_PARAM)
          );
 };
 ZMETA(Gpio)
@@ -200,6 +204,7 @@ z_status GpioPin::json_config_get(z_json_stream &js) {
     return zs_ok;
 }
 z_status GpioPin::setOutputState(bool state) {
+
     return (state?on():off());
 }
 
@@ -419,9 +424,24 @@ void GpioBeep::pushBeeps(std::initializer_list<Beep> const beeps)
  *   GpioBeepPWM
  *
  */
+
+
+
+#ifdef NOGPIO
+
+int syswr(ctext filename,int i) {
+        return zs_io_error;
+}
+int setPwmFreq(int freq) {
+    return zs_io_error;
+}
+#else
+
 #define PWM_PATH "/sys/class/pwm/pwmchip0/pwm0/" // Adjust for pwmchip1/pwm1 if needed
 #define PWM_CHIP  "/sys/class/pwm/pwmchip0/export"
 
+
+bool pwm_is_init=false;
 
 
 
@@ -429,7 +449,7 @@ int syswr(ctext filename,int i) {
     z_string s=i;
     FILE* fd = fopen(filename, "wb");
     if (!fd) {
-
+        return zs_io_error;
         //perror("Failed to open export file");
         return Z_ERROR_MSG(zs_io_error,"PWM Error writing %d to %s\n",i,filename);
     }
@@ -439,6 +459,15 @@ int syswr(ctext filename,int i) {
     return 0;
 }
 int setPwmFreq(int freq) {
+    if (!pwm_is_init) {
+        if (syswr(PWM_CHIP,0))
+            return -1;
+        if (syswr(PWM_PATH "enable",0))
+            return -1;
+        pwm_is_init=true;
+
+
+    }
     if (freq) {
         U64 period=1000000000/freq;
         if (syswr(PWM_PATH "period",period))
@@ -458,10 +487,11 @@ int setPwmFreq(int freq) {
     return 0;
 
 }
-void GpioBeepPWM::_off()
+#endif
+
+int GpioBeepPWM::_off()
 {
-    if (_enabled)
-        setPwmFreq(0);
+    return setPwmFreq(0);
 }
 int GpioBeepPWM::timer_callback(void *)
 {
@@ -487,12 +517,30 @@ int GpioBeepPWM::timer_callback(void *)
         }
     return delay;
 }
-
-void GpioBeepPWM::_on()
+void GpioBeepPWM::pushBeeps(std::initializer_list<Beep> const beeps)
 {
-    if(_quiet) return;
+    if (!_enabled)    return ;
+
+    if (!_timer) {
+        Z_ERROR_MSG(zs_not_open,"Buzzer not initialized");
+        return;
+    }
+
+    if(_queue.get_count()>10)
+        return;
+    for(auto i : beeps)
+    {
+        _queue.push(i);
+    }
+    _timer->start(1,false);
+}
+
+int GpioBeepPWM::_on()
+{
+    if(_quiet) return -1;
     if (_enabled)
-        setPwmFreq(50000);
+        return setPwmFreq(50000);
+    return -1;
 }
 z_status GpioBeepPWM::toneRise()
 {
@@ -502,16 +550,32 @@ z_status GpioBeepPWM::toneRise()
     return zs_ok;
 }
 
-z_status GpioBeepPWM::buzz(int freq, int duration) {
+z_status GpioBeepPWM::buzz(int f0,int d0,int f1,int d1,int f2,int d2) {
 
     if (!_enabled)    return zs_not_open;
 
-    if(!_chip->initialize())
-        return zs_io_error;
-    pushBeeps({{freq,duration}});
+    pushBeeps({{f0,d0},{f1,d1},{f2,d2}});
     return zs_ok;
 }
+void GpioBeepPWM::init() {
+    if (!_enabled)
+        return;
+    if (syswr(PWM_CHIP,0)) {
+        _exists=false;
+        Z_ERROR_MSG(zs_io_error,"PWM init failed, will try again later");
+    }
 
+    if (_off() /*error*/) {
+        _exists=false;
+        Z_ERROR_MSG(zs_io_error,"PWM does not exists, disabling");
+
+    }
+
+    _initialized=true;
+    if(!_timer)
+        _timer=root.timerService.create_timer_t(this,&GpioBeepPWM::timer_callback,0    );
+
+}
 /**************************************************************************************
  *
  *   Gpio
@@ -541,9 +605,7 @@ Gpio::~Gpio()
 }
 
 bool Gpio::initialize() {
-#ifdef NOGPIO
-    return false;
-#endif
+
     if(_initialized) return _open;
     _initialized=true;
     if(!_timer)
@@ -564,7 +626,7 @@ bool Gpio::initialize() {
         p.second->init(this,p.first);
     }
     beeper.init(this);
-    beepPwm.init(this);
+    beepPwm.init();
     return _open;
 }
 bool Gpio::shutdown()

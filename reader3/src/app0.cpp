@@ -41,7 +41,6 @@ z_status App0::shutdown()
 }
 z_status App0::initialize()
 {
-    _index_last_notify=_index;
     return zs_ok;
 }
 
@@ -57,6 +56,7 @@ z_status App0::open()
     //root.gpio.ledRed.on();
 
     _open=true;
+    root.gpio.beepPwm.pushBeeps( {{1000,50},{1200,50},{1400,50},{0,80}  });
 
     return zs_ok;
 }
@@ -93,7 +93,8 @@ z_status App0::stop()
     printf("deleting tags\n");
 
     _tags.delete_all();
-
+    root.gpio.beepPwm.pushBeeps(
+            {{1500,30},{1000,30},{750,30},{500,100}});
     //root.gpio.ledRed.on();
     //root.gpio.ledGreen.off();
 
@@ -158,6 +159,8 @@ z_status App0::start()
     {
         return Z_ERROR_MSG(s, msg);
     }
+    root.gpio.beepPwm.pushBeeps(
+        {{500,30},{0,30},{750,30}});
     return s;
 }
 bool App0::is_reading() {
@@ -173,7 +176,7 @@ int App0::add_json_status(z_json_stream &js) {
     js.keyval("reads_path",_file_path_record);
     js.key_bool("reading",is_reading());
     js.key_bool("recording",is_recording());
-    js.keyval_int("last_index",getReadIndex());
+    js.keyval_int("last_index",getLastWriteTimestamp());
     js.keyval_int("ts_start",(I64)_t_started.get_ptime_ms());
     js.obj_end();
 
@@ -183,8 +186,8 @@ int App0::add_json_status(z_json_stream &js) {
 
 
 void App0::signalWaitingRequests() {
-    if (_index>_index_last_notify) {
-        _index_last_notify=_index;
+    if (_last_write_timestamp>_last_notify_timestamp) {
+        _last_notify_timestamp=_last_write_timestamp;
         root.web_server.complete_req_type(DELAYED_REQUEST_READS_FILTERED);
         ZDBG("\nsignal waiting for filtered reads\n");
         ZDBGS.flush();
@@ -230,8 +233,6 @@ int  App0::timer_callback(void*)
         z_string epc=it->first;
 
         if (t->processCheck(*this,now)) {
-            _index++;
-            t->_index=_index;
             if (_record_filtered)
                 t->writeOut( _file_filtered.get_stream(),t->_state);
 
@@ -299,9 +300,7 @@ bool App0::callbackRead(RfidRead* read)
             pTag = z_new RfidTag(read,epc);
             pTag->_epc=epc;
             _tags.add(epc, pTag);
-            _index++;
 
-            pTag->_index=_index;
             newtag=true;
         }
 
@@ -386,7 +385,8 @@ void RfidTag::writeOut(z_stream& s,FilteredReadState type) {
 
 
 
-    s<<_index;
+
+    s<<root.app0.getNewWriteTimestamp();
     s,ts.to_string_ms(true);
 
 
@@ -399,14 +399,17 @@ void RfidTag::writeOut(z_stream& s,FilteredReadState type) {
 
     switch (type) {
         case fr_type_arrived:
+            root.gpio.beepPwm.pushBeeps( {{1100,30}});
             s,"ARR";
             break;
         case fr_type_departed:
             s,"DEP";
+            root.gpio.beepPwm.pushBeeps( {{500,25}});
 
             break;
         default:
             s,"HI";
+            root.gpio.beepPwm.pushBeeps( {{700,40},{1500,40}});
 
             break;
     }

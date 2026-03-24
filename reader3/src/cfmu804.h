@@ -408,7 +408,7 @@ public:
 
 		z_status status= send_command(0x3f, &data, 1);
 		if (status == zs_ok) {
-			_antenna_mask=mask;
+			 // _antenna_mask=mask;
 		}
 		return status;
 	}

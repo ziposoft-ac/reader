@@ -29,23 +29,30 @@ class App0 : public RfidReadConsumer{
     const int _default_timer_period = 5000;
     bool _debug_reads=true;
     bool _beep=true;
+    bool _buzzer=true;
     bool _record_raw=true;
     bool _record_filtered=true;
     bool _recording=false;
     RecordFile _file_raw;
     RecordFile _file_filtered;
     bool _record_tod=true;
-    int _index_last_notify = 0;
-    int _index = 0;
-
+    U64 _last_write_timestamp=0;
+    U64 _last_notify_timestamp=0;
 public:
     App0();
 
     z_time _t_started;
 
     z_string _file_path_record = "/zs/reader/reads";
-
-    int getReadIndex() { return _index; }
+    U64 getNewWriteTimestamp() {
+        U64 ts=z_time::get_now_ms();
+        if (ts<=_last_write_timestamp)
+            _last_write_timestamp++;
+        else
+            _last_write_timestamp=ts;
+        return _last_write_timestamp;
+    }
+    U64 getLastWriteTimestamp() { return _last_write_timestamp; }
     bool is_reading() ;
     bool is_recording() { return _recording; }
     virtual z_status open();
@@ -75,6 +82,7 @@ ZMETA_DECL(App0) {
     ZPROP(_file_path_record);
     //ZPROP(_file_path_complete);
     ZPROP(_beep);
+    ZPROP(_buzzer);
     ZPROP(_peak_window_ms);
     ZPROP(_presence_window_s);
     ZPROP(_record_tod);
@@ -87,7 +95,6 @@ ZMETA_DECL(App0) {
     ZPROP(_filter_epc);
     //ZPROP(_single_tag_test);
     ZPROP(_recording);
-    ZPROP(_index);
     //ZPROP(_broadcast);
     ZPROP(_debug_reads);
     //#define ZACT(_ACT_) ZACT_X(_ACT_,#_ACT_,ZFF_ACT_DEF,"")

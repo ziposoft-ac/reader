@@ -151,7 +151,7 @@ protected:
     U32 _queue_max_depth=1000;
     z_time _ts_reading_started;
 
-	virtual z_status ant_mask_set(int mask) {   _antenna_mask=mask;return zs_ok;  }
+	virtual z_status ant_mask_set(int mask) {   return zs_ok;  }
 
     virtual z_status _read_start()  {   return zs_ok;  }
     virtual z_status _read_stop()  {   return zs_ok;  }
@@ -175,8 +175,7 @@ public:
     int _session=0;
     int _qvalue=15;
     int _filter_time=5;
-    int _antenna_config=0xf;
-    int _antenna_mask=0xf;
+    //int _antenna_mask=0xf;
     int _antenna_return_loss_threshold=7;
 
     int _freq_low=0;
@@ -188,6 +187,7 @@ public:
 
     // Status
     int _antenna_detected=0;
+    int _antenna_enabled=0xf;
 
     int cached_read_count() {
         return _queue_reads_all.size();
@@ -270,7 +270,7 @@ ZMETA_DECL(RfidReader)
 
     ZPROP_X(_reading, "Running", ZFF_READ_ONLY, "Reader is started");
     ZCMD(power_set, ZFF_CMD_DEF, "power_set", ZPRM(int, val, 30, "val", ZFF_PARAM));
-    ZPROP_X(_antenna_config, "antenna_config", ZFF_READ_ONLY, "Ant Config");
+    ZPROP_X(_antenna_enabled, "antenna_config", ZFF_READ_ONLY, "Ant Config");
     ZPROP_X(_antenna_detected, "antenna_detected", ZFF_READ_ONLY, "Ant Detected");
 
 
@@ -281,7 +281,7 @@ ZMETA_DECL(RfidReader)
     ZPROP(_freq_low);
     ZPROP(_freq_high);
     ZPROP(_queue_max_depth);
-    ZPROP(_antenna_mask);
+    //ZPROP(_antenna_mask);
     ZPROP(_session);
     ZPROP(_pause_read_time);
     ZPROP(_write_power);

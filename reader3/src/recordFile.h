@@ -38,7 +38,7 @@ public:
     U8 _ant_mask=0;
     int _count = 0;
     int _count_hi = 0;
-    int _index=0;
+    //int _index=0;
     void writeOut(z_stream& s,FilteredReadState type );
     FilteredReadState _state=fr_type_arrived;
     // return time to check next

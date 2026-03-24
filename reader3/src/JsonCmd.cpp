@@ -121,11 +121,9 @@ int fn_post_gpio(http_request r,z_json_obj &o)
 }
 int fn_get_config(http_request r,z_string_map &vars)
 {
-    send_json_response(r,[](z_json_stream &js)
-    {
-        z_status status=root.getReader().json_config_get(js);
-        return (status?HTTP_STATUS_SERVICE_UNAVAILABLE: HTTP_STATUS_OK);
-    });
+    z_status status=root.getReader().config_read();
+    send_full_status(r);
+
     return 200;
 }
 
@@ -133,10 +131,16 @@ int fn_get_config(http_request r,z_string_map &vars)
 int fn_get_beep(http_request r,z_string_map &vars)
 {
 
-    int dur=vars.get_as("dur",25);
-    int count=vars.get_as("count",2);
-    while (count--)
-        root.gpio.beeper.pushBeeps({{dur,25}});
+    if (root.gpio.beepPwm._enabled) {
+        root.gpio.beepPwm.toneRise();
+    }
+    else {
+        int dur=vars.get_as("dur",25);
+        int count=vars.get_as("count",2);
+        while (count--)
+            root.gpio.beeper.pushBeeps({{dur,25}});
+    }
+
     send_json_response(r,[](z_json_stream &js)
     {
 
@@ -297,14 +301,14 @@ int fn_get_reads_filtered(http_request r,z_string_map &vars)
 {
     App0& app=root.app0;
 
-    I64 fromIndex=vars.get_as("fromIndex",0);
+    U64 fromIndex=vars.get_as("fromIndex",(U64)0);
     bool debug=vars.get_as("debug",true);
-    if (fromIndex>app.getReadIndex()) {
+    if (fromIndex>app.getLastWriteTimestamp()) {
         fromIndex=0;
-        ZDBG("R#%d: FLTR requested index %d greater than current, using 0\n",r.index,fromIndex);
+        ZDBG("R#%d: FLTR requested index %llu greater than current, using 0\n",r.index,fromIndex);
     }
 
-    if (app.getReadIndex()==fromIndex) {
+    if (app.getLastWriteTimestamp()==fromIndex) {
         delayed_request *req = new delayed_request();
         req->r=r;
         ZDBG("R#%d: FLTRindex %d matches, wait for reads\n",r.index,fromIndex);
@@ -314,7 +318,7 @@ int fn_get_reads_filtered(http_request r,z_string_map &vars)
         req->ctx1=fromIndex;
         req->ctx2=0; //unused
         req->fn_complete=[](z_json_stream &js,size_t fromIndex,size_t unused) {
-            ZDBG("R#:FLTR delay complete %d to %d\n",fromIndex,root.app0.getReadIndex());
+            ZDBG("R#:FLTR delay complete %llu to %llu\n",fromIndex,root.app0.getLastWriteTimestamp());
             root.app0.add_json_status(js);
         };
         WEBSERV(r.c).push_delayed_request(req);
@@ -322,7 +326,7 @@ int fn_get_reads_filtered(http_request r,z_string_map &vars)
     }
     send_json_response(r,[r,fromIndex](z_json_stream &js)
     {
-        ZDBG("R#%d:FLTR sending immediate %d to %d\n",r.index,fromIndex,root.app0.getReadIndex());
+        ZDBG("R#%d:FLTR sending immediate %llu to %llu\n",r.index,fromIndex,root.app0.getLastWriteTimestamp());
 
         root.app0.add_json_status(js);
         return HTTP_STATUS_OK;
