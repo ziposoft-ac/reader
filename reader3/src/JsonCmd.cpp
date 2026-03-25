@@ -127,7 +127,22 @@ int fn_get_config(http_request r,z_string_map &vars)
     return 200;
 }
 
+int fn_get_pingpong(http_request r,z_string_map &vars)
+{
 
+    int count=vars.get_as("count",0);
+    bool flash=vars.get_as("flash",false);
+    count++;
+    send_json_response(r,[count,flash](z_json_stream &js)
+    {
+        if (flash) {
+            root.gpio.g27.toggle();
+        }
+        js.keyval_int("count",count);;
+        return HTTP_STATUS_OK;
+    });
+    return 200;
+}
 int fn_get_beep(http_request r,z_string_map &vars)
 {
 
@@ -364,23 +379,7 @@ int fn_set_config(http_request r,z_string_map &vars)
     return 200;
 }
 
-int fn_get_test(http_request r,z_string_map &vars)
-{
-    send_json_response(r,[](z_json_stream &js)
-    {
-        js.keyval("status","test boy!");
-        return HTTP_STATUS_OK;
 
-    });
-
-
-    return 200;
-}
-int fn_get_test(z_string_map &vars,z_json_stream &jo,z_string& msg)
-{
-    jo.keyval("status","testing!!");
-    return 200;
-}
 int fn_post(z_json_obj &jin,z_json_stream &jout,z_string msg)
 {
 

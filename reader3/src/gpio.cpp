@@ -33,7 +33,7 @@ ZMETA(GpioPinLed)
     ZPROP(_output);
     ZPROP(_delay_off);
     ZPROP(_flashCountMax);
-    ZACT(toggle);
+    ZACT(toggling_start);
     ZPROP_F(_flashCount,ZFF_READ_ONLY);
     ZCMD(flash, ZFF_CMD_DEF, "flash",
          ZPRM(int, count, 1, "count", ZFF_PARAM)
@@ -73,6 +73,7 @@ ZMETA(Gpio)
     ZOBJ_X(ledRed,"red",ZFF_PROP_DEF,"Red LED, pin#3");
     ZOBJ_X(ledYellow,"yellow",ZFF_PROP_DEF,"Yellow LED, pin#22");
     ZOBJ_X(readBeep,"readBeep",ZFF_PROP_DEF,"Beep on read enable, pin#23");
+    ZOBJ(g27);
     ZOBJ(g24);
     ZOBJ(beeper);
     ZOBJ(beepPwm);
@@ -133,6 +134,13 @@ void GpioPin::shutdown()
         gpiod_line_request_release(_request);
         _request=0;
     }
+}
+
+z_status GpioPin::toggle()
+{
+    _state=!_state;
+    gpiod_line_request_set_value(_request, _pin, (gpiod_line_value)_state);
+    return zs_ok;
 }
 void GpioPin::_off()
 {
@@ -234,7 +242,7 @@ z_status GpioPin::on()
  *
  */
 
-z_status GpioPinLed::toggle()
+z_status GpioPinLed::toggling_start()
 {
     if(!root.gpio.initialize())
         return zs_io_error;

@@ -30,7 +30,7 @@ enum delayed_request_type {
     CMD_GET(beep) \
     CMD_POST(beepon) \
     CMD_POST(beepoff) \
-    CMD_GET(test)
+    CMD_GET(pingpong)
 
 
 

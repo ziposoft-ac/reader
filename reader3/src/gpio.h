@@ -57,6 +57,7 @@ public:
     z_status setOutputState(bool state);
     z_status setOutput();
     z_status show();
+    z_status toggle();
     z_status off();
     z_status on();
     virtual void init(Gpio* chip,ctext name);
@@ -81,7 +82,7 @@ public:
     GpioPinLed(int pin=0) : GpioPin(pin){}
     virtual ~GpioPinLed(){}
     z_status flash(int count);
-    z_status toggle();
+    z_status toggling_start();
     virtual void init(Gpio* chip,ctext name);
 
 };
@@ -169,6 +170,7 @@ public:
     GpioPinLed ledYellow=22;
     GpioPinLed readBeep=23;
     GpioPinLed g24=24;
+    GpioPinLed g27=27;
     //GpioPinLed ledYellow=YELLOW;
     GpioBeep beeper=2;
     GpioBeepPWM beepPwm;
