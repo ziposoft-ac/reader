@@ -12,6 +12,9 @@
 #include "recordFile.h"
 
 
+extern ctext default_record_path;
+extern ctext default_record_path_raw;
+
 class App0 : public RfidReadConsumer{
     friend z_factory_t<App0>;
     int _write_count=0;
@@ -43,7 +46,8 @@ public:
 
     z_time _t_started;
 
-    z_string _file_path_record = "/zs/reader/reads";
+    z_string _file_path_record = default_record_path;
+    z_string _file_path_record_raw =default_record_path_raw;
     U64 getNewWriteTimestamp() {
         U64 ts=z_time::get_now_ms();
         if (ts<=_last_write_timestamp)
@@ -64,6 +68,7 @@ public:
     virtual z_status remote_quit();
     virtual z_status stop();
     virtual z_status start();
+    virtual z_status start_json(z_json_obj& o);
 
     void beep();
     virtual bool callbackRead(RfidRead* r);
@@ -107,6 +112,7 @@ ZMETA_DECL(App0) {
     ZACT(shutdown);
     ZACT(remote_quit);
     ZSTAT(is_reading);
+    ZSTAT(_last_write_timestamp);
 
 }
 

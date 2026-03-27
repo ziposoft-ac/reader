@@ -445,6 +445,17 @@ z_string z_json_obj::get_str_def(ctext key,ctext def)
 	return s;
 
 }
+bool z_json_obj::get_str(ctext key,z_string& s, ctext def)
+{
+	z_json_str* ji = get_val_t<z_json_str>(key);
+	if (ji)
+	{
+		s = ji->_str;
+		return true;
+	}
+	return false;
+
+}
 bool z_json_obj::get_bool(ctext key, bool& val, bool def)
 {
 	z_json_bool* ji = get_val_t<z_json_bool>(key);

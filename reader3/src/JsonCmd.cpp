@@ -229,6 +229,10 @@ int fn_post_start_app0(http_request r,z_json_obj &o)
     if (root.getReader().isReading()) {
         return send_rfid_status(r,HTTP_STATUS_SERVICE_UNAVAILABLE,"already reading");
     }
+    z_string path=o.get_str_def("path",default_record_path);
+    bool record_raw=false;
+    o.get_bool("raw",record_raw,false);
+
     root.app0.start();
 
     send_full_status(r);

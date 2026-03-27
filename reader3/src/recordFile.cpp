@@ -33,7 +33,7 @@ z_status RecordFile::open_new(ctext path,ctext type,z_time ts) {
     _path=path;
     _type=type;
     std::error_code ec;
-    std::filesystem::create_directory(_path.c_str(),ec);
+    std::filesystem::create_directories(_path.c_str(),ec);
     if (ec.value()) {
         Z_ERROR_MSG(zs_bad_parameter,"Could not create directory record file!");
     }

@@ -12,7 +12,7 @@ class RecordFile;
 
 enum FilteredReadState {
     fr_type_arrived,
-    fr_type_new_peak,
+    fr_type_signal_going_up,
     fr_type_peaked,
     fr_type_departed,
 
