@@ -321,6 +321,7 @@ int fn_get_reads_filtered(http_request r,z_string_map &vars)
     App0& app=root.app0;
 
     U64 fromIndex=vars.get_as("fromIndex",(U64)0);
+
     bool debug=vars.get_as("debug",true);
     if (fromIndex>app.getLastWriteTimestamp()) {
         fromIndex=0;

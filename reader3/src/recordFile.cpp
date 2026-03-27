@@ -32,12 +32,16 @@ z_status RecordFile::open_new(ctext path,ctext type,z_time ts) {
     }
     _path=path;
     _type=type;
+    z_string done_dir=_path+"/done/";
     std::error_code ec;
     std::filesystem::create_directories(_path.c_str(),ec);
     if (ec.value()) {
         Z_ERROR_MSG(zs_bad_parameter,"Could not create directory record file!");
     }
-
+    std::filesystem::create_directories(done_dir.c_str(),ec);
+    if (ec.value()) {
+        Z_ERROR_MSG(zs_bad_parameter,"Could not create directory done_dir file!");
+    }
     _time_opened = ts;
 
     _time_opened.string_format(_time_opened_str, "%Y_%m_%d_%H_%M_%S",true);
@@ -65,7 +69,7 @@ z_status RecordFile::close_copy() {
 
 
 
-    z_string new_name =_path+"/reads-"+_time_opened_str +"-" +  std::to_string(_time_opened.get_t()) +"-" + std::to_string(time_closed.get_t())+"-"  +_type  + "-.csv";
+    z_string new_name =_path+"/done/reads-"+_time_opened_str +"-" +  std::to_string(_time_opened.get_t()) +"-" + std::to_string(time_closed.get_t())+"-"  +_type  + "-.csv";
     try {
         // Copy the file
         std::error_code ec;

@@ -112,7 +112,7 @@ ZMETA_DECL(App0) {
     ZACT(shutdown);
     ZACT(remote_quit);
     ZSTAT(is_reading);
-    ZSTAT(_last_write_timestamp);
+    ZSTAT(getLastWriteTimestamp);
 
 }
 
