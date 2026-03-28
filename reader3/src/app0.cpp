@@ -341,7 +341,7 @@ z_time RfidTag::processRead(RfidRead *r, RfidReadConsumer& rc) {
     _ts_last_time_seen=r->_time_stamp;
     if (!_ts_first_time_seen)
         _ts_first_time_seen=_ts_last_time_seen;
-    _ant_mask|=r->_antNum;
+    _ant_mask = _ant_mask | r->_antNum;
     _count++;
      z_time ts=r->_time_stamp;
 

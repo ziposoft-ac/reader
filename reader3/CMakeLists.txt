@@ -23,7 +23,7 @@ add_executable(${TARGET}  ${SRC}  ${HEADERS}  )
 add_dependencies(${TARGET} timestamp)
 add_custom_target(timestamp
         COMMAND touch ${CMAKE_CURRENT_SOURCE_DIR}/src/timestamp.cpp
-        OUTPUT src/timestamp.cpp
+        src/timestamp.cpp
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
         COMMENT "setting version...")
 add_definitions( -DUNIX -DLINUX)

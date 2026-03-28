@@ -331,14 +331,14 @@ int fn_get_reads_filtered(http_request r,z_string_map &vars)
     if (app.getLastWriteTimestamp()==fromIndex) {
         delayed_request *req = new delayed_request();
         req->r=r;
-        ZDBG("R#%d: FLTRindex %d matches, wait for reads\n",r.index,fromIndex);
+        //ZDBG("R#%d: FLTRindex %d matches, wait for reads\n",r.index,fromIndex);
         req->type=DELAYED_REQUEST_READS_FILTERED;
 
         req->ts_expire=z_time_get_ticks()+WAIT_FOR_NEW_READS_TIMEOUT;
         req->ctx1=fromIndex;
         req->ctx2=0; //unused
         req->fn_complete=[](z_json_stream &js,size_t fromIndex,size_t unused) {
-            ZDBG("R#:FLTR delay complete %llu to %llu\n",fromIndex,root.app0.getLastWriteTimestamp());
+            //ZDBG("R#:FLTR delay complete %llu to %llu\n",fromIndex,root.app0.getLastWriteTimestamp());
             root.app0.add_json_status(js);
         };
         WEBSERV(r.c).push_delayed_request(req);

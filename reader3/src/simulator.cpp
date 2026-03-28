@@ -17,6 +17,7 @@ ZMETA(RfidSimulator)
     ZACT(setRandomMode);
     ZACT(setFileMode);
     ZACT(setManMode);
+    ZACT(same);
     ZCMD(manRead, ZFF_CMD_DEF, "manRead",
          ZPRM(z_string, epc, "0001", "epc", ZFF_PARAM),
          ZPRM(int, rssi, 50, "rssi", ZFF_PARAM),
@@ -30,6 +31,7 @@ ZMETA(RfidSimulator)
      ZPRM(int, count, 5, "count", ZFF_PARAM),
      ZPRM(int, interval_ms, 1, "interval_ms", ZFF_PARAM)
     );
+
 };
 
 
