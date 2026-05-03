@@ -336,7 +336,7 @@ public:
 
 	virtual z_status inventory_single();
 
-	virtual RfidRead *read_single();
+	virtual RfidRead *read_single(int retry);
 
 	virtual z_status exp_data_read();
 
@@ -404,11 +404,23 @@ public:
 	}
 
 	z_status ant_mask_set(int mask) {
-		U8 data = mask;
+		if (_num_ports==4) {
+			U8 data = mask;
+			z_status status= send_command(0x3f, &data, 1);
+			if (status == zs_ok) {
+				// _antenna_mask=mask;
+			}
+			return status;
 
-		z_status status= send_command(0x3f, &data, 1);
+
+		}
+		U8 data[3];
+		data[0]=0;
+		data[2]=(U8)mask;
+		data[1]=0;
+		z_status status= send_command(0x3f, data, 3);
 		if (status == zs_ok) {
-			 // _antenna_mask=mask;
+			// _antenna_mask=mask;
 		}
 		return status;
 	}
@@ -429,7 +441,14 @@ public:
 
 	z_status program(int number, bool overwrite);
 
-	cfmu_status_code program_epc(Epc &epc);
+	cfmu_status_code _program_epc(Epc &epc);
+	z_status program_epc(z_string hex) {
+		Epc x(hex);
+		auto code=_program_epc(x);
+		if (code)
+			print_cfmu_error(get_default_logger(),code);
+		return zs_ok;
+	}
 
 	RfidRead *program_bcd(int number, bool overwrite, bool &programmed);
 };
@@ -459,6 +478,9 @@ ZMETA_DECL(Cfmu804) {
 	ZCMD(measure_ant, ZFF_CMD_DEF, "measure_ant",
 	     ZPRM(int, ant, 0, "ant", ZFF_PARAM)
 	);
+	ZCMD(program_epc, ZFF_CMD_DEF, "program_epc",
+	 ZPRM(z_string, epc, "DEADBEEF", "epc", ZFF_PARAM)
+);
 	ZCMD(write_power_set, ZFF_CMD_DEF, "write_power_set",
 	     ZPRM(int, number, 10, "number", ZFF_PARAM)
 	);

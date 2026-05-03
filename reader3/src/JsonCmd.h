@@ -21,6 +21,9 @@ enum delayed_request_type {
     CMD_GET(config) \
     CMD_GET(gpio) \
     CMD_POST(gpio) \
+    CMD_POST(program_bcd) \
+    CMD_POST(program_epc) \
+    CMD_GET(read_one) \
     CMD_POST(config) \
     CMD_GET(delay) \
     CMD_POST(stop_raw) \

@@ -36,7 +36,7 @@ public:
     U8 _rssi_high_logged=0;
     U8 _rssi_high=0;
     U8 _ant_mask=0;
-    int _count = 0;
+    int _count_total = 0;
     int _count_hi = 0;
     //int _index=0;
     void writeOut(z_stream& s,FilteredReadState type );

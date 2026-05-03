@@ -193,7 +193,7 @@ public:
 	bool get_int_val(ctext key, I64 &i);
 	bool get_str(ctext key,z_string& s, ctext def);
 	z_string get_str_def(ctext key,ctext def);
-	bool get_bool(ctext key, bool& s, bool def);
+	bool get_bool(ctext key, bool def);
 	template <class VALTYPE> VALTYPE* get_val_t(ctext key)
 	{
 		z_json_val* val = _keys.getobj(key);

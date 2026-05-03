@@ -119,6 +119,62 @@ int fn_post_gpio(http_request r,z_json_obj &o)
 
     return 200;
 }
+int fn_post_program_bcd(http_request r,z_json_obj &o)
+{
+    int bcd=o.get_int("bcd",0);
+    bool overwrite=o.get_bool("overwrite",false);
+    ZDBG("Program bcd=",bcd);
+    z_status status=root.cfmu804.program(bcd,overwrite);
+
+    send_json_response(r,[status](z_json_stream &js)
+    {
+
+        return (status?HTTP_STATUS_INTERNAL_SERVER_ERROR: HTTP_STATUS_OK);
+    });
+
+
+    return 200;
+}
+int fn_post_program_epc(http_request r,z_json_obj &o)
+{
+    z_string hex;
+    bool found=o.get_str("epc",hex,"");
+    bool overwrite=o.get_bool("overwrite",false);
+    z_status status=zs_bad_command;
+    if (found) {
+         status=root.cfmu804.program_epc(hex);
+
+    }
+
+    send_json_response(r,[status](z_json_stream &js)
+    {
+        js.key_bool("success",status==zs_ok);
+        js.keyval("error",zs_get_status_text(status));
+
+        return (status?HTTP_STATUS_INTERNAL_SERVER_ERROR: HTTP_STATUS_OK);
+    });
+
+
+    return 200;
+}
+
+int fn_get_read_one(http_request r,z_string_map &vars)
+{
+    RfidRead* read=root.cfmu804.read_single(20);
+
+    send_json_response(r,[read](z_json_stream &js)
+    {
+
+        js.key_bool("success",(read != nullptr));
+        if (read) {
+            z_string epc;
+            read->getEpcString(epc);
+            js.keyval("epc",epc);
+        }
+        return ( HTTP_STATUS_OK);
+    });
+    return 200;
+}
 int fn_get_config(http_request r,z_string_map &vars)
 {
     z_status status=root.getReader().config_read();
@@ -230,8 +286,7 @@ int fn_post_start_app0(http_request r,z_json_obj &o)
         return send_rfid_status(r,HTTP_STATUS_SERVICE_UNAVAILABLE,"already reading");
     }
     z_string path=o.get_str_def("path",default_record_path);
-    bool record_raw=false;
-    o.get_bool("raw",record_raw,false);
+    bool record_raw=  o.get_bool("raw",false);
 
     root.app0.start();
 
@@ -249,9 +304,7 @@ int fn_post_stop_app0(http_request r,z_json_obj &o)
 }
 int fn_post_beepon(http_request r,z_json_obj &o)
 {
-    bool beep;
-
-    o.get_bool("beep",beep,false);
+    bool beep=   o.get_bool("beep",false);
     root.gpio.readBeep.off();
     ZLOG("fn_post_beepon");
     send_rfid_status(r);
@@ -260,10 +313,8 @@ int fn_post_beepon(http_request r,z_json_obj &o)
 
 int fn_post_beepoff(http_request r,z_json_obj &o)
 {
-    bool beep;
-
-    o.get_bool("beep",beep,false);
-        root.gpio.readBeep.on();
+    bool beep=   o.get_bool("beep",false);
+    root.gpio.readBeep.on();
     ZLOG("fn_post_beepoff");
 
     send_rfid_status(r);

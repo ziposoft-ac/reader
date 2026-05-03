@@ -128,8 +128,8 @@ z_status App0::setup_reader_live(z_json_obj &settings)
 }
 
 z_status App0::start_json(z_json_obj& o) {
-    o.get_bool("record_raw",_record_raw,_record_raw);
-    o.get_bool("enable_beep",_beep,_beep);
+    _record_raw=o.get_bool("record_raw",_record_raw);
+    _beep=o.get_bool("enable_beep",_beep);
     o.get_str("path",_file_path_record,default_record_path);
 
     return start();
@@ -342,14 +342,14 @@ z_time RfidTag::processRead(RfidRead *r, RfidReadConsumer& rc) {
     if (!_ts_first_time_seen)
         _ts_first_time_seen=_ts_last_time_seen;
     _ant_mask = _ant_mask | r->_antNum;
-    _count++;
+    _count_total++;
      z_time ts=r->_time_stamp;
 
     if (_rssi_high < r->_rssi) {
         // new RSSI high
         _ts_next_check_required=ts + (U64)rc._peak_window_ms;
         _rssi_high = r->_rssi;
-        _count_hi=_count;
+        _count_hi=_count_total;
         _ts_rssi_high =r->_time_stamp;
         _state=fr_type_signal_going_up;
 
@@ -422,7 +422,7 @@ void RfidTag::writeOut(z_stream& s,FilteredReadState type) {
 
 
     s, ts.get_t() , _ant_mask
-    , (_state==fr_type_peaked ? _count_hi:_count)
+    , (_state==fr_type_peaked ? _count_hi:_count_total)
     , (_state==fr_type_departed ? _last_rssi:_rssi_high)
     , _epc.c_str();
 

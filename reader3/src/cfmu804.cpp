@@ -189,7 +189,7 @@ z_status Cfmu804::send_command(U8 code, U8* tx_data,
     if(return_code>3)
     {
         //z_string err_msg;
-        print_cfmu_error(get_error_logger(),return_code);
+         // print_cfmu_error(get_error_logger(),return_code);
         status=zs_failed_on_device;
 
         //Z_THROW_MSG(zs_io_error,err_msg);

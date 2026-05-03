@@ -75,7 +75,7 @@ struct membuf_epc_return_t
     U8 scan;
 
 }  __attribute__((__packed__)) ;
-RfidRead*  Cfmu804::read_single()
+RfidRead*  Cfmu804::read_single(int retry)
 {
     open();
     if(isReading())
@@ -90,20 +90,29 @@ RfidRead*  Cfmu804::read_single()
     U8 data[134];
     int len=0;
     cfmu_status_code return_code=0xF0;//Quit waiting for response
+    z_status status;
+    for (int i=0;i<retry;i++) {
+        status=send_command(0xf,0,0,2000,
+                             &return_code,data,133, &len);
+        if (status==zs_ok)
+            break;
 
-    z_status status=send_command(0xf,0,0,2000,
-                                 &return_code,data,133, &len);
+    }
 
 
-    if(status)
+
+    if(status) {
+        if (return_code!=0xfb)
+            print_cfmu_error(get_error_logger(),return_code);
         return NULL;
+    }
 
     U8 ant=data[0];
     U8 epc_len=data[2];
 
     U8* epc=(U8*)(data+3);
     U8 rssi=data[epc_len+3];
-    ZOUT("rssi=%d epclen=%d",rssi,epc_len);
+    //ZDBG("rssi=%d epclen=%d \n",rssi,epc_len);
     RfidRead* r=new RfidRead(1,data[0],rssi,epc,epc_len,z_time::get_now());
 
 
@@ -289,7 +298,7 @@ z_status Cfmu804::_info_get(reader_info_t* pi)
 
 }
 
-cfmu_status_code Cfmu804::program_epc(Epc& epc)
+cfmu_status_code Cfmu804::_program_epc(Epc& epc)
 {
     open();
 
@@ -303,6 +312,7 @@ cfmu_status_code Cfmu804::program_epc(Epc& epc)
 
     }
     else {
+        print_cfmu_error(get_default_logger(),code);
         Z_ERROR_MSG(zs_io_error,"error writing epc");
     }
 
@@ -316,7 +326,7 @@ z_status Cfmu804::write_bcd(int number)
     Epc epc;
     epc.set_bcd_from_int(number);
 
-    cfmu_status_code code=program_epc(epc);
+    cfmu_status_code code=_program_epc(epc);
     if(code)
         return zs_io_error;
     return zs_ok;
@@ -593,7 +603,7 @@ int  Cfmu804::get_temperature_cmd()
 z_status  Cfmu804::inventory_single()
 {
     open();
-    RfidRead* r=read_single();
+    RfidRead* r=read_single(20);
     if(!r)
         return zs_io_error;
     z_string s;
@@ -632,7 +642,7 @@ z_status  Cfmu804::program(int number,bool overwrite)
 RfidRead* Cfmu804::program_bcd(int number,bool overwrite,bool& programmed)
 {
     open();
-    RfidRead* r=read_single();
+    RfidRead* r=read_single(10);
     if(!r)
     {
         Z_ERROR_MSG(zs_not_found,"no bib read");
@@ -641,16 +651,16 @@ RfidRead* Cfmu804::program_bcd(int number,bool overwrite,bool& programmed)
     z_string epc_string;
     r->_epc.getHexString(epc_string);
     programmed=false;
-    if(r->_epc.get_bib_number() == number)
+    int currentBib=r->_epc.get_bib_number();
+    if(currentBib == number)
     {
         Z_ERROR_MSG(zs_already_exists,"bib already programmed with same number= %s",epc_string.c_str());
         return r;
     }
 
-    int len=r->_epc.get_len();
-    if((len<5) && !overwrite)
+    if((currentBib) && !overwrite)
     {
-        Z_ERROR_MSG(zs_already_exists,"bib already programmed with different number= %s,%d",epc_string.c_str(),len);
+        Z_ERROR_MSG(zs_already_exists,"bib already programmed with different number= %s,%d",epc_string.c_str(),currentBib);
         return r;
     }
 
@@ -663,7 +673,7 @@ RfidRead* Cfmu804::program_bcd(int number,bool overwrite,bool& programmed)
 
     delete r;
 
-    r=read_single();
+    r=read_single(10);
     if (!r)
         return NULL;
 

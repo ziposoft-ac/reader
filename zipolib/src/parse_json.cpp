@@ -456,16 +456,15 @@ bool z_json_obj::get_str(ctext key,z_string& s, ctext def)
 	return false;
 
 }
-bool z_json_obj::get_bool(ctext key, bool& val, bool def)
+bool z_json_obj::get_bool(ctext key, bool def)
 {
+	bool val=def;
 	z_json_bool* ji = get_val_t<z_json_bool>(key);
 	if (ji)
 	{
 		val = ji->_val;
-		return true;
 	}
-	val = def;
-	return false;
+	return val;
 
 }
 
