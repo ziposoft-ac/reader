@@ -218,6 +218,11 @@ z_status Cfmu804::_hw_init() {
     if (_info_get(&info)==zs_ok) {
         _model=(Model)info.Type;
         switch (_model) {
+            case model_mu804:
+                _num_ports=4;
+                ZLOG("OLD MU804 reader \n");
+
+                break;
             case model_e714:
                 _num_ports=4;
                 ZLOG("E714 4 port reader \n");
@@ -456,6 +461,12 @@ z_status Cfmu804::_rx_thread_stop()
 
 
     return zs_ok;
+
+}
+z_status Cfmu804::send_cmd_3bytes(U8 cmd_code,U8 d0, U8 d1, U8 d2)
+{
+    U8 data[3]={d0,d1,d2};
+    return send_command(cmd_code,data,3);
 
 }
 z_status Cfmu804::send_cmd_byte(U8 cmd_code,U8 data)

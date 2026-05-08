@@ -173,6 +173,7 @@ struct working_mode_t {
 enum Model {
 	// old model??
 	model_unknown=0,
+	model_mu804=0x20,
 	model_e714=0x75,
 	model_e718=0x76,
 
@@ -187,6 +188,9 @@ class Cfmu804 : public RfidReader {
 	int _maskMem = 0;
 	Model _model=model_unknown;
 	int _num_ports=4;
+
+
+	reader_info_t _cached_reader_info;
 protected:
 	z_status _rx_thread_start();
 
@@ -244,6 +248,7 @@ public:
 	}
 
 	z_status send_cmd_byte(U8 cmd_code, U8 data);
+	z_status send_cmd_3bytes(U8 cmd_code, U8 d0, U8 d1, U8 d2);
 
 	z_status cmd_single_byte_return(U8 cmd_code, U8 *data);
 
@@ -329,6 +334,7 @@ public:
 	virtual z_status readmode_set();
 
 	virtual z_status info_dump() override;
+	z_status info_print(reader_info_t& info) ;
 
 	virtual z_status inventory();
 
@@ -512,9 +518,15 @@ ZMETA_DECL(Cfmu804) {
 	ZCMD(cmd, ZFF_CMD_DEF, "cmd",
 	     ZPRM(int, cmd, 0, "code", ZFF_PARAM)
 	);
-	ZCMD(send_cmd_byte, ZFF_CMD_DEF, "cmd2",
+	ZCMD_NAME(send_cmd_byte, "cmd1",ZFF_CMD_DEF, "send command with 1 data byte",
 	     ZPRM(int, cmd, 0, "code", ZFF_PARAM),
 	     ZPRM(int, data, 0, "data", ZFF_PARAM)
+	);
+	ZCMD_NAME(send_cmd_3bytes, "cmd3",ZFF_CMD_DEF, "send command with 3 data bytes",
+		 ZPRM(int, cmd, 0, "code", ZFF_PARAM),
+		 ZPRM(int, d0, 0, "d0", ZFF_PARAM),
+		 ZPRM(int, d1, 0, "d1", ZFF_PARAM),
+		 ZPRM(int, d3, 0, "d2", ZFF_PARAM)
 	);
 	ZCMD(freq_set, ZFF_CMD_DEF, "freq_set",
 	     ZPRM(int, low, 0, "low quad", ZFF_PARAM),

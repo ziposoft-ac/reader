@@ -122,7 +122,7 @@ typedef struct {
 } rfid_config_t;
 
 const rfid_config_t rfid_config_heattest={
-    5,0,0xf,0,3,30,0,0
+    5,0,0xf,0,3,33,0,0
 };
 const rfid_config_t rfid_config_program={
     5,0,1,0,3,10,0,0

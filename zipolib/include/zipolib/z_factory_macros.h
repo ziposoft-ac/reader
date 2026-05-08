@@ -82,13 +82,12 @@ ________________________________________________________________________*/
 	zf_cmd* cmd=f->cmd_add<BASECLASS>(params,parambind,#_NAME_,_FLAGS_,_DESC_);\
 	}
 
-#define ZCMDS(_NAME_,_FLAGS_,_DESC_,...) { \
-   auto mfunc=&BASECLASS::_NAME_;\
-   zf_param_list *params =z_new zf_param_list(); \
-   auto parambind=std::bind(mfunc,std::placeholders::_1,std::placeholders::_2, __VA_ARGS__ ); \
-	zf_cmd* cmd=f->cmds_add<BASECLASS>(params,parambind,#_NAME_,_FLAGS_,_DESC_);\
-	}
-
+#define ZCMD_NAME(_FUNC_,_NAME_,_FLAGS_,_DESC_,...) { \
+	auto mfunc=&BASECLASS::_FUNC_;\
+	zf_param_list *params =z_new zf_param_list(); \
+	auto parambind=std::bind(mfunc,std::placeholders::_1, __VA_ARGS__ ); \
+	zf_cmd* cmd=f->cmd_add<BASECLASS>(params,parambind,_NAME_,_FLAGS_,_DESC_);\
+}
 
 
 #define Z_FACT_ACT(_NAME_,_FLAGS_,_DESC_) { \

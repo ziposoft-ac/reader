@@ -19,7 +19,6 @@ ZMETA(Root)
     ZOBJ(web_server);
     //ZOBJ(server);
     ZOBJ(app0);
-    ZACT(heat_test);
     ZACT(simulate_on);
     ZACT(simulate_off);
     ZACT(dump_ports);
@@ -110,38 +109,3 @@ z_status Root::quit_notify()
     return zs_ok;
 }
 
-int Root::heat_test_callback(void*)
-{
-    if(_shutting_down)
-        return 0;
-    _test_count++;
-
-    cfmu804.stop();
-    int count=cfmu804.getReadIndex();
-    int queue=cfmu804.get_queue_depth();
-    int temp=cfmu804.get_temperature_cmd();
-    z_string ts=z_time::getTimeStrLocal();
-    ZLOG("%s : ");
-    printf("COUNT: %d QUEUE: %d TEMP:%d\n",count,queue,temp);
-    if(temp>55) {
-        printf("TEMP EXCESS! STOPPING TEST");
-
-        return 0;
-
-    }
-    if(_shutting_down)
-        return 0;
-    cfmu804.start();
-    return 60000;
-}
-z_status Root::heat_test()
-{
-    cfmu804.configure(rfid_config_heattest);
-
-    cfmu804.readmode_get();
-    cfmu804.info_dump();
-    cfmu804.start();
-    timerService.create_timer_t(this,&Root::heat_test_callback,0,2000);
-    run_as_service();
-    return zs_ok;
-}

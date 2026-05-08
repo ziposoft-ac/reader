@@ -116,7 +116,7 @@ public:
     virtual z_status onStop();
     virtual int onCallback(void*);
     int _read_pause_time=4;
-    int _session=1;
+    int _session=0;
 
 };
 class TestHeatTest : public ReaderTest{

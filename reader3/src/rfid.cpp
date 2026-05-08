@@ -257,29 +257,21 @@ z_status RfidReader::config_dump() {
         printf("currently reading, cannot dump rest of config");
         return zs_ok;
     }
-    //info_dump();
+    info_dump();
     z_status status=config_read();
 
     if (status!=zs_ok)
         return status;
 
+    printf("=== Cached variables ==\n");
 
-    printf("IS READING=%d\n", _reading);
-
-    printf("TagProtocol=%x\n", _tagProtocol);
-    printf("ReadPauseTime=%x\n", _pause_read_time);
-    printf("FilterTime=%x\n", _filter_time);
-    printf("QValue=%x\n", _qvalue);
-    printf("Session=%d\n", _session);
+    //printf("ReadPauseTime=%x\n", _pause_read_time);
     printf("Ant Return Loss=%d\n", _antenna_return_loss_threshold);
 
-    printf("ReadPauseTime=%d\n", _pause_read_time);
     printf("Antenna Detected=%b\n", _antenna_detected);
     printf("Antenna Enabled=%b\n", _antenna_enabled);
-    printf("FilterTime=%d\n", _filter_time);
-    printf("QValue=%02x\n", _qvalue);
-    printf("Session=%02x\n", _session);
-    printf("Power=%d\n", _power);
+    //printf("FilterTime=%d\n", _filter_time);
+    printf("Cached Power var=%d\n", _power);
     printf("_freq_low=%d\n", _freq_low);
     printf("_freq_high=%d\n", _freq_high);
 
@@ -295,15 +287,14 @@ z_status RfidReader::readmode_dump() {
     if (status!=zs_ok)
         return status;
 
+    printf("==READMODE DUMP==\n");
     printf("IS READING=%d\n", _reading);
+    printf("Session=%02x\n", _session);
+    printf("QValue=%02x\n", _qvalue);
+    printf("FilterTime=%d\n", _filter_time);
+    printf("TagProtocol=%x\n", _tagProtocol);
 
     printf("ReadPauseTime=%d\n", _pause_read_time);
-    printf("Antenna=%b\n", _antenna_detected);
-    printf("FilterTime=%d\n", _filter_time);
-    printf("QValue=%02x\n", _qvalue);
-    printf("Session=%02x\n", _session);
-    printf("Power=%d\n", _power);
-    printf("Write Power=%d\n", _write_power);
     return zs_ok;
 }
 

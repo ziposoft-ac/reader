@@ -332,31 +332,27 @@ z_status Cfmu804::write_bcd(int number)
     return zs_ok;
 }
 
-
-
-z_status Cfmu804::info_dump()
+z_status Cfmu804::info_print(reader_info_t& info)
 {
-    reader_info_t info;
-    if (_info_get(&info)==zs_ok) {
+    ZOUT("==INFO DUMP==\n");
+    ZOUT("Version=%x\n", info.Version);
+    ZOUT("Type=%x\n", info.Type);
+    ZOUT("Tr_Type=%x\n", info.Tr_Type);
+    ZOUT("dmaxfre=%x\n", info.dmaxfre);
+    ZOUT("dminfre=%x\n", info.dminfre);
+    ZOUT("Power=%d\n", info.Power);
+    ZOUT("CheckAnt=%d\n", info.CheckAnt);
+    ZOUT("Ant MASK=%d\n", info.Ant);
+    ZOUT("Scntm=%d\n", info.Scntm);
 
-        ZOUT("Version=%x\n", info.Version);
-        ZOUT("Type=%x\n", info.Type);
-        ZOUT("Tr_Type=%x\n", info.Tr_Type);
-        ZOUT("dmaxfre=%x\n", info.dmaxfre);
-        ZOUT("dminfre=%x\n", info.dminfre);
-        ZOUT("Power=%d\n", info.Power);
-        ZOUT("CheckAnt=%d\n", info.CheckAnt);
-        ZOUT("Ant MASK=%d\n", info.Ant);
-        ZOUT("Scntm=%d\n", info.Scntm);
+    if (((info.dmaxfre&0xc0) ==0 )&&((info.dminfre&0xc0) ==0x80 )) {
+        ZOUT("US Band #1: Min=%3.3lf Max=%3.3lf\n",
+        getFreqBand(FREQ_BAND_US1,info.dminfre&0x3f),
+        getFreqBand(FREQ_BAND_US1,info.dmaxfre&0x3f)
+            );
 
-        if (((info.dmaxfre&0xc0) ==0 )&&((info.dminfre&0xc0) ==0x80 )) {
-            ZOUT("US Band #1: Min=%3.3lf Max=%3.3lf\n",
-            getFreqBand(FREQ_BAND_US1,info.dminfre&0x3f),
-            getFreqBand(FREQ_BAND_US1,info.dmaxfre&0x3f)
-                );
-
-        }
-        else
+    }
+    else
         if (((info.dmaxfre&0xc0) ==0xc0 )&&((info.dminfre&0xc0) ==0x0 )) {
             ZOUT("US Band #3: Min=%3.3lf Max=%3.3lf\n",
             getFreqBand(FREQ_BAND_US3,info.dminfre&0x3f),
@@ -366,11 +362,19 @@ z_status Cfmu804::info_dump()
             ZOUT("ERROR! Unknown band");
         }
 
-        return zs_ok;
 
+
+    return zs_ok;
+
+}
+
+z_status Cfmu804::info_dump()
+{
+    reader_info_t info;
+    if (_info_get(&info)==zs_ok) {
+        return info_print(info);
     }
     printf("error reading info\n");
-
     return zs_ok;
 
 }
@@ -472,8 +476,7 @@ z_status Cfmu804::config_read() {
     if (profile_set_get(profile))
         return zs_read_error;
     _profile=profile;
-    reader_info_t info;
-    if (_info_get(&info) == zs_ok) {
+    if (_info_get(&_cached_reader_info) == zs_ok) {
     }
     if (write_power_get())
         return zs_read_error;

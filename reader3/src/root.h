@@ -57,8 +57,6 @@ public:
     z_status initialize();
 
     z_status quit_notify();
-    int heat_test_callback(void*);
-    z_status heat_test();
 
     RfidReader& getReader() { return *_reader; }
 
