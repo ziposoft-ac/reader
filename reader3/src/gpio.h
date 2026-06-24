@@ -135,6 +135,8 @@ public:
 
     bool exists() {return _exists;}
     virtual ~GpioBeepPWM(){}
+    // a good BLEEP =  1000,50,500,50,1600,50
+
     z_status buzz(int f0,int d0,int f1,int d1,int f2,int d2);
     z_status toneRise();
     virtual void init();
@@ -154,7 +156,6 @@ public:
     Gpio();
     virtual ~Gpio();
     enum Led{
-        RED=3,
         BLUE=23,
         GREEN=17,
         YELLOW=22,
@@ -163,7 +164,9 @@ public:
     //GpioPinLed ledBlue=BLUE;
     //GpioPinLed ledGreen=GREEN;
     //GpioPinLed g2=2;
-    GpioPinLed ledRed=3;
+
+    // DO NOT USE PINS 2 and 3
+
     GpioPinLed g5=5;
     GpioPinLed g6=6;
     GpioPinLed ledGreen=17;
@@ -172,9 +175,10 @@ public:
     GpioPinLed g24=24;
     GpioPinLed g27=27;
     //GpioPinLed ledYellow=YELLOW;
-    GpioBeep beeper=2;
+    //GpioBeep beeper=2; - TIMER 3A, confilicts with I2C
+    GpioBeep beeper=21;
     GpioBeepPWM beepPwm;
-    const int led_gpio[4]={RED,GREEN,YELLOW,BLUE};
+    const int led_gpio[4]={GREEN,YELLOW,BLUE};
     bool initialize();
     bool shutdown();
     z_status set(int gpio,int val);

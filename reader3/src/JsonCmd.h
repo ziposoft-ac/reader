@@ -18,6 +18,7 @@ enum delayed_request_type {
     CMD_GET(status) \
     CMD_GET(reads_raw) \
     CMD_GET(reads_filtered) \
+    CMD_GET(visits) \
     CMD_GET(config) \
     CMD_GET(gpio) \
     CMD_POST(gpio) \

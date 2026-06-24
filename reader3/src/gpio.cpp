@@ -70,7 +70,7 @@ ZMETA(Gpio)
     ZOBJ(g5);
     ZOBJ(g6);
     ZOBJ_X(ledGreen,"green",ZFF_PROP_DEF,"Green LED, pin#17");
-    ZOBJ_X(ledRed,"red",ZFF_PROP_DEF,"Red LED, pin#3");
+    //ZOBJ_X(ledRed,"red",ZFF_PROP_DEF,"Red LED, pin#3");
     ZOBJ_X(ledYellow,"yellow",ZFF_PROP_DEF,"Yellow LED, pin#22");
     ZOBJ_X(readBeep,"readBeep",ZFF_PROP_DEF,"Beep on read enable, pin#23");
     ZOBJ(g27);

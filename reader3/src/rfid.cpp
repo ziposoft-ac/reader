@@ -221,7 +221,6 @@ z_status RfidReader::start()
     _ts_reading_started.set_now();
     if(status==zs_ok) {
 
-        root.gpio.ledRed.off();
         root.gpio.ledGreen.on();
 
         _reading=true;
@@ -516,7 +515,7 @@ z_status RfidReader::stop()
     ZTF;
     _read_stop();
     _reading = false;
-    root.gpio.ledRed.on();
+    //root.gpio.ledRed.on();
     root.gpio.ledGreen.off();
     return zs_ok;
 

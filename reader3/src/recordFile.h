@@ -17,6 +17,22 @@ enum FilteredReadState {
     fr_type_departed,
 
 };
+
+struct Visit {
+    z_string _epc;
+    U64 _ts_enter;
+    U64 _ts_peak;
+    U64 _ts_exit;
+    U32 _count;
+    U8 _ant_mask=0;
+    U8 _ant_hi=0;
+    U8 _rssi_hi=0;
+
+};
+
+
+typedef std::vector<Visit> Visits;
+
 class RfidTag
 {
 public:
@@ -36,10 +52,12 @@ public:
     U8 _rssi_high_logged=0;
     U8 _rssi_high=0;
     U8 _ant_mask=0;
-    int _count_total = 0;
-    int _count_hi = 0;
+    U8 _ant_hi=0;
+    U32 _count_total = 0;
+    U32 _count_hi = 0;
     //int _index=0;
-    void writeOut(z_stream& s,FilteredReadState type );
+    void writeOutType(z_stream& s,FilteredReadState type );
+    void writeOut(z_stream& s);
     FilteredReadState _state=fr_type_arrived;
     // return time to check next
     //
@@ -50,6 +68,8 @@ public:
     bool isDeparted() {
         return _state==fr_type_departed;
     }
+
+    Visit get_visit();
 
 };
 

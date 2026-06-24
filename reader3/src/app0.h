@@ -33,11 +33,11 @@ class App0 : public RfidReadConsumer{
     bool _debug_reads=true;
     bool _beep=true;
     bool _buzzer=true;
-    bool _record_raw=true;
-    bool _record_filtered=true;
+    bool _record_raw=false;
+    bool _record_visits=true;
     bool _recording=false;
     RecordFile _file_raw;
-    RecordFile _file_filtered;
+    RecordFile _file_visits;
     bool _record_tod=true;
     U64 _last_write_timestamp=0;
     U64 _last_notify_timestamp=0;
@@ -56,23 +56,24 @@ public:
             _last_write_timestamp=ts;
         return _last_write_timestamp;
     }
-    U64 getLastWriteTimestamp() { return _last_write_timestamp; }
+    U64 getLastWriteTimestamp()  { return _last_write_timestamp; }
     bool is_reading() ;
-    bool is_recording() { return _recording; }
+    bool is_recording() const { return _recording; }
     virtual z_status open();
     virtual z_status close();
     virtual z_status run();
     virtual z_status shutdown();
     virtual z_status setup_reader_live(z_json_obj &settings);
 
+    z_status get_live_tag_visits(Visits &visits);
     virtual z_status remote_quit();
     virtual z_status stop();
     virtual z_status start();
     virtual z_status start_json(z_json_obj& o);
 
     void beep();
-    virtual bool callbackRead(RfidRead* r);
-    virtual bool callbackQueueEmpty();
+    bool callbackRead(RfidRead* r) override;
+    bool callbackQueueEmpty() override;
     virtual void signalWaitingRequests();
 
     z_status initialize();
@@ -92,7 +93,7 @@ ZMETA_DECL(App0) {
     ZPROP(_presence_window_s);
     ZPROP(_record_tod);
     ZPROP(_record_raw);
-    ZPROP(_record_filtered);
+    ZPROP(_record_visits);
     //ZPROP(_start_detection_s);
     //ZPROP(_minimum_log_time_ms);
     ZPROP(_min_rssi);

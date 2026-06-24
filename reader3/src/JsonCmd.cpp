@@ -335,7 +335,7 @@ int fn_get_reads_raw(http_request r,z_string_map &vars)
     if (reader.getReadIndex()==fromIndex) {
         delayed_request *req = new delayed_request();
         req->r=r;
-        ZDBG("R#%d: RAW (%s) index %d matches, wait for reads\n",r.index,(return_reads?"reads":"stat"),fromIndex);
+        //ZDBG("R#%d: RAW (%s) index %d matches, wait for reads\n",r.index,(return_reads?"reads":"stat"),fromIndex);
 
         req->ts_expire=z_time_get_ticks()+WAIT_FOR_NEW_READS_TIMEOUT;
         req->ctx1=fromIndex;
@@ -353,7 +353,7 @@ int fn_get_reads_raw(http_request r,z_string_map &vars)
     }
     send_json_response(r,[r,fromIndex,return_reads](z_json_stream &js)
     {
-        ZDBG("R#%d:RAW(%s) returning reads from %d to %d\n",r.index,(return_reads?"reads":"stat"),fromIndex,root.getReader().getReadIndex());
+       // ZDBG("R#%d:RAW(%s) returning reads from %d to %d\n",r.index,(return_reads?"reads":"stat"),fromIndex,root.getReader().getReadIndex());
 
         js.set_pretty_print(true);
         RfidReader &reader = root.getReader();
@@ -407,7 +407,89 @@ int fn_get_reads_filtered(http_request r,z_string_map &vars)
 
     return 200;
 }
+/*
+*export class ReadVisit
+{
+count=0;
+tsIn=0;
+tsOut=0;
+tsPeak=0;
+rssi=0;
+epc="";
+antMask=0;
+antHi=0;
+}
 
+
+*/
+int get_live_tags(z_json_stream& s) {
+
+    App0& app=root.app0;
+    Visits visits;
+    app.get_live_tag_visits(visits);
+    s.key("live_tags");
+    s.array_start();
+
+    for (auto i : visits) {
+        s.obj_start();
+        s.keyval_int("count",i._count);
+        s.keyval_int("tsIn",i._ts_enter);
+        s.keyval_int("tsOut",i._ts_exit);
+        s.keyval_int("tsPeak",i._ts_peak);
+        s.keyval_int("rssi",i._rssi_hi);
+        s.keyval_int("antMask",i._ant_mask);
+        s.keyval_int("antHi",i._ant_hi);
+        s.keyval("epc",i._epc);
+        s.obj_end();
+
+    }
+    s.array_end();
+    return 0;
+}
+
+
+int fn_get_visits(http_request r,z_string_map &vars)
+{
+    App0& app=root.app0;
+
+    U64 fromIndex=vars.get_as("fromIndex",(U64)0);
+
+    bool debug=vars.get_as("debug",true);
+    if (fromIndex>app.getLastWriteTimestamp()) {
+        fromIndex=0;
+        ZDBG("R#%d: FLTR requested index %llu greater than current, using 0\n",r.index,fromIndex);
+    }
+    if (fromIndex)
+        if (app.getLastWriteTimestamp()==fromIndex) {
+            delayed_request *req = new delayed_request();
+            req->r=r;
+            //ZDBG("R#%d: FLTRindex %d matches, wait for reads\n",r.index,fromIndex);
+            req->type=DELAYED_REQUEST_READS_FILTERED;
+
+            req->ts_expire=z_time_get_ticks()+WAIT_FOR_NEW_READS_TIMEOUT;
+            req->ctx1=fromIndex;
+            req->ctx2=0; //unused
+            req->fn_complete=[](z_json_stream &js,size_t fromIndex,size_t unused) {
+                //ZDBG("R#:FLTR delay complete %llu to %llu\n",fromIndex,root.app0.getLastWriteTimestamp());
+                root.app0.add_json_status(js);
+                get_live_tags(js);
+            };
+            WEBSERV(r.c).push_delayed_request(req);
+            return 0;
+        }
+    send_json_response(r,[r,fromIndex](z_json_stream &js)
+    {
+        ZDBG("R#%d:FLTR sending immediate %llu to %llu\n",r.index,fromIndex,root.app0.getLastWriteTimestamp());
+        get_live_tags(js);
+
+        root.app0.add_json_status(js);
+        return HTTP_STATUS_OK;
+
+    });
+
+
+    return 200;
+}
 int fn_get_delay(http_request r,z_string_map &vars)
 {
     delayed_request *req = new delayed_request();

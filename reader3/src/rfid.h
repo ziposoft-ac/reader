@@ -11,6 +11,9 @@
 #define ENABLE_PHASE 0
 #undef ENABLE_PHASE
 
+
+
+
 class RfidRead {
 public:
     U8 _antNum=0;
@@ -240,6 +243,16 @@ public:
     z_status json_readmode_get(z_json_stream &js);
 	virtual z_status freq_set(U8 low,U8 max){ return zs_ok;}
 
+    U64 _last_timestamp=0;
+
+    U64 getNewTimestamp() {
+	    U64 ts=z_time::get_now_ms();
+	    if (ts<=_last_timestamp)
+	        _last_timestamp++;
+	    else
+	        _last_timestamp=ts;
+	    return _last_timestamp;
+	}
 };
 
 
