@@ -189,7 +189,8 @@ int App0::add_json_status(z_json_stream &js) {
     js.keyval("reads_path",_file_path_record);
     js.key_bool("reading",is_reading());
     js.key_bool("recording",is_recording());
-    js.keyval_int("last_write",getLastWriteTimestamp());
+    js.keyval_int("ts_last_file_write",getLastWriteTimestamp());
+    js.keyval_int("ts_last_read",_ts_last_read);
     js.keyval_int("ts_start",(I64)_t_started.get_ptime_ms());
     js.obj_end();
 
@@ -327,6 +328,7 @@ bool App0::callbackRead(RfidRead* read)
             }
 
         }
+        _ts_last_read=read->_time_stamp;
 
         U64 needs_check_in= pTag->processRead(read,*this)-now;
 

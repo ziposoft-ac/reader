@@ -452,12 +452,14 @@ int fn_get_visits(http_request r,z_string_map &vars)
 {
     App0& app=root.app0;
 
-    U64 fromIndex=vars.get_as("fromIndex",(U64)0);
+    U64 ts_last_file_write=vars.get_as("ts_last_file_write",(U64)0);
+    U64 ts_last_read=vars.get_as("ts_last_read",(U64)0);
 
     bool debug=vars.get_as("debug",true);
-    if (fromIndex>app.getLastWriteTimestamp()) {
-        fromIndex=0;
-        ZDBG("R#%d: FLTR requested index %llu greater than current, using 0\n",r.index,fromIndex);
+    bool get_live=vars.get_as("get_live",true);
+    if (ts_last_file_write>app.getLastWriteTimestamp()) {
+        ts_last_file_write=0;
+        ZDBG("R#%d: VISIIT requested file TS %llu greater than current, using 0\n",r.index,ts_last_file_write);
     }
     if (fromIndex)
         if (app.getLastWriteTimestamp()==fromIndex) {

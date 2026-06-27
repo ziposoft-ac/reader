@@ -41,6 +41,7 @@ class App0 : public RfidReadConsumer{
     bool _record_tod=true;
     U64 _last_write_timestamp=0;
     U64 _last_notify_timestamp=0;
+    U64 _ts_last_read=0;
 public:
     App0();
 
