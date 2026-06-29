@@ -19,20 +19,13 @@ ZMETA(Root)
     ZOBJ(web_server);
     //ZOBJ(server);
     ZOBJ(app0);
-    ZACT(simulate_on);
-    ZACT(simulate_off);
     ZACT(dump_ports);
     ZACT(run_app);
-    ZPROP(_auto_start_server);
-    ZPROP(_auto_start_app);
-    ZPROP(_init_rfid);
     ZACT_X(run_as_service,"service", ZFF_ACT_DEF,"Run as service");
-    ZPROP(_simulate);
 
 };
 
 Root::Root()  {
-    _reader=&cfmu804;
 }
 
 Root::~Root() {
@@ -63,18 +56,6 @@ z_status Root::run_app()
 z_status Root::initialize()
 {
 
-    if(_auto_start_server) {
-        app0.open();
-
-    }
-    if(_auto_start_app) {
-        web_server.start();
-        app0.run();
-
-    }
-    if(_init_rfid) {
-        _reader->open();
-    }
     return zs_ok;
 }
 z_status Root::shutdown()
