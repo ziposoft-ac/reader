@@ -45,7 +45,6 @@ int isCwdWritable()
 
 int main(int argc, char* argv[])
 {
-    LockFile lock_file("/tmp/rfid.lock");
     std::error_code ec;
 
     if (!lock_file.lock()) {
@@ -65,7 +64,6 @@ int main(int argc, char* argv[])
     printf("\n========Zipo Timer=========\nBUILD: %s\n",timestamp);
     auto path=std::filesystem::current_path( ec );
 
-    //printf("path=%s\n",path.string().c_str());
     std::filesystem::create_directory("logs");
 
     z_string ts=z_time::getTimeStrLocal();

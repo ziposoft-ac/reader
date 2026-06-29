@@ -8,6 +8,9 @@
 
 #include "zipolib/z_stream.h"
 
+
+
+
 class z_logger : public z_stream_multi {
 	z_file_out _file;
 

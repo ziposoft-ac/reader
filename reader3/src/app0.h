@@ -5,6 +5,7 @@
 #ifndef ZIPOSOFT_APP0_H
 #define ZIPOSOFT_APP0_H
 #include "pch.h"
+#include "zipolib/lockfile.h"
 
 #include "timers.h"
 #include "rfid.h"
@@ -42,10 +43,21 @@ class App0 : public RfidReadConsumer{
     U64 _last_write_timestamp=0;
     U64 _last_notify_timestamp=0;
     U64 _ts_last_read=0;
+
+    RfidReader* _reader;
+    LockFile lock_file;
+
 public:
     App0();
+    virtual z_status open();
+    virtual z_status close();
+    virtual z_status run();
+    virtual z_status shutdown();
 
+    virtual z_status stop();
+    virtual z_status start();
     z_time _t_started;
+    bool _simulate=true;
 
     z_string _file_path_record = default_record_path;
     z_string _file_path_record_raw =default_record_path_raw;
@@ -60,16 +72,12 @@ public:
     U64 getLastWriteTimestamp()  { return _last_write_timestamp; }
     bool is_reading() ;
     bool is_recording() const { return _recording; }
-    virtual z_status open();
-    virtual z_status close();
-    virtual z_status run();
-    virtual z_status shutdown();
+
     virtual z_status setup_reader_live(z_json_obj &settings);
 
     z_status get_live_tag_visits(Visits &visits);
     virtual z_status remote_quit();
-    virtual z_status stop();
-    virtual z_status start();
+
     virtual z_status start_json(z_json_obj& o);
 
     void beep();
@@ -77,9 +85,14 @@ public:
     bool callbackQueueEmpty() override;
     virtual void signalWaitingRequests();
 
-    z_status initialize();
 
     int add_json_status(z_json_stream &js);
+
+
+    z_status simulate_on() ;
+    z_status simulate_off();
+
+    RfidReader& getReader() { return *_reader; }
 
 };
 

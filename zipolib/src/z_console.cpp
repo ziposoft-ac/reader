@@ -100,7 +100,7 @@ z_status  z_console::runapp(int argc, char* argv[],bool autoloadcfg,ctext init_a
 	{
 		//help();
 		ExecuteLine(_param_path);
-		run();
+		run(); // run the terminal
 	}
 	else
 	{

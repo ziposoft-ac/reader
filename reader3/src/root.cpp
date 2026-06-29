@@ -62,14 +62,8 @@ z_status Root::run_app()
 }
 z_status Root::initialize()
 {
-    if (_simulate)
-        _reader=&simulator;
-    else
-        _reader=&cfmu804;
-    app0.initialize();
-    gpio.initialize();
+
     if(_auto_start_server) {
-        web_server.start();
         app0.open();
 
     }

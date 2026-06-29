@@ -25,6 +25,16 @@ App0::App0()
 
 
 }
+z_status App0::simulate_on() {
+    _reader=&root.simulator;
+    _simulate=true;
+    return zs_ok;
+}
+z_status App0::simulate_off() {
+    _reader=&root.cfmu804;
+    _simulate=false;
+    return zs_ok;
+}
 
 z_status App0::remote_quit()
 {
@@ -43,17 +53,20 @@ z_status App0::shutdown()
         root.timerService.remove_timer(_timer);
     return zs_ok;
 }
-z_status App0::initialize()
-{
-    return zs_ok;
-}
 
 z_status App0::open()
 {
     if(_open)
         return zs_ok;
 
-    root.getReader().register_consumer(this);
+    root.gpio.initialize();
+
+    if (_simulate)
+    _reader=&root.simulator;
+    else
+    _reader=&root.cfmu804;
+    getReader().register_consumer(this);
+    root.web_server.start();
 
     if(!_timer)
         _timer=root.timerService.create_timer_t(this,&App0::timer_callback,0    );
@@ -85,7 +98,7 @@ z_status App0::stop()
     if(!_open)
         return zs_ok;
     _timer->stop();
-    root.getReader().stop();
+    getReader().stop();
 
 
     _recording=false;
@@ -105,9 +118,11 @@ z_status App0::stop()
     return zs_ok;
 }
 
+
+// TODO - unused
 z_status App0::setup_reader_live(z_json_obj &settings)
 {
-    if(root.getReader().isReading())
+    if(getReader().isReading())
         return zs_access_denied;
     //_write_to_file=true;
     settings.print(stdout_json);
@@ -120,7 +135,7 @@ z_status App0::setup_reader_live(z_json_obj &settings)
         filterTime=5;
     if((power<10)||(power>33))
         power=33;
-    return root.getReader().configure({
+    return getReader().configure({
         5,1,0xf,0,3,30,0,0
     });
 

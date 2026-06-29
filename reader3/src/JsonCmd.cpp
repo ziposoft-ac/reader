@@ -461,15 +461,15 @@ int fn_get_visits(http_request r,z_string_map &vars)
         ts_last_file_write=0;
         ZDBG("R#%d: VISIIT requested file TS %llu greater than current, using 0\n",r.index,ts_last_file_write);
     }
-    if (fromIndex)
-        if (app.getLastWriteTimestamp()==fromIndex) {
+    if (ts_last_file_write)
+        if (app.getLastWriteTimestamp()==ts_last_file_write) {
             delayed_request *req = new delayed_request();
             req->r=r;
             //ZDBG("R#%d: FLTRindex %d matches, wait for reads\n",r.index,fromIndex);
             req->type=DELAYED_REQUEST_READS_FILTERED;
 
             req->ts_expire=z_time_get_ticks()+WAIT_FOR_NEW_READS_TIMEOUT;
-            req->ctx1=fromIndex;
+            req->ctx1=ts_last_file_write;
             req->ctx2=0; //unused
             req->fn_complete=[](z_json_stream &js,size_t fromIndex,size_t unused) {
                 //ZDBG("R#:FLTR delay complete %llu to %llu\n",fromIndex,root.app0.getLastWriteTimestamp());
@@ -479,9 +479,9 @@ int fn_get_visits(http_request r,z_string_map &vars)
             WEBSERV(r.c).push_delayed_request(req);
             return 0;
         }
-    send_json_response(r,[r,fromIndex](z_json_stream &js)
+    send_json_response(r,[r,ts_last_file_write](z_json_stream &js)
     {
-        ZDBG("R#%d:FLTR sending immediate %llu to %llu\n",r.index,fromIndex,root.app0.getLastWriteTimestamp());
+        ZDBG("R#%d:FLTR sending immediate %llu to %llu\n",r.index,ts_last_file_write,root.app0.getLastWriteTimestamp());
         get_live_tags(js);
 
         root.app0.add_json_status(js);

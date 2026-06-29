@@ -13,19 +13,17 @@
 class LockFile
 {
     int _fd=0;
-    z_string _filename;
 public:
-    LockFile(const char *filename="lockfile.tmp")
+    LockFile()
     {
-        _filename=filename;
     }
     ~LockFile()
     {
         unlock();
     }
-    bool lock()
+    bool lock(const char *filename="lockfile.tmp")
     {
-        _fd = open(_filename, O_RDWR | O_CREAT, 0666);
+        _fd = open(filename, O_RDWR | O_CREAT, 0666);
         if (_fd == -1) {
             //perror("open");
             _fd=0;

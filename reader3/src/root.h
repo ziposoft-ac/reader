@@ -24,11 +24,6 @@ class Root
     std::condition_variable _cv_quit;
     std::mutex _mutex_quit;
     bool _shutting_down=false;
-    bool _auto_start_server=false;
-    bool _auto_start_app=false;
-    bool _init_rfid=true;
-    bool _simulate=true;
-    RfidReader* _reader;
 
 public:
     Root();
@@ -58,22 +53,12 @@ public:
 
     z_status quit_notify();
 
-    RfidReader& getReader() { return *_reader; }
 
     z_status dump_ports();
 
     z_status run_app();
     z_status run_as_service();
-    z_status simulate_on() {
-        _reader=&simulator;
-        _simulate=true;
-        return zs_ok;
-    }
-    z_status simulate_off() {
-        _reader=&cfmu804;
-        _simulate=false;
-        return zs_ok;
-    }
+
 
 };
 
