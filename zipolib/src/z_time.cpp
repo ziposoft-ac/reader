@@ -7,40 +7,13 @@
 #include <time.h>
 
 
-U64 z_time_get_ticks();
-double z_time_get_ms_elapsed(U64 ticks_start);
 
 
 
 
 
-#ifdef WINDOWS
-
-
-U64 z_time_get_ticks()
-{
-	LARGE_INTEGER start_time;
-	QueryPerformanceCounter(&start_time);
-	return  start_time.QuadPart;
-}
-
-double z_time_get_ms_elapsed(U64 start_time) //millisec
-{
-	static LARGE_INTEGER freq = { 0,0 };
-	double dt;
-	U64 elapsed_tics = z_time_get_ticks() - start_time;
-	if (!(freq.QuadPart))
-		QueryPerformanceFrequency(&freq);
-	dt = (double)elapsed_tics;
-	dt = dt * 1000;
-	dt = dt / freq.QuadPart;
-	return dt; //millisec
-
-}
-
-#else
 #ifdef CLOCK_REALTIME
-U64 z_time_get_ticks()
+U64 z_time_get_ticks_ms()
 {
 	timespec t;
 	clock_gettime(CLOCK_REALTIME, &t);
@@ -48,18 +21,15 @@ U64 z_time_get_ticks()
 	return milliseconds;
 }
 
-double z_time_get_ms_elapsed(U64 start_time) //millisec
+U64 z_time_get_ms_elapsed(U64 start_time) //millisec
 {
-	double dt;
-	U64 elapsed_tics = z_time_get_ticks() - start_time;
-	dt = (double)elapsed_tics;
-	return dt; //millisec
+	U64 elapsed_tics = z_time_get_ticks_ms() - start_time;
+	return elapsed_tics; //millisec
 
 }
 
 
 
-#endif
 #endif
 
 

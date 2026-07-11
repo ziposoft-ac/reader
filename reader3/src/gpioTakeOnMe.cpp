@@ -2,11 +2,11 @@
 // Created by ac on 11/12/20.
 //
 
-#include "gpio.h"
+#include "BeepPwm.h"
 
 extern int melody[] ;
 int getLed(int note);
-int setPwmFreq(int freq);
+int setPwmFreq(int freq,int duty);
 
 
 // The note duration, 8 = 8th note, 4 = quarter note, etc.
@@ -20,10 +20,11 @@ int durations[] = {
 extern int songLength ;
 
 #define MULT 800
-z_status Gpio::takeOnMe()
+z_status BeepPwm::takeOnMe()
 {
-    if(_simulate) return zs_ok;
-    if(!initialize())
+    if(_quiet) return zs_ok;
+    if(!_enabled) return zs_ok;
+    if(!init())
     {
         zout << "initialize failed.\n";
         return zs_io_error;
@@ -38,10 +39,10 @@ z_status Gpio::takeOnMe()
 
         // gpioWrite(led,1);
         // gpioHardwarePWM(18,melody[thisNote],100000);
-        setPwmFreq(melody[thisNote]);
+        setPwmFreq(melody[thisNote],50);
         usleep(duration*MULT);
         //gpioWrite(led,0);
-        setPwmFreq(0);
+        setPwmFreq(0,50);
 
         //gpioHardwarePWM(18,0,500000);
         //int pause = duration * 1;
@@ -50,10 +51,10 @@ z_status Gpio::takeOnMe()
     }
     return zs_ok;
 }
-z_status Gpio::takeOnMePush()
+z_status BeepPwm::takeOnMePush()
 {
-    if(_simulate) return zs_ok;
-    if(!initialize())
+    if (!_enabled)    return zs_not_open ;
+    if(!init())
     {
         zout << "initialize failed.\n";
         return zs_io_error;
@@ -63,7 +64,7 @@ z_status Gpio::takeOnMePush()
         // determine the duration of the notes that the computer understands
         // divide 1000 by the value, so the first note lasts for 1000/8 milliseconds
         int duration = 1000/ durations[thisNote];
-        beepPwm.pushBeeps( {
+        pushBeeps( {
             {melody[thisNote],duration*.8},
             {0,duration*0.6},
                           });

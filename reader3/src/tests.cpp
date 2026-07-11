@@ -19,7 +19,9 @@ ZMETA(Tests)
     ZOBJ(flashleds);
     ZOBJ(gpioOnOff);
     //ZOBJ(wsBlast);
-    ZOBJ(timer);
+    ZOBJ(timerInterval);
+    ZOBJ(timerSimple);
+    ZOBJ(timerCascade);
     ZOBJ(thread);
     ZOBJ(inv);
     //ZOBJ(thread2);
@@ -69,14 +71,23 @@ z_status Tests::shutdown()
     flashleds.stop();
     //wsBlast.stop();
     gpioOnOff.stop();
-    timer.stop();
+    timerCascade.stop();
+    timerInterval.stop();
+    heatTest.stop();
 
     return zs_ok;
 }
-ZMETA(TestTimers)
+ZMETA(TestTimerInterval)
 {
     ZBASE(TestTimer);
-
+};
+ZMETA(TestTimerSimple)
+{
+    ZBASE(TestTimer);
+};
+ZMETA(TestTimerCascade)
+{
+    ZBASE(TestTimer);
 };
 ZMETA(TestGpioOnOff)
 {
@@ -185,7 +196,7 @@ z_status TestTimer::stop()
 }
 z_status TestTimer::start()
 {
-    _count=0;
+    _current_iteration=0;
     z_status status=onStart();
     if(status!=zs_ok) {
         Z_ERROR_MSG(status,"start timer failed");
@@ -193,15 +204,15 @@ z_status TestTimer::start()
 
     }
 
-    int next=onCallback(0);
-    if(!next)
-        return zs_ok;
+
 
     if(!_timer)
         _timer=root.timerService.create_timer_t(this,&TestTimer::timer_callback,0    );
-    _timer->start(next);
+    _timer->start(_interval);
     return zs_ok;
 }
+
+
 
 int TestTimer::timer_callback(void* context)
 {
@@ -212,6 +223,44 @@ int TestTimer::timer_callback(void* context)
         return 0;
     }
     return ms;
+}
+
+
+int TestTimerCascade::onCallback(void *p) {
+
+    printf("count=%d\n",_current_iteration--);
+    if (_current_iteration==4) {
+        root.timerService.timer_start_from_callback_context(_timer2,3000,true);
+    }
+    if (_current_iteration>0)
+        return _interval;
+
+
+    return 0;
+
+}
+
+int TestTimerCascade::timer_callback2(void *) {
+    printf("timer_callback2\n");
+
+    return 0;
+}
+
+z_status TestTimerCascade::onStop() {
+    if(_timer2)
+        _timer2->stop();
+
+    return zs_ok;
+}
+
+z_status TestTimerCascade::onStart() {
+    _current_iteration=_iterations;
+    if(!_timer2)
+        _timer2=root.timerService.create_timer_t(this,&TestTimerCascade::timer_callback2,0    );
+    _timer2->_debug=true;
+    return zs_ok;
+
+
 }
 z_status TestHeatTest::onStart() {
     if (root.cfmu804.stop())
@@ -388,7 +437,7 @@ int TestHeatTest::onCallback(void* context)
 
 int  TestGpioOnOff::onCallback(void*)
 {
-    if(_count++>_iterations)
+    if(_current_iteration++>_iterations)
         return 0;
     _state=!_state;
     root.gpio.set(_gpioNum,_state);
@@ -424,17 +473,18 @@ int  TestWsBlast::onCallback(void*)
     return _time_off;
 }
 #endif
-int  TestTimers::onCallback(void*)
+int  TestTimerInterval::onCallback(void*)
 {
     // zout <<  "TestWsBlast::onCallback\n";
-    _iterations++;
-    _count++;
-    if(_count*_interval>5000)
+    _iterations--;
+    _current_iteration++;
+    if(_current_iteration*_interval>_print_interval_seconds*1000)
     {
-        _count=0;
-        zout << "timertest:"<< _iterations<< "\n";
+        _current_iteration=0;
+        zout << "timertest:"<< _iterations<< " every 5 seconds\n";
 
     }
+    _last_iter=_iterations;
 
     return _interval;
 }

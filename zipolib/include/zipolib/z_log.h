@@ -8,7 +8,7 @@
 
 #include "zipolib/z_stream.h"
 
-
+z_status create_log_directory();
 
 
 class z_logger : public z_stream_multi {

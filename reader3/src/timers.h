@@ -19,14 +19,13 @@ class Timer {
 protected:
     bool _running=false;
     int _interval=0;
-    int _ms_left=0;
+    U64 _ts_expire=0;
     TimerService* _service;
     TimerCallback _user_callback;
     void* _user_context;
     virtual int invoke_callback();
 
-    int update(int ms_elapsed);
-
+    U64 update();
 public:
     Timer(TimerService *service, TimerCallback callback, void* user_context);
     virtual ~Timer();
@@ -34,12 +33,11 @@ public:
     void stop();
     void start(int ms,bool reset=true);
     void restart(int ms);
-    int get_ms_left() {return _ms_left;}
-    void set_ms_left(int val) { _ms_left=val; }
-    void set_minimum_ms_left(int val) {
-        if (val<_ms_left)
-            _ms_left=val;
+    void set_minimum_ts_expire(U64 ts) {
+        if (ts<_ts_expire)
+            _ts_expire=ts;
     }
+    bool _debug=false;
 
 };
 
@@ -72,19 +70,28 @@ class TimerService {
     std::thread _thread_handle;
     std::set<Timer*> _timers;
     bool _running=false;
+    bool _flag_reprocess_timers=false;
     std::thread _thread_process;
     void process_thread();
-    std::mutex _mutex_quit;
-    std::condition_variable _cond_quit;
+    std::mutex _mutex_stop_wait;
+    std::condition_variable _cond_stop_wait;
+    U64 _ts_next_expire=0;
+    bool update_timers();
 
-    int update_timers(int ms_elapsed);
-
+    /*
+     * Dont call this directly.
+     */
+    z_status timer_start(Timer* timer,int ms,bool reset=false);
+    void timer_stop(Timer* timer);
 public:
     TimerService();
     ~TimerService();
-    z_status start();
+
+
     z_status stop();
     z_status test();
+    z_status timer_start_from_callback_context(Timer* timer,int ms,bool reset=false);
+    z_status timer_stop_from_callback_context(Timer* timer);
 
     Timer* createTimer(TimerCallback callback, void* user_data, int start = 0);
     bool remove_timer(Timer* timer);

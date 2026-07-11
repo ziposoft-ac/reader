@@ -9,7 +9,6 @@
 ZMETA(TimerService)
 {
     ZACT(stop);
-    ZACT(start);
     ZACT(test);
 
 };
@@ -29,56 +28,54 @@ Timer::~Timer()
 
 
 }
-int Timer::update(int ms_elapsed)
+U64 Timer::update()
 {
     if (!_running)
         return 0;
 
-    if(!_ms_left) {
+    if(!_ts_expire) {
         return 0; //not running
 
     }
-    if(_ms_left> ms_elapsed)
-    {
-        _ms_left-=ms_elapsed;
-    } else{
-        U64 start=z_time::get_now_ms();
-        _ms_left=invoke_callback();
-       if (z_time::get_now_ms()-start > 200) {
-           ZDBG("Timer callback took more than 200 milliseconds\n");
-       }
-
-        if (!_ms_left)
-            _running=false;
+    U64 ts_now=z_time::get_now_ms();
+    if (_debug) {
+        int dummy=2;
+        dummy=1;
     }
-    return _ms_left;
+    U64 ms_left=0;
+    if(_ts_expire> ts_now)
+        return _ts_expire;
+    ms_left=invoke_callback();
+    if (z_time::get_now_ms()-ts_now > 200) {
+        ZDBG("Timer callback took more than 200 milliseconds\n");
+    }
+
+    if (!ms_left){
+        _running=false;
+        _ts_expire=0;
+    } else {
+        _ts_expire=ts_now+ms_left;
+    }
+    return _ts_expire;
 }
 
 // TODO - possible race condition !!
 // TimerSerice could be updating timer while user calls start/stop
 void Timer::stop() {
+    _service->timer_stop(this);
+
     _running=false;
-    _ms_left=0;
+    _ts_expire=0;
 }
 void Timer::start() {
     //TODO calling start if already running?
     if (_running)
         return;
-    _running=true;
-
-    _ms_left=_interval;
-    _service->start();
+    _service->timer_start(this,_interval,false);
 }
 void Timer::start(int ms,bool reset) {
-    _running=true;
 
-    if(reset || (_ms_left==0))
-    {
-        _ms_left=ms;
-        _interval=ms;
-
-    }
-    _service->start();
+    _service->timer_start(this,ms,reset);
 
 }
 int Timer::invoke_callback()
@@ -105,8 +102,9 @@ z_status TimerService::stop()
 
     if(_running)
     {
-        _cond_quit.notify_all();
         _running=false;
+
+        _cond_stop_wait.notify_all();
     }
     if (_thread_process.joinable())
         _thread_process.join();
@@ -120,17 +118,17 @@ bool TimerService::remove_timer(Timer *timer) {
     delete timer;
     return true;
 }
-Timer* TimerService::createTimer(TimerCallback callback, void* user_data, int start )
+Timer* TimerService::createTimer(TimerCallback callback, void* user_data, int ms_expire )
 {
+
+
     Timer* timer=z_new Timer(this,callback,user_data);
 
     {
         std::unique_lock<std::mutex> mlock(_mutex_sync);
         _timers.insert(timer);
     }
-
-    if(start)
-        timer->start(start);
+    timer_start(timer,ms_expire,true);
     return timer;
 }
 
@@ -156,31 +154,104 @@ z_status TimerService::test()
 
     return zs_ok;
 }
-
-z_status TimerService::start()
+/*
+ * This is called by Timer::start to start the thread if necessary.
+ * The timer service cannot run if there are no timers
+ */
+z_status TimerService::timer_start(Timer* t,int ms,bool reset)
 {
-    if(_running) return zs_ok;
     std::unique_lock<std::mutex> mlock(_mutex_sync);
+    t->_running=true;
+    if(reset || (t->_ts_expire==0))
+    {
+        t->_interval=ms;
+        t->_ts_expire=ms+z_time::get_now_ms();
+
+    }
+    if(_running) {
+        if (_ts_next_expire>t->_ts_expire) {
+            // If new timer starts sooner than wait loop
+            //force restart of loop
+            _cond_stop_wait.notify_all();
+
+        }
+        return zs_ok;
+
+    }
+
+
+
+
     if (_thread_process.joinable())
         _thread_process.join();
     _running=true;
     _thread_process = std::thread(&TimerService::process_thread, this);
     return zs_ok;
 }
-int TimerService::update_timers(int ms_elapsed)
+
+void Timer::restart(int ms) {
+}
+
+void TimerService::timer_stop(Timer *t) {
+    std::unique_lock<std::mutex> mlock(_mutex_sync);
+    t->_running=false;
+    t->_ts_expire=0;
+}
+
+z_status TimerService::timer_stop_from_callback_context(Timer *t) {
+    t->_running=false;
+    t->_ts_expire=0;
+    _flag_reprocess_timers=true;
+    return zs_ok;
+
+}
+
+z_status TimerService::timer_start_from_callback_context(Timer* t,int ms,bool reset) {
+
+    t->_running=true;
+    if(reset || (t->_ts_expire==0))
+    {
+        t->_interval=ms;
+        t->_ts_expire=ms+z_time::get_now_ms();
+
+    }
+    _flag_reprocess_timers=true;
+    return zs_ok;
+}
+
+bool TimerService::update_timers()
 {
     std::unique_lock<std::mutex> mlock(_mutex_sync);
 
-    int ms_next_wait=INT_MAX;
-    for (auto i : _timers)
-    {
-        int t=i->update(ms_elapsed);
-        if(t && (t < ms_next_wait))
+    while (1) {
+        _ts_next_expire=0;;
+
+        _flag_reprocess_timers=false;
+        for (auto i : _timers)
         {
-            ms_next_wait=t;
+            U64 t=i->update();
+            if (t) {
+                if ((_ts_next_expire==0)||(t<_ts_next_expire)) {
+                    _ts_next_expire=t;
+
+                }
+
+            }
+
         }
+        if (!_flag_reprocess_timers)
+            break;
+
     }
-    return ms_next_wait;
+
+
+    if (!_ts_next_expire) {
+        _running=false;
+        return false;
+
+    }
+
+    return true;
 
 
 }
@@ -192,21 +263,16 @@ void TimerService::process_thread()
         {
             //ZDBG("process_thread\n");
 
-            int ms_next_wait=update_timers(ms_elapsed);
-            if(ms_next_wait==INT_MAX)
-            {
-                _running=false;
+            if (!update_timers())
                 return;
-            }
+            U64 ms_wait=_ts_next_expire-z_time::get_now_ms();
+            if (ms_wait) {
+                std::unique_lock<std::mutex> m_wait(_mutex_stop_wait);
+                //ZDBG("waiting for %d ms\n",ms_next_wait);
+                if(_cond_stop_wait.wait_for(m_wait,std::chrono::milliseconds (ms_wait)) !=std::cv_status::timeout) {
 
-            std::unique_lock<std::mutex> m_wait(_mutex_quit);
-            //ZDBG("waiting for %d ms\n",ms_next_wait);
-            if(_cond_quit.wait_for(m_wait,std::chrono::milliseconds (ms_next_wait)) !=std::cv_status::timeout) {
-                _running=false;
-                return;
+                }
             }
-            ms_elapsed=ms_next_wait;
-
         }
     }
     catch (std::exception &e)

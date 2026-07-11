@@ -51,7 +51,8 @@ if (ZS_BUILD_ARM)
     #add_custom_command(TARGET ${TARGET} POST_BUILD   COMMAND  scp ${TARGET} pi@10.1.1.1:/home/pi/rfid/        )
 else()
     target_link_libraries(${TARGET} mongoose cap)
-    #target_compile_definitions(${TARGET} PUBLIC NOGPIO=1)
+    target_compile_definitions(${TARGET} PUBLIC NOGPIO=1)
+    message( "Default Build")
 
 endif()
 

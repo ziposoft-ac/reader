@@ -7,14 +7,17 @@
 
 
 #include "pch.h"
+#include "BeepPwm.h"
 
 #include "cfmu804.h"
 #include "timers.h"
 #include "tests.h"
 #include "simulator.h"
+#include "gpioButton.h"
 #include "gpio.h"
 #include "WebServer.h"
-#include "app0.h"
+#include "VisitProcess.h"
+#include "ReaderService.h"
 //#include "processRunner.h"
 
 class Root
@@ -24,7 +27,12 @@ class Root
     std::condition_variable _cv_quit;
     std::mutex _mutex_quit;
     bool _shutting_down=false;
-
+    bool _auto_start_server=false;
+    bool _auto_start_app=false;
+    bool _init_rfid=true;
+    bool _simulate=true;
+    RfidReader* _reader;
+    bool _enable_logging=false;
 public:
     Root();
     virtual ~Root();
@@ -33,10 +41,14 @@ public:
     RfidSimulator simulator;
     // server;
     Gpio gpio;
-    App0 app0;
+    gpioButton button;
+    VisitProcess visitProc;
     Tests tests;
     WebServer web_server;
     TimerService timerService;
+    ReaderService readerService;
+    BeepPwm beeper;
+
     //ProcessRunner processRunner;
 
     int _test_count=0;
@@ -53,12 +65,20 @@ public:
 
     z_status quit_notify();
 
+    RfidReader& getReader() { return *_reader; }
 
     z_status dump_ports();
 
-    z_status run_app();
-    z_status run_as_service();
-
+    z_status simulate_on() {
+        _reader=&simulator;
+        _simulate=true;
+        return zs_ok;
+    }
+    z_status simulate_off() {
+        _reader=&cfmu804;
+        _simulate=false;
+        return zs_ok;
+    }
 
 };
 

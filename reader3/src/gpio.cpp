@@ -44,27 +44,12 @@ ZMETA(GpioBeep)
     ZBASE(GpioPin);
     ZPROP(_quiet);
     ZPROP(_enabled);
-    ZACT(up);
-    ZACT(down);
 
     ZCMD(beep, ZFF_CMD_DEF, "beep",
          ZPRM(int, duration, 100, "duration", ZFF_PARAM)
          );
 };
-ZMETA(GpioBeepPWM)
-{
-    ZACT(toneRise);
-    ZPROP(_quiet);
-    ZPROP(_enabled);
-    ZCMD(buzz, ZFF_CMD_DEF, "buzz",
-         ZPRM(int, f0, 8000, "freq0", ZFF_PARAM),
-         ZPRM(int, d0, 100, "duration0", ZFF_PARAM),
-         ZPRM(int, f1, 800, "freq1", ZFF_PARAM),
-         ZPRM(int, d1, 100, "duration1", ZFF_PARAM),
-         ZPRM(int, f2, 800, "freq2", ZFF_PARAM),
-         ZPRM(int, d2, 100, "duration2", ZFF_PARAM)
-         );
-};
+
 ZMETA(Gpio)
 {
     ZOBJ(g5);
@@ -76,7 +61,6 @@ ZMETA(Gpio)
     ZOBJ(g27);
     ZOBJ(g24);
     ZOBJ(beeper);
-    ZOBJ(beepPwm);
     ZCMD(set, ZFF_CMD_DEF, "set",
          ZPRM(int, gpio, 0, "gpio", ZFF_PARAM),
          ZPRM(int, val, 0, "val", ZFF_PARAM)
@@ -86,8 +70,6 @@ ZMETA(Gpio)
          ZPRM(int, num, 0, "num", ZFF_PARAM)
          );*/
     ZACT(dump);
-    ZACT(takeOnMe);
-    ZACT(takeOnMePush);
     //ZACT(beep);
     ZACT(lightShow);
     ZACT(dump_pins);
@@ -290,142 +272,6 @@ void GpioPinLed::init(Gpio* chip,ctext name)
     GpioPin::init(chip,name);
 }
 
-/**************************************************************************************
- *
- *   GpioBeep
- *
- */
-void GpioBeep::init(Gpio* chip)
-{
-    Z_ASSERT(!_timer);
-    _state=1; //SET OFF
-    GpioPin::init(chip,"beep");
-
-
-}
-void GpioBeep::_off()
-{
-    // Reverse it
-    GpioPin::_on();
-}
-void GpioBeep::_on()
-{
-    // Reverse it
-    GpioPin::_off();
-}
-int GpioBeep::timer_callback(void *)
-{
-    int delay=0;
-
-    if (_next_time_off) {
-        _off();
-        delay=_next_time_off;
-        _next_time_off=0;
-        return delay;
-    }
-
-
-    Beep beep;
-    if(_queue.pop(beep))
-    {
-        delay=beep.first;
-        _next_time_off=beep.second;
-        if(delay>3000)
-        {
-            Z_WARN_MSG(zs_bad_parameter,"Beep Delay Too Long");
-            delay=100;
-        }
-        if(!delay)
-            delay=1;
-    }
-    else {
-        _off();
-        return 0;
-    }
-    if (_enabled)
-        if(!_quiet) {
-            _on();
-        }
-    return delay;
-}
-z_status GpioBeep::down() {
-
-    if (!_enabled)    return zs_not_open;
-
-    if(!_chip->initialize())
-        return zs_io_error;
-    pushBeeps({{200,200},{100,100},{50,0}});
-    return zs_ok;
-}
-z_status GpioBeep::up() {
-
-    if (!_enabled)    return zs_not_open;
-
-    if(!_chip->initialize())
-        return zs_io_error;
-    pushBeeps({{50,50},{100,100},{200,50}});
-    return zs_ok;
-}
-z_status GpioBeep::beep( int duration) {
-
-    if (!_enabled)    return zs_not_open;
-
-    if(!_chip->initialize())
-        return zs_io_error;
-    pushBeeps({{duration,50}});
-    return zs_ok;
-}
-/**
- *
- * Dont even know what this is
- *
- * @param beep
- */
-void GpioBeep::beepDiminishing(Beep beep)
-{
-#ifdef NOGPIO
-    return;
-#endif
-    if (!_timer)
-        return;
-    if (!_enabled)    return ;
-
-    int count=_queue.get_count();
-    if(count>10)
-        return;
-    if(count)
-        beep.second=beep.second-(beep.second/10)*count;
-
-    if(beep.second<10)
-        beep.second=10;
-    _queue.push( beep);
-    beep.first=0;
-    _queue.push( beep);
-    _timer->start(1,false);
-
-}
-
-void GpioBeep::pushBeeps(std::initializer_list<Beep> const beeps)
-{
-    if (!_enabled)    return ;
-
-    if (!_timer) {
-        Z_ERROR_MSG(zs_not_open,"Buzzer not initialized");
-        return;
-    }
-#ifdef NOGPIO
-    return;
-#endif
-    if(_queue.get_count()>10)
-        return;
-    for(auto i : beeps)
-    {
-        _queue.push(i);
-    }
-    _timer->start(1,false);
-}
-
-
 
 /**************************************************************************************
  *
@@ -435,155 +281,10 @@ void GpioBeep::pushBeeps(std::initializer_list<Beep> const beeps)
 
 
 
-#ifdef NOGPIO
-
-int syswr(ctext filename,int i) {
-        return zs_io_error;
-}
-int setPwmFreq(int freq) {
-    return zs_io_error;
-}
-#else
-
-#define PWM_PATH "/sys/class/pwm/pwmchip0/pwm0/" // Adjust for pwmchip1/pwm1 if needed
-#define PWM_CHIP  "/sys/class/pwm/pwmchip0/export"
-
-
-bool pwm_is_init=false;
 
 
 
-int syswr(ctext filename,int i) {
-    z_string s=i;
-    FILE* fd = fopen(filename, "wb");
-    if (!fd) {
-        return zs_io_error;
-        //perror("Failed to open export file");
-        return Z_ERROR_MSG(zs_io_error,"PWM Error writing %d to %s\n",i,filename);
-    }
-    fwrite(s.c_str(), s.size(),1,fd); // Export PWM channel 0
-    //ZLOG("Writing %s:%s\n",filename,s.c_str());
-    fclose(fd);
-    return 0;
-}
-int setPwmFreq(int freq) {
-    if (!pwm_is_init) {
-        if (syswr(PWM_CHIP,0))
-            return -1;
-        if (syswr(PWM_PATH "enable",0))
-            return -1;
-        pwm_is_init=true;
 
-
-    }
-    if (freq) {
-        U64 period=1000000000/freq;
-        if (syswr(PWM_PATH "period",period))
-            return -1;
-        if (syswr(PWM_PATH "duty_cycle",500000))
-            return -1;
-
-        if (syswr(PWM_PATH "enable",1))
-            return -1;
-    }
-    else {
-        if (syswr(PWM_PATH "enable",0))
-            return -1;
-
-
-    }
-    return 0;
-
-}
-#endif
-
-int GpioBeepPWM::_off()
-{
-    return setPwmFreq(0);
-}
-int GpioBeepPWM::timer_callback(void *)
-{
-    Beep beep;
-    int delay=0;
-    int freq=0;
-    if(_queue.pop(beep))
-    {
-        delay=beep.second;
-        if(delay>2000)
-        {
-            Z_WARN_MSG(zs_bad_parameter,"Buzzer Delay Too Long");
-            delay=100;
-        }
-        freq=beep.first;
-        if(!delay)
-            delay=1;
-    }
-    if (_enabled)
-        if(!_quiet) {
-            setPwmFreq(freq);
-
-        }
-    return delay;
-}
-void GpioBeepPWM::pushBeeps(std::initializer_list<Beep> const beeps)
-{
-    if (!_enabled)    return ;
-
-    if (!_timer) {
-        Z_ERROR_MSG(zs_not_open,"Buzzer not initialized");
-        return;
-    }
-
-    if(_queue.get_count()>10)
-        return;
-    for(auto i : beeps)
-    {
-        _queue.push(i);
-    }
-    _timer->start(1,false);
-}
-
-int GpioBeepPWM::_on()
-{
-    if(_quiet) return -1;
-    if (_enabled)
-        return setPwmFreq(50000);
-    return -1;
-}
-z_status GpioBeepPWM::toneRise()
-{
-    if (!_enabled)    return zs_not_open;
-
-    pushBeeps({{500,20},{800,20},{1100,20}});
-    return zs_ok;
-}
-
-z_status GpioBeepPWM::buzz(int f0,int d0,int f1,int d1,int f2,int d2) {
-
-    if (!_enabled)    return zs_not_open;
-
-    pushBeeps({{f0,d0},{f1,d1},{f2,d2}});
-    return zs_ok;
-}
-void GpioBeepPWM::init() {
-    if (!_enabled)
-        return;
-    if (syswr(PWM_CHIP,0)) {
-        _exists=false;
-        Z_ERROR_MSG(zs_io_error,"PWM init failed, will try again later");
-    }
-
-    if (_off() /*error*/) {
-        _exists=false;
-        Z_ERROR_MSG(zs_io_error,"PWM does not exists, disabling");
-
-    }
-
-    _initialized=true;
-    if(!_timer)
-        _timer=root.timerService.create_timer_t(this,&GpioBeepPWM::timer_callback,0    );
-
-}
 /**************************************************************************************
  *
  *   Gpio
@@ -614,40 +315,44 @@ Gpio::~Gpio()
 
 bool Gpio::initialize() {
 
-    if(_initialized) return _open;
-    _initialized=true;
+    if(_initialized) return _initialized;
+
+#ifdef NOGPIO
+    return false;
+#endif
     if(!_timer)
         _timer=root.timerService.create_timer_t(this,&Gpio::timer_callback,0    );
+
+
+
 
     _chip = gpiod_chip_open(chipname);
 
     if(_chip==nullptr)
     {
-        Z_ERROR_MSG(zs_io_error,"gpiod_chip_open failed:%s",strerror(errno));
+        Z_ERROR_MSG(zs_io_error,"gpiod_chip_open failed:%s %d",strerror(errno),errno);
 
-        _open= false;
+        _initialized= false;
         return false;
     }
-    _open=true;
+    _initialized=true;
     for(auto p : _led_map)
     {
         p.second->init(this,p.first);
     }
     beeper.init(this);
-    beepPwm.init();
-    return _open;
+    return _initialized;
 }
 bool Gpio::shutdown()
 {
-    if(!_open) return false;
+    if(!_initialized) return false;
 
-    setPwmFreq(0);
 
     for(auto p : _led_map)
     {
         p.second->shutdown();
     }
-
+    beeper.shutdown();
     return false;
 }
 z_status Gpio::led_json_config_set(z_json_obj &jo) {
@@ -727,7 +432,7 @@ z_status Gpio::beep()
     if(!initialize())
         return zs_io_error;
     beepPwm.pushBeeps({{500,50}});
-    //root.gpio.beepPwm.pushBeeps({{2000,500}});
+    //root.beeper.pushBeeps({{2000,500}});
 
     return zs_ok;
 }*/
@@ -841,3 +546,107 @@ int Gpio::setPinOutput( unsigned int pin,int value) {
     return -1;
 
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/**************************************************************************************
+ *
+ *   GpioBeep
+ *
+ */
+void GpioBeep::init(Gpio* chip)
+{
+    Z_ASSERT(!_timer);
+    _state=1; //SET OFF
+    GpioPin::init(chip,"beep");
+
+
+}
+void GpioBeep::_off()
+{
+    // Reverse it
+    GpioPin::_on();
+}
+void GpioBeep::_on()
+{
+    // Reverse it
+    GpioPin::_off();
+}
+typedef std::pair<int,int> Beep;
+
+int GpioBeep::timer_callback(void *)
+{
+    int delay=0;
+
+    if (_next_time_off) {
+        _off();
+        delay=_next_time_off;
+        _next_time_off=0;
+        return delay;
+    }
+
+
+    Beep beep;
+    if(_queue.pop(beep))
+    {
+        delay=beep.first;
+        _next_time_off=beep.second;
+        if(delay>3000)
+        {
+            Z_WARN_MSG(zs_bad_parameter,"Beep Delay Too Long");
+            delay=100;
+        }
+        if(!delay)
+            delay=1;
+    }
+    else {
+        _off();
+        return 0;
+    }
+    if (_enabled)
+        if(!_quiet) {
+            _on();
+        }
+    return delay;
+}
+z_status GpioBeep::beep( int duration) {
+
+    if (!_enabled)    return zs_not_open;
+
+    if(!_chip->initialize())
+        return zs_io_error;
+    pushBeeps({{duration,50}});
+    return zs_ok;
+}
+
+void GpioBeep::pushBeeps(std::initializer_list<Beep> const beeps)
+{
+    if (!_enabled)    return ;
+
+    if (!_timer) {
+        Z_ERROR_MSG(zs_not_open,"Buzzer not initialized");
+        return;
+    }
+#ifdef NOGPIO
+    return;
+#endif
+    if(_queue.get_count()>10)
+        return;
+    for(auto i : beeps)
+    {
+        _queue.push(i);
+    }
+    _timer->start(1,false);
+}
+

@@ -266,7 +266,7 @@ int WebServer::timer_callback_req_wait_expire(void*) {
         return 200;
     std::unique_lock<std::mutex> mlock(_mutex_req_list);
 
-    U64 now=z_time_get_ticks();
+    U64 now=z_time_get_ticks_ms();
 
     //WS_DBG("current %d reqs\n",_outstanding_reqs.size());
 

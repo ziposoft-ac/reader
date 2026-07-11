@@ -192,8 +192,8 @@ public:
 
 };
 #endif
-U64 z_time_get_ticks();
-double z_time_get_ms_elapsed(U64 ticks_start);
+U64 z_time_get_ticks_ms();
+U64 z_time_get_ms_elapsed(U64 ticks_start);
 
 
 #endif

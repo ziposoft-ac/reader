@@ -39,7 +39,7 @@ public:
     //int _time_off=1000;
     //int _state=0;
     int _iterations=10;
-    int _count=0;
+    int _current_iteration=0;
     virtual z_status stop();
     virtual z_status start();
     virtual int onCallback(void*)
@@ -54,6 +54,38 @@ public:
     {
         return zs_ok;
     }
+};
+class TestTimerInterval : public TestTimer{
+public:
+    int onCallback(void*) override;
+    int _last_iter=0;
+    int _print_interval_seconds=3;
+
+};
+class TestTimerSimple : public TestTimer{
+public:
+    int onCallback(void*) override {
+        printf("iter=%d\n", _current_iteration++);
+        if (_current_iteration<_iterations)
+            return _interval;
+        return 0;
+    }
+    virtual z_status onStart()
+    {
+        _current_iteration=0;
+        return zs_ok;
+    }
+
+};
+
+class TestTimerCascade : public TestTimer{
+public:
+    int onCallback(void*) override;
+    int timer_callback2(void*);
+    z_status onStop() override;
+    z_status onStart() override;
+
+    Timer* _timer2=0;
 };
 class TestThread : public Test {
     std::thread _thread_handle;
@@ -94,11 +126,7 @@ public:
     z_string _name="/tmp/debugview";
 };
 
-class TestTimers : public TestTimer{
-public:
-    int onCallback(void*);
 
-};
 /*
 class TestWsBlast : public Test{
 public:
@@ -163,7 +191,9 @@ public:
     TestLedFlash flashleds;
     TestHeatTest heatTest;
     ReaderTest readTest;
-    TestTimers timer;
+    TestTimerInterval timerInterval;
+    TestTimerCascade timerCascade;
+    TestTimerSimple timerSimple;
     TestPipe pipe;
     TestThread thread;
     Inventory inv;

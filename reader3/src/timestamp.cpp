@@ -1,5 +1,5 @@
 #include "pch.h"
-const char* timestamp=__DATE__ "," __TIME__;
+const char* BUILD_TIME_STAMP=__DATE__ "," __TIME__;
 
 
 //

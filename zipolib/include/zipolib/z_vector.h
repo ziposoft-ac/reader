@@ -11,7 +11,6 @@ ________________________________________________________________________*/
 #include "zipolib/zipo.h"
 
 
-
 template <class ITEM_CLASS , bool OWNER=true> class z_obj_vector : public std::vector<ITEM_CLASS*>
 {
 protected:

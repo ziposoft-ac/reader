@@ -16,8 +16,8 @@
 extern ctext default_record_path;
 extern ctext default_record_path_raw;
 
-class App0 : public RfidReadConsumer{
-    friend z_factory_t<App0>;
+class VisitProcess : public RfidReadConsumer{
+    friend z_factory_t<VisitProcess>;
     int _write_count=0;
     bool _open=false;
     bool _reading=false;
@@ -45,10 +45,9 @@ class App0 : public RfidReadConsumer{
     U64 _ts_last_read=0;
 
     RfidReader* _reader;
-    LockFile lock_file;
 
 public:
-    App0();
+    VisitProcess();
     virtual z_status open();
     virtual z_status close();
     virtual z_status run();
@@ -97,7 +96,7 @@ public:
 };
 
 
-ZMETA_DECL(App0) {
+ZMETA_DECL(VisitProcess) {
 
     ZPROP(_file_path_record);
     //ZPROP(_file_path_complete);

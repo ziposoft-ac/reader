@@ -1,14 +1,14 @@
 //
 // Created by ac on 11/12/20.
 //
-#include "app0.h"
+#include "VisitProcess.h"
 #include "root.h"
 #include <filesystem>
 
 #include "JsonCmd.h"
 //#include <openssl/ossl_typ.h>
 
-ZMETA_DEF(App0);
+ZMETA_DEF(VisitProcess);
 
 
 ctext default_record_path="/zs/timer_data/reads";
@@ -20,23 +20,13 @@ static z_time ts_start;
 #undef DBGL
 #define DBGL(...)
 
-App0::App0()
+VisitProcess::VisitProcess()
 {
 
 
 }
-z_status App0::simulate_on() {
-    _reader=&root.simulator;
-    _simulate=true;
-    return zs_ok;
-}
-z_status App0::simulate_off() {
-    _reader=&root.cfmu804;
-    _simulate=false;
-    return zs_ok;
-}
 
-z_status App0::remote_quit()
+z_status VisitProcess::remote_quit()
 {
     // THIS IS CALLED FROM WS SERVER CONTEXT - CANNOT QUIT FROM HERE
     printf("QUIT REQUEST\n");
@@ -44,17 +34,15 @@ z_status App0::remote_quit()
     root.quit_notify();
     return zs_ok;
 }
-z_status App0::shutdown()
+z_status VisitProcess::shutdown()
 {
-    printf("App0 quiting\n");
     stop();
     //
-    if(_timer)
-        root.timerService.remove_timer(_timer);
+
     return zs_ok;
 }
 
-z_status App0::open()
+z_status VisitProcess::open()
 {
     if(_open)
         return zs_ok;
@@ -69,31 +57,31 @@ z_status App0::open()
     root.web_server.start();
 
     if(!_timer)
-        _timer=root.timerService.create_timer_t(this,&App0::timer_callback,0    );
+        _timer=root.timerService.create_timer_t(this,&VisitProcess::timer_callback,0    );
     //root.gpio.ledRed.on();
 
     _open=true;
-    root.gpio.beepPwm.pushBeeps( {{1000,50},{1200,50},{1400,50},{0,80}  });
+    root.beeper.pushBeeps( {{1000,50},{1200,50},{1400,50},{0,80}  });
 
     return zs_ok;
 }
-z_status App0::close()
+z_status VisitProcess::close()
 {
     if(!_open)
         return zs_ok;
-    root.gpio.beepPwm.pushBeeps(
+    root.beeper.pushBeeps(
             {{1500,50},{1000,50},{500,50},{0,50},
             });
     stop();
     _open=false;
     return zs_ok;
 }
-z_status App0::run()
+z_status VisitProcess::run()
 {
 
     return open();
 }
-z_status App0::stop()
+z_status VisitProcess::stop()
 {
     if(!_open)
         return zs_ok;
@@ -110,17 +98,19 @@ z_status App0::stop()
     printf("deleting tags\n");
 
     _tags.delete_all();
-    root.gpio.beepPwm.pushBeeps(
+    root.beeper.pushBeeps(
             {{1500,30},{1000,30},{750,30},{500,100}});
     //root.gpio.ledRed.on();
     //root.gpio.ledGreen.off();
-
+    if(_timer)
+        root.timerService.remove_timer(_timer);
+    _timer=nullptr;
     return zs_ok;
 }
 
 
 // TODO - unused
-z_status App0::setup_reader_live(z_json_obj &settings)
+z_status VisitProcess::setup_reader_live(z_json_obj &settings)
 {
     if(getReader().isReading())
         return zs_access_denied;
@@ -142,7 +132,7 @@ z_status App0::setup_reader_live(z_json_obj &settings)
 
 }
 
-z_status App0::start_json(z_json_obj& o) {
+z_status VisitProcess::start_json(z_json_obj& o) {
     _record_raw=o.get_bool("record_raw",_record_raw);
     _beep=o.get_bool("enable_beep",_beep);
     o.get_str("path",_file_path_record,default_record_path);
@@ -150,7 +140,7 @@ z_status App0::start_json(z_json_obj& o) {
     return start();
 }
 
-z_status App0::start()
+z_status VisitProcess::start()
 {
     ctext msg="error";
     open();
@@ -187,18 +177,18 @@ z_status App0::start()
         stop();
         return Z_ERROR_MSG(s, msg);
     }
-    root.gpio.beepPwm.pushBeeps(
+    root.beeper.pushBeeps(
         {{500,30},{0,30},{750,30}});
     return s;
 }
-bool App0::is_reading() {
+bool VisitProcess::is_reading() {
     return root.getReader().isReading();
 }
 
 
-int App0::add_json_status(z_json_stream &js) {
+int VisitProcess::add_json_status(z_json_stream &js) {
     js.set_pretty_print(true);
-    js.obj_val_start("app0");
+    js.obj_val_start("visitProc");
 
     js.keyval("file",_file_visits.getLiveFileName());
     js.keyval("reads_path",_file_path_record);
@@ -214,7 +204,7 @@ int App0::add_json_status(z_json_stream &js) {
 }
 
 
-void App0::signalWaitingRequests() {
+void VisitProcess::signalWaitingRequests() {
     if (_last_write_timestamp>_last_notify_timestamp) {
         _last_notify_timestamp=_last_write_timestamp;
         root.web_server.complete_req_type(DELAYED_REQUEST_READS_FILTERED);
@@ -224,7 +214,7 @@ void App0::signalWaitingRequests() {
     }
 }
 
-bool App0::callbackQueueEmpty()
+bool VisitProcess::callbackQueueEmpty()
 {
     _file_raw.flush();
 
@@ -233,11 +223,11 @@ bool App0::callbackQueueEmpty()
 
 
 
-void App0::beep() {
+void VisitProcess::beep() {
     if (_beep)
         root.gpio.beeper.beep(50);
 }
-z_status  App0::get_live_tag_visits(Visits &visits) {
+z_status  VisitProcess::get_live_tag_visits(Visits &visits) {
 
     std::unique_lock<std::mutex> mlock(_mutex_tags);
     auto it = _tags.start();
@@ -250,7 +240,7 @@ z_status  App0::get_live_tag_visits(Visits &visits) {
 
     return zs_ok;
 }
-int  App0::timer_callback(void*)
+int  VisitProcess::timer_callback(void*)
 {
     z_time now;
     now.set_now();
@@ -320,7 +310,7 @@ int  App0::timer_callback(void*)
     return next_callback;
 }
 
-bool App0::callbackRead(RfidRead* read)
+bool VisitProcess::callbackRead(RfidRead* read)
 {
     z_time now=z_time::get_now_ms();
 
@@ -347,7 +337,7 @@ bool App0::callbackRead(RfidRead* read)
 
         U64 needs_check_in= pTag->processRead(read,*this)-now;
 
-        _timer->set_minimum_ms_left(needs_check_in);
+        _timer->set_minimum_ts_expire(needs_check_in);
         DBGL("needs_check_in=%d",needs_check_in);
 
     }
@@ -454,7 +444,7 @@ void RfidTag::writeOut(z_stream& s) {
 
     s<<'\n';
 
-    root.gpio.beepPwm.pushBeeps( {{700,40},{1500,40}});
+    root.beeper.pushBeeps( {{700,40},{1500,40}});
 
 
 }

@@ -29,8 +29,8 @@ enum delayed_request_type {
     CMD_GET(delay) \
     CMD_POST(stop_raw) \
     CMD_POST(start_raw) \
-    CMD_POST(stop_app0) \
-    CMD_POST(start_app0) \
+    CMD_POST(stop_visitProc) \
+    CMD_POST(start_visitProc) \
     CMD_GET(beep) \
     CMD_POST(beepon) \
     CMD_POST(beepoff) \

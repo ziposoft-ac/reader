@@ -15,17 +15,22 @@ ZMETA(Root)
     ZOBJ(tests);
     ZOBJ_X(cfmu804,"rfid",ZFF_PROP_DEF,"cf-804 module");
     ZOBJ(timerService);
+    ZOBJ(readerService);
+    ZOBJ(button);
     //ZOBJ(processRunner);
     ZOBJ(web_server);
+    ZOBJ(beeper);
     //ZOBJ(server);
-    ZOBJ(app0);
+    ZOBJ(visitProc);
+    ZACT(simulate_on);
+    ZACT(simulate_off);
     ZACT(dump_ports);
-    ZACT(run_app);
-    ZACT_X(run_as_service,"service", ZFF_ACT_DEF,"Run as service");
+    ZPROP_X(_enable_logging,"logging",ZFF_PROP_NOLOAD,"Enable logging to console");
 
 };
 
 Root::Root()  {
+    _reader=&cfmu804;
 }
 
 Root::~Root() {
@@ -41,20 +46,16 @@ z_status Root::dump_ports()
     }
     return zs_ok;
 }
-z_status Root::run_as_service()
-{
-    if (console.is_console_running())
-        return zs_already_open;
-    web_server.start();
-    wait_for_quit();
-    return zs_ok;
-}
-z_status Root::run_app()
-{
-    return zs_ok;
-}
+
+
 z_status Root::initialize()
 {
+    if (_simulate)
+        _reader=&simulator;
+    else
+        _reader=&cfmu804;
+    gpio.initialize();
+
 
     return zs_ok;
 }
@@ -65,11 +66,13 @@ z_status Root::shutdown()
     timerService.stop();
     web_server.stop();
 
-    app0.shutdown();
+    visitProc.shutdown();
     cfmu804.close();
 
     simulator.close();
     gpio.shutdown();
+    beeper.shutdown();
+    button.stop();
 
     return zs_ok;
 }

@@ -1,14 +1,17 @@
 //
 // Created by ac on 11/30/25.
 //
-
-
+#ifndef LOCKFILE_H
+#define LOCKFILE_H
 #include "zipolib/zipolib.h"
 
-//#include <unistd.h>
-//#include <fcntl.h>
+#include <fcntl.h>
+#include <unistd.h>
+//#include <bits/fcntl.h>
+
+
+
 #include <sys/file.h>
-//#include <errno.h>
 
 class LockFile
 {
@@ -57,3 +60,4 @@ public:
         return true;
     }
 };
+#endif

@@ -52,10 +52,10 @@ http_status_t send_status(http_request r,http_status_t status=HTTP_STATUS_OK,cte
 
     return status;
 }*/
-http_status_t send_app0_status(http_request r,http_status_t status=HTTP_STATUS_OK,ctext message=nullptr) {
+http_status_t send_visitProc_status(http_request r,http_status_t status=HTTP_STATUS_OK,ctext message=nullptr) {
     send_json_response(r,[status,message](z_json_stream &js)
     {
-        root.app0.add_json_status(js);
+        root.visitProc.add_json_status(js);
         if (message)
             js.keyval("msg", message);
         return status;
@@ -82,7 +82,7 @@ http_status_t send_full_status(http_request r,http_status_t status=HTTP_STATUS_O
     {
         root.getReader().add_json_config(js);
         root.getReader().add_json_status(js);
-        root.app0.add_json_status(js);
+        root.visitProc.add_json_status(js);
 
         if (message)
             js.keyval("msg", message);
@@ -202,8 +202,8 @@ int fn_get_pingpong(http_request r,z_string_map &vars)
 int fn_get_beep(http_request r,z_string_map &vars)
 {
 
-    if (root.gpio.beepPwm._enabled) {
-        root.gpio.beepPwm.toneRise();
+    if (root.beeper._enabled) {
+        root.beeper.toneRise();
     }
     else {
         int dur=vars.get_as("dur",25);
@@ -280,7 +280,7 @@ int fn_post_stop_raw(http_request r,z_json_obj &o)
 
     return HTTP_STATUS_OK;
 }
-int fn_post_start_app0(http_request r,z_json_obj &o)
+int fn_post_start_visitProc(http_request r,z_json_obj &o)
 {
     if (root.getReader().isReading()) {
         return send_rfid_status(r,HTTP_STATUS_SERVICE_UNAVAILABLE,"already reading");
@@ -288,15 +288,15 @@ int fn_post_start_app0(http_request r,z_json_obj &o)
     z_string path=o.get_str_def("path",default_record_path);
     bool record_raw=  o.get_bool("raw",false);
 
-    root.app0.start();
+    root.visitProc.start();
 
     send_full_status(r);
     return HTTP_STATUS_OK;
 }
-int fn_post_stop_app0(http_request r,z_json_obj &o)
+int fn_post_stop_visitProc(http_request r,z_json_obj &o)
 {
 
-    root.app0.stop();
+    root.visitProc.stop();
 
     send_full_status(r);
 
@@ -337,7 +337,7 @@ int fn_get_reads_raw(http_request r,z_string_map &vars)
         req->r=r;
         //ZDBG("R#%d: RAW (%s) index %d matches, wait for reads\n",r.index,(return_reads?"reads":"stat"),fromIndex);
 
-        req->ts_expire=z_time_get_ticks()+WAIT_FOR_NEW_READS_TIMEOUT;
+        req->ts_expire=z_time_get_ticks_ms()+WAIT_FOR_NEW_READS_TIMEOUT;
         req->ctx1=fromIndex;
         req->type=DELAYED_REQUEST_READS_RAW;
         req->ctx2=return_reads;
@@ -359,7 +359,7 @@ int fn_get_reads_raw(http_request r,z_string_map &vars)
         RfidReader &reader = root.getReader();
             reader.get_reads_since(js, fromIndex,return_reads);
 
-        //root.app0.add_json_status(js);
+        //root.visitProc.add_json_status(js);
         return HTTP_STATUS_OK;
 
     });
@@ -369,7 +369,7 @@ int fn_get_reads_raw(http_request r,z_string_map &vars)
 }
 int fn_get_reads_filtered(http_request r,z_string_map &vars)
 {
-    App0& app=root.app0;
+    VisitProcess& app=root.visitProc;
 
     U64 fromIndex=vars.get_as("fromIndex",(U64)0);
 
@@ -385,21 +385,21 @@ int fn_get_reads_filtered(http_request r,z_string_map &vars)
         //ZDBG("R#%d: FLTRindex %d matches, wait for reads\n",r.index,fromIndex);
         req->type=DELAYED_REQUEST_READS_FILTERED;
 
-        req->ts_expire=z_time_get_ticks()+WAIT_FOR_NEW_READS_TIMEOUT;
+        req->ts_expire=z_time_get_ticks_ms()+WAIT_FOR_NEW_READS_TIMEOUT;
         req->ctx1=fromIndex;
         req->ctx2=0; //unused
         req->fn_complete=[](z_json_stream &js,size_t fromIndex,size_t unused) {
-            //ZDBG("R#:FLTR delay complete %llu to %llu\n",fromIndex,root.app0.getLastWriteTimestamp());
-            root.app0.add_json_status(js);
+            //ZDBG("R#:FLTR delay complete %llu to %llu\n",fromIndex,root.visitProc.getLastWriteTimestamp());
+            root.visitProc.add_json_status(js);
         };
         WEBSERV(r.c).push_delayed_request(req);
         return 0;
     }
     send_json_response(r,[r,fromIndex](z_json_stream &js)
     {
-        ZDBG("R#%d:FLTR sending immediate %llu to %llu\n",r.index,fromIndex,root.app0.getLastWriteTimestamp());
+        ZDBG("R#%d:FLTR sending immediate %llu to %llu\n",r.index,fromIndex,root.visitProc.getLastWriteTimestamp());
 
-        root.app0.add_json_status(js);
+        root.visitProc.add_json_status(js);
         return HTTP_STATUS_OK;
 
     });
@@ -424,7 +424,7 @@ antHi=0;
 */
 int get_live_tags(z_json_stream& s) {
 
-    App0& app=root.app0;
+    VisitProcess& app=root.visitProc;
     Visits visits;
     app.get_live_tag_visits(visits);
     s.key("live_tags");
@@ -450,7 +450,7 @@ int get_live_tags(z_json_stream& s) {
 
 int fn_get_visits(http_request r,z_string_map &vars)
 {
-    App0& app=root.app0;
+    VisitProcess& app=root.visitProc;
 
     U64 ts_last_file_write=vars.get_as("ts_last_file_write",(U64)0);
     U64 ts_last_read=vars.get_as("ts_last_read",(U64)0);
@@ -468,12 +468,12 @@ int fn_get_visits(http_request r,z_string_map &vars)
             //ZDBG("R#%d: FLTRindex %d matches, wait for reads\n",r.index,fromIndex);
             req->type=DELAYED_REQUEST_READS_FILTERED;
 
-            req->ts_expire=z_time_get_ticks()+WAIT_FOR_NEW_READS_TIMEOUT;
+            req->ts_expire=z_time_get_ticks_ms()+WAIT_FOR_NEW_READS_TIMEOUT;
             req->ctx1=ts_last_file_write;
             req->ctx2=0; //unused
             req->fn_complete=[](z_json_stream &js,size_t fromIndex,size_t unused) {
-                //ZDBG("R#:FLTR delay complete %llu to %llu\n",fromIndex,root.app0.getLastWriteTimestamp());
-                root.app0.add_json_status(js);
+                //ZDBG("R#:FLTR delay complete %llu to %llu\n",fromIndex,root.visitProc.getLastWriteTimestamp());
+                root.visitProc.add_json_status(js);
                 get_live_tags(js);
             };
             WEBSERV(r.c).push_delayed_request(req);
@@ -481,10 +481,10 @@ int fn_get_visits(http_request r,z_string_map &vars)
         }
     send_json_response(r,[r,ts_last_file_write](z_json_stream &js)
     {
-        ZDBG("R#%d:FLTR sending immediate %llu to %llu\n",r.index,ts_last_file_write,root.app0.getLastWriteTimestamp());
+        ZDBG("R#%d:FLTR sending immediate %llu to %llu\n",r.index,ts_last_file_write,root.visitProc.getLastWriteTimestamp());
         get_live_tags(js);
 
-        root.app0.add_json_status(js);
+        root.visitProc.add_json_status(js);
         return HTTP_STATUS_OK;
 
     });
@@ -496,7 +496,7 @@ int fn_get_delay(http_request r,z_string_map &vars)
 {
     delayed_request *req = new delayed_request();
             //req->r.hm->message = mg_strdup(r.hm);
-    req->ts_expire=z_time_get_ticks()+5000;
+    req->ts_expire=z_time_get_ticks_ms()+5000;
     req->r=r;
     req->type=DELAYED_REQUEST_TEST;
 

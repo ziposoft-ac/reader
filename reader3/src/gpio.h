@@ -86,11 +86,13 @@ public:
     virtual void init(Gpio* chip,ctext name);
 
 };
+
 typedef std::pair<int,int> Beep;
 
 class GpioBeep : public GpioPin
 {
     friend z_factory_t<GpioBeep>;
+    z_safe_queue<Beep> _queue;
 
 public:
 
@@ -98,53 +100,26 @@ protected:
     int _next_time_off=0;
 
 
-    virtual int timer_callback(void*);
-    z_safe_queue<Beep> _queue;
-    virtual void _off();
-    virtual void _on();
+    int timer_callback(void*) override;
+    virtual void _off() override;
+    virtual void _on() ;
 public:
     bool _quiet=false;
     bool _enabled=false;
     void pushBeeps(std::initializer_list<Beep> const beeps);
-    void beepDiminishing(Beep beep);
     GpioBeep(int pin=0) : GpioPin(pin){}
     virtual ~GpioBeep(){}
     virtual void init(Gpio* chip);
 
-    virtual void shutdown(){ off(); };
+    virtual void shutdown() {
+        off();
+        GpioPin::shutdown();
+    };
     z_status beep(int duration);
-    z_status up();
-    z_status down();
 
-};
-class GpioBeepPWM  {
-protected:
-    virtual int _off();
-    virtual int _on();
-    virtual int timer_callback(void*);
-    z_safe_queue<Beep> _queue;
-    Timer* _timer=0;
-    bool _initialized=false;
-    bool _open=false;
-
-public:
-    bool _exists=false;
-    bool _quiet=false;
-    bool _enabled=false;
-    GpioBeepPWM() {}
-
-    bool exists() {return _exists;}
-    virtual ~GpioBeepPWM(){}
-    // a good BLEEP =  1000,50,500,50,1600,50
-
-    z_status buzz(int f0,int d0,int f1,int d1,int f2,int d2);
-    z_status toneRise();
-    virtual void init();
-    void pushBeeps(std::initializer_list<Beep> const beeps);
 };
 class Gpio {
     bool _initialized=false;
-    bool _open=false;
     bool _simulate=false;
 
     Timer* _timer=0;
@@ -177,7 +152,6 @@ public:
     //GpioPinLed ledYellow=YELLOW;
     //GpioBeep beeper=2; - TIMER 3A, confilicts with I2C
     GpioBeep beeper=21;
-    GpioBeepPWM beepPwm;
     const int led_gpio[4]={GREEN,YELLOW,BLUE};
     bool initialize();
     bool shutdown();
@@ -185,8 +159,6 @@ public:
     z_status dump();
     z_status dump_pins();
     //z_status beep();
-    z_status takeOnMe();
-    z_status takeOnMePush();
     z_status lightShow();
 	struct gpiod_chip *_chip=0;
     z_status json_config_get(z_json_stream &js);
@@ -197,7 +169,7 @@ public:
     int setPinDirection(gpiod_line_direction dir, unsigned int pin);
     int setPinOutput(unsigned int pin,int val);
     int reconfigure_line(struct gpiod_line_request *request,unsigned int offset,gpiod_line_direction dir,enum gpiod_line_value value=GPIOD_LINE_VALUE_INACTIVE);
-
+    int enableInterrupt(int pin);
    // z_status addPin(int num);
 
     //z_obj_map<GpioPin, false> _led_map;
