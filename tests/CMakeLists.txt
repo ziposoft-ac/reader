@@ -1,4 +1,5 @@
 add_subdirectory(test_gpio)
+add_subdirectory(test_factory)
 add_subdirectory(test_gpio_button)
 add_subdirectory(test_mongoose)
 #add_subdirectory(test_serial)

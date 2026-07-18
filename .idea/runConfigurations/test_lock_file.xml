@@ -1,0 +1,7 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="test_lock_file" type="CMakeRunConfiguration" factoryName="Application" folderName="tests" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="ziposoft" TARGET_NAME="test_lock_file" CONFIG_NAME="Release" RUN_TARGET_PROJECT_NAME="ziposoft" RUN_TARGET_NAME="test_lock_file">
+    <method v="2">
+      <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+    </method>
+  </configuration>
+</component>

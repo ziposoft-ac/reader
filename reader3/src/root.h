@@ -7,17 +7,21 @@
 
 
 #include "pch.h"
-#include "BeepPwm.h"
+#include "io/BeepPwm.h"
+#include "api/MqServer.h"
 
-#include "cfmu804.h"
-#include "timers.h"
-#include "tests.h"
-#include "simulator.h"
-#include "gpioButton.h"
-#include "gpio.h"
-#include "WebServer.h"
-#include "VisitProcess.h"
-#include "ReaderService.h"
+#include "rfid/cfmu804.h"
+#include "util/timers.h"
+#include "tests/tests.h"
+#include "rfid/simulator.h"
+#include "io/gpioButton.h"
+#include "battery/Battery.h"
+#include "io/gpio.h"
+#include "io/i2c.h"
+#include "web/WebServer.h"
+#include "rfid/VisitProcess.h"
+#include "rfid/ReaderService.h"
+#include "leds/LedService.h"
 //#include "processRunner.h"
 
 class Root
@@ -40,14 +44,15 @@ public:
     Cfmu804 cfmu804;
     RfidSimulator simulator;
     // server;
-    Gpio gpio;
+    I2c i2c;
+    Battery battery;
     gpioButton button;
     VisitProcess visitProc;
     Tests tests;
     WebServer web_server;
-    TimerService timerService;
     ReaderService readerService;
     BeepPwm beeper;
+    MqServerTest mqServerTest;
 
     //ProcessRunner processRunner;
 

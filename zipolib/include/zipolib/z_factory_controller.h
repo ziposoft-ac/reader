@@ -162,6 +162,17 @@ public:
 		_node_path.reset(_root);
 		init_commands();
 	}
+	void initialize_vobj( z_void_obj* vobj/* root object */,ctext exe_name /* exe/config file name */)
+	{
+
+		z_factory* fact = get_factory_from_vobj(vobj);
+		init_config_file_name(exe_name, fact->get_name());
+		_root.init(vobj, fact);
+		_node_path.reset(_root);
+		init_commands();
+	}
+
+
 
 	virtual void get_current_string_path(z_string &path);
 	z_stream& get_default_stream() {

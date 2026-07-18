@@ -548,6 +548,30 @@ public:
 
 
 };
+template <class TYPE> class zf_extern_obj_t : public zf_child_obj
+{
+	TYPE * _external_obj_ptr=0;
+public:
+
+	virtual z_void_obj* obj_ptr_get(void* parent)
+	{
+		return (z_void_obj*)_external_obj_ptr;
+	}
+	zf_extern_obj_t(ctext id, ctext name, TYPE*  objPtr, zf_operation_flags flags, ctext desc)
+		: zf_child_obj(id, name, 0, flags, desc)
+	{
+		_external_obj_ptr=objPtr;
+	}
+	virtual ~zf_extern_obj_t() {}
+	virtual z_status get_as_string(z_string& s, void* vobj)
+	{
+
+		return zs_not_implemented;
+
+	}
+	virtual z_factory* get_factory();
+
+};
 
 template <class TYPE> class zf_child_obj_t : public zf_child_obj
 {

@@ -117,6 +117,11 @@ public:
 		}
 		return 0;
 	}
+	zf_action* get_action(ctext key)
+	{
+		return get_feature_t<zf_action>(key);
+	}
+
 	template <class FTYPE> FTYPE* get_feature_t(ctext key)
 	{
 		zf_feature* f = get_feature(key);
@@ -168,6 +173,14 @@ public:
 	template <class VTYPE>  zf_feature* zf_child_obj_create(VTYPE& dummy, ctext id, z_memptr offset, zf_operation_flags flags, ctext desc)
 	{
 		zf_feature* f = z_new zf_child_obj_t<VTYPE>(id, id, offset,flags,desc);
+		//f->_desc = desc;
+		//f->set_flags(flags);
+		return f;
+	}
+
+	template <class VTYPE>  zf_feature* zf_extern_obj_create(VTYPE& dummy, ctext id, VTYPE* objPtr, zf_operation_flags flags, ctext desc)
+	{
+		zf_feature* f = z_new zf_extern_obj_t<VTYPE>(id, id, objPtr,flags,desc);
 		//f->_desc = desc;
 		//f->set_flags(flags);
 		return f;
@@ -384,7 +397,9 @@ template<class TYPE>  z_factory* zf_child_obj_t<TYPE>::get_factory() {
 template<class TYPE>  z_factory* zf_child_obj_ptr_t<TYPE>::get_factory() {
 	return z_factory_t<TYPE>::get_instance_static();
 }
-
+template<class TYPE>  z_factory* zf_extern_obj_t<TYPE>::get_factory() {
+	return z_factory_t<TYPE>::get_instance_static();
+}
 template <class VTYPE> inline  zf_node create_node(VTYPE & _obj_)
 {
 	
@@ -395,7 +410,13 @@ z_factory* get_factory_from_vobj(const z_void_obj* vo);
 
 #define GET_FACT(_CLASS_) z_factory_t<_CLASS_>::get_instance_static()
 
+template<typename T>
+zf_node::zf_node(T* obj) {
+	_factory = GET_FACT(T);
+	_obj=obj;
 
+
+}
 
 template <class PTYPE,class CTYPE> z_status get_child_objs_type(z_factory* pf,PTYPE* parent,z_obj_map<CTYPE,false>& map)
 {

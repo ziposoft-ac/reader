@@ -1,0 +1,7 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="reader3" type="CMakeRunConfiguration" factoryName="Application" PROGRAM_PARAMS="debug" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="true" WORKING_DIR="file://$PROJECT_DIR$/../../reader/" PASS_PARENT_ENVS_2="true" PROJECT_NAME="ziposoft" TARGET_NAME="reader3" RUN_TARGET_PROJECT_NAME="ziposoft" RUN_TARGET_NAME="reader3">
+    <method v="2">
+      <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+    </method>
+  </configuration>
+</component>

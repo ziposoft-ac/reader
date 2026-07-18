@@ -16,12 +16,16 @@ ZMETA(Root)
     ZOBJ_X(cfmu804,"rfid",ZFF_PROP_DEF,"cf-804 module");
     ZOBJ(timerService);
     ZOBJ(readerService);
+    ZOBJ(mqServiceLeds);
     ZOBJ(button);
     //ZOBJ(processRunner);
     ZOBJ(web_server);
     ZOBJ(beeper);
+    ZOBJ(battery);
+    ZOBJ(i2c);
     //ZOBJ(server);
     ZOBJ(visitProc);
+    ZOBJ(mqServerTest);
     ZACT(simulate_on);
     ZACT(simulate_off);
     ZACT(dump_ports);
@@ -54,7 +58,7 @@ z_status Root::initialize()
         _reader=&simulator;
     else
         _reader=&cfmu804;
-    gpio.initialize();
+    //gpio.initialize();
 
 
     return zs_ok;
@@ -73,7 +77,8 @@ z_status Root::shutdown()
     gpio.shutdown();
     beeper.shutdown();
     button.stop();
-
+    mqServerTest.shutdown();
+    mqServiceLeds.shutdown();
     return zs_ok;
 }
 
@@ -87,3 +92,9 @@ z_status Root::quit_notify()
     return zs_ok;
 }
 
+z_console& init_console(ctext exe_name) {
+    root.console.initialize(&root, exe_name);
+    root.console.loadcfg();
+    root.initialize();
+    return root.console;
+}

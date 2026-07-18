@@ -1,0 +1,6 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="octopi" type="CLion_Remote" version="1" remoteCommand="octopi:1234" symbolFile="" sysroot="">
+    <debugger kind="GDB" isBundled="true" />
+    <method v="2" />
+  </configuration>
+</component>

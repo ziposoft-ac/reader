@@ -6,8 +6,8 @@
 #include <stdarg.h>
 using namespace std;
 /*
-utf8 test = u8"∃y ∀x ¬(x ≺ y)";
-utf8 smile = u8"😃";
+utf8 test = U8"∃y ∀x ¬(x ≺ y)";
+utf8 smile = U8"😃";
 */
 
 /* binary search in memory */

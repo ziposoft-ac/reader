@@ -1,60 +1,68 @@
 #include "pch.h"
+#include "global.h"
 
-#include "root.h"
+
+std::condition_variable g_process_quit_cv;
+std::mutex g_process_quit_mutex;
+bool g_process_shutting_down = false;
+
+z_console console;
 
 
-#include "zipolib/z_log.h"
-#include "zipolib/lockfile.h"
+typedef int (*ShutdownCallback)(void* data);
 
+
+
+void process_wait_for_quit()
+{
+    if (console.is_console_running())
+        return; //
+
+    std::unique_lock<std::mutex> mlock(g_process_quit_mutex);
+
+    g_process_quit_cv.wait(mlock);
+}
+void process_quit_notify()
+{
+    printf("root quit_notify\n");
+    g_process_shutting_down=true;
+    g_process_quit_cv.notify_all();
+    console.quit();
+
+}
 void ctrl_C_handler(int s) {
-    root.console.quit();
-    root.quit_notify();
+    console.quit();
+    process_quit_notify();
     zout << "ctrl C handler\n";
 };
-z_string get_now_time()
-{
-    return z_time::get_now_local().to_readable_string();
-}
 
-int eval(int val)
-{
-    printf("eval:%d\n",val);
-    return val;
-}
-
-
-void testfunc(int first, int second,int third)
-{
-    printf("first:%d second:%d third:%d\n",first,second,third);
-
-}
 
 int main(int argc, char* argv[])
 {
-
-
     srand(time(NULL));
-    //testfunc(eval(1),eval(2),eval(3));
-    //return 0;
     tzset();
 
-
-
+    if (!gRootObject) {
+        Z_ERROR_LOG("No root object defined\n");
+        return -1;
+    }
+    z_catch_ctl_c(ctrl_C_handler);
     z_debug_load_save_args(&argc, &argv);
 
+    console.initialize_vobj(gRootObject, argv[0]);
 
-#ifndef ARM
-    //get_zlog().add_stdout();
+#ifdef UGLY_CRAP
+    z_factory* factory =   get_factory_from_vobj(gRootObject);
+    zf_action* init_act=factory->get_action("initialize");
+    if (init_act) {
+        zf_command_context cc(&console);
+        init_act->execute(cc);
+    }
 #endif
 
 
-    z_catch_ctl_c(ctrl_C_handler);
-    root.console.initialize(&root, argv[0]);
+    console.runapp(argc, argv, true, 0);
 
-    z_status status = root.console.loadcfg();
-    root.initialize();
 
-    root.console.runapp(argc, argv, true, 0);
-    root.shutdown();
 
 }

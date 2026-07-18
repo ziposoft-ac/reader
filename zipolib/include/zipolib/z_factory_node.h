@@ -167,6 +167,10 @@ public:
 		init(o, ft);
 
 	}
+	// Templated constructor
+	template <typename T> 	zf_node(T* obj) ;
+
+
 	zf_node(const z_void_obj* o);
 	void init(z_void_obj* o, z_factory* ft);
 	void set(const z_void_obj* o);
@@ -196,5 +200,6 @@ public:
 
 
 const zf_node zf_node_null;
+
 
 #endif

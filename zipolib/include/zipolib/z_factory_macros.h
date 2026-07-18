@@ -41,6 +41,11 @@ ________________________________________________________________________*/
 	f->add_feature(ZFF_PARSE_STRING,z_new zf_const_string(_STR_,ZFF_PARSE_STRING,ZFF_PARSE_STRING,ZFF_CONST,0));
 
 
+
+#define ZOBJ_EX(_OBJ_,_NAME_,_FLAGS_,_DESC_) \
+	f->add_feature(_NAME_,f->zf_extern_obj_create(_OBJ_,_NAME_,&_OBJ_,_FLAGS_,_DESC_))
+
+
 #define ZOBJ_X(_VAR_,_NAME_,_FLAGS_,_DESC_) \
 	f->add_feature(_NAME_,f->zf_child_obj_create((( (BASECLASS*)0)->_VAR_),_NAME_,zp_offsetof_class(BASECLASS,_VAR_),_FLAGS_,_DESC_))
 
