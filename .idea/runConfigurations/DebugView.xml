@@ -1,5 +1,5 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="DebugView" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="ziposoft" TARGET_NAME="DebugView" CONFIG_NAME="Release" RUN_TARGET_PROJECT_NAME="ziposoft" RUN_TARGET_NAME="DebugView">
+  <configuration default="false" name="DebugView" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="ziposoft" TARGET_NAME="DebugView" CONFIG_NAME="x64_reldb" RUN_TARGET_PROJECT_NAME="ziposoft" RUN_TARGET_NAME="DebugView">
     <method v="2">
       <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
     </method>
