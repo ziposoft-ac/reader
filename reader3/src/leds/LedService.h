@@ -7,35 +7,12 @@
 
 #include "pch.h"
 
-#include "util/Service.h"
+#include "../main/Service.h"
 #include "LedApi.h"
 
 
 
 
-
-class LedServiceMq : public MqServer{
-    friend z_factory_t<LedServiceMq>;
-
-private:
-
-public:
-
-    LedServiceMq() {
-        _this_mq_server_name="/LedService";
-    }
-    virtual  int process_message(MqMsg* msg) ;
-
-
-    z_status sendFlashLed() {
-         LedFlash flash={
-             LedGreen,1000,4
-         };
-        send_msg(_this_mq_server_name,"flashLed",(ctext)&flash,sizeof(flash));
-        return zs_ok;
-
-    }
-};
 
 
 class LedService : public  Service{
@@ -43,14 +20,33 @@ class LedService : public  Service{
 
     LedService(){}
     virtual ~LedService() {}
+    MqServerMap<LedService> mq;
+    z_status initialize() override;
+    z_status shutdown() override;
 
-    LedServiceMq mq;
-    z_status init();
-    z_status flashLed(LedFlash* cmd) {
+
+    z_status Dummy(Dummy* cmd) {
+        printf("Dummy !! %d\n",
+            cmd->dummy
+            );
+        return zs_ok;
+    }
+    z_status LedFlash(LedFlash* cmd) {
         printf("flashLed !! %d,%d\n",
             cmd->color,cmd->count
             );
         return zs_ok;
+    }
+    z_status LedSet(LedSet* cmd) {
+        printf("LedSet !! %d,%d\n",
+            cmd->color,cmd->on
+            );
+        return zs_ok;
+    }
+    z_status test() {
+        z_status s=apiLedService.LedFlash({LedGreen,1000,3});
+
+        return s;
     }
 };
 

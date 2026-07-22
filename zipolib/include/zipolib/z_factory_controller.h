@@ -171,7 +171,16 @@ public:
 		_node_path.reset(_root);
 		init_commands();
 	}
+	template <class ROOT_OBJ_CLASS> void initialize( ROOT_OBJ_CLASS* obj/* root object */,
+		z_factory* fact,
+		ctext exe_name /* exe/config file name */)
+	{
 
+		init_config_file_name(exe_name, fact->get_name());
+		_root.init((z_void_obj*)obj, fact);
+		_node_path.reset(_root);
+		init_commands();
+	}
 
 
 	virtual void get_current_string_path(z_string &path);

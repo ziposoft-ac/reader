@@ -8,9 +8,7 @@
 #include "pch.h"
 
 
-extern z_void_obj* gRootObject;
-#define SET_ROOT_OBJ(_X_) z_void_obj* gRootObject=(z_void_obj*)&_X_;
-
+extern z_console gConsole;
 
 void process_quit_notify();
 

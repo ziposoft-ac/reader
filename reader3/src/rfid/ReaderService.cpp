@@ -5,7 +5,7 @@
 #include "zipolib/lockfile.h"
 #include <filesystem>
 
-#include "../ReaderService.h"
+#include "ReaderService.h"
 
 
 ZMETA_DEF(ReaderService);

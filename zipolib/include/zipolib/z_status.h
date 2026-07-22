@@ -14,6 +14,8 @@ typedef enum  {
 	zs_matched=0,
 	zs_success=0,
 	zs_no_match,
+	zs_pending,
+	zs_more_data_to_follow,
 	zs_skipped,
 	zs_unparsed_data,
 	zs_eof,
@@ -54,8 +56,7 @@ typedef enum  {
 	zs_out_of_memory,
     zs_quit,
     zs_bad_command,
-    zs_failed_on_device,
-	zs_more_data_to_follow
+    zs_failed_on_device
 
 } z_status;
 ctext zs_get_status_text(z_status status);

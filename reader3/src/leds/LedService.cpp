@@ -3,40 +3,39 @@
 //
 
 #include "LedService.h"
-#include "global.h"
-ZMETA(LedServiceMq) {
-    ZBASE(MqServer);
-    ZACT(sendFlashLed);
-
-};
-
-
-
+#include "../global.h"
 ZMETA(LedService) {
     ZBASE(Service);
     ZOBJ(mq);
-    ZACT(init);
+
+    ZACT(test);
 };
 
 
+ZMETA(MqServerMap<LedService>) {
+    ZBASE(MqServer);
+};
 
-LedService ledService;
-MqApiHandler handler(&ledService);
+#define MQ_HANDLER LedService
+#define API LED_API
+#include "api/ApiMap.inc"
 
 
-int LedServiceMq::process_message(MqMsg* msg) {
-    printf("LedServiceMq RX: %s\n",msg->command_str);
 
-    handler.exec_callback(msg->command_str,(void*)msg->data);
-    return 0;
+
+z_status LedService::initialize() {
+
+    mq.run_map("/LedService",this);
+
+    return zs_ok;
+
+}
+z_status LedService::shutdown() {
+
+    mq.stop();
+    return zs_ok;
+
 }
 
-z_status LedService::init() {
 
-    handler.add_callback("flashLed",&LedService::flashLed);
-        return zs_ok;
-
-}
-
-
-SET_ROOT_OBJ(ledService);
+ROOT_SERVICE(LedService);

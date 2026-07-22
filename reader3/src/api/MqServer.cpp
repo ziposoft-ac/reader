@@ -4,7 +4,7 @@
 
 #include "MqServer.h"
 #include <mqueue.h>
-
+ZMETA_DEF(MqServer);
 ZMETA(MqServerTest) {
     ZBASE(MqServer);
 
@@ -26,6 +26,8 @@ z_status msg_create(MqMsg* msg,ctext mq_reply_name, ctext command,U16  command_e
         sizeof(U32)+ // data_len
         sizeof(U32); // msg_id
 
+    if (data==nullptr)
+        data="";
 
     if (len_total >= MAX_MSG_SIZE) {
         return Z_ERROR_MSG(zs_bad_parameter,"total msg exceeds max len: %s",command);
@@ -47,12 +49,7 @@ z_status msg_create(MqMsg* msg,ctext mq_reply_name, ctext command,U16  command_e
 
 
 
-void msg_destroy(MqMsg* msg) {
-    if (msg->buffer)
-        delete []msg->buffer;
-    msg->buffer=NULL;
-    msg->buff_len=0;
-}
+
 z_status msg_deserialize(MqMsg* msg,ctext buff,size_t len) {
     ctext p=buff;
     ctext end=buff+len;
@@ -85,6 +82,33 @@ z_status msg_deserialize(MqMsg* msg,ctext buff,size_t len) {
 
 
 }
+z_status MqServer::process_command_handlers(MqMsg* msg) {
+
+    for(auto handler :_cmdHandlers ) {
+        if (handler->cmd_exists(msg->command_str)!=zs_ok)
+            continue;;
+
+        z_string return_buffer;
+
+        z_status status=  handler->callback_rx(msg->command_str,
+            msg->data,msg->data_len,return_buffer);
+
+        if (status!=zs_ok) {
+            return status;
+        }
+
+        if (msg->mq_reply_name && msg->mq_reply_name_len > 1) {
+            z_string reply="@";
+            reply+=msg->command_str;
+            mq_send_msg_with_reply(msg->mq_reply_name,"",reply,msg->msg_id,return_buffer.c_str(),return_buffer.length());
+        }
+
+        return zs_ok;
+    }
+
+    return zs_not_found;
+
+}
 
 
 
@@ -93,6 +117,7 @@ void MqServer::thread() {
     unsigned int msg_priority=0;
     char* buff=new char[MAX_MSG_SIZE+1];
     MqMsg msg;
+    _is_running=true;
     while (1) {
         ssize_t len=mq_receive(_mq_server_fd, buff, MAX_MSG_SIZE, &msg_priority);
         if (len == -1) {
@@ -107,12 +132,17 @@ void MqServer::thread() {
         if (msg.command_enum == mq_command_quit)
             break;
 
+        if (process_command_handlers(&msg)==zs_not_found) {
+
         process_message(&msg);
+
+        }
 
 
     }
     delete []buff;
     printf("Mq server quiting thread\n");
+    _is_running=false;
 
 
 }
@@ -120,11 +150,15 @@ void MqServer::thread() {
 
 z_status MqServer::shutdown() {
 
+    if (_is_running) {
+        send_msg_self(mq_command_quit);
+        if (_thread_handle.joinable())
+            _thread_handle.join();
+
+    }
     if (!_mq_server_fd)
         return zs_not_open;
-    send_msg_self(mq_command_quit);
-    if (_thread_handle.joinable())
-        _thread_handle.join();
+
     mq_close(_mq_server_fd);
     printf("Mq server shutdown\n");
     _mq_server_fd=0;
@@ -143,7 +177,7 @@ z_status MqServer::send_msg_self(mq_command_enum_t command_enum) {
 }
 
 z_status MqServer::start() {
-    return run(_this_mq_server_name);
+    return run(_q_name);
 }
 
 z_status MqServer::run(ctext name,int size) {
@@ -158,7 +192,7 @@ z_status MqServer::run(ctext name,int size) {
     attr.mq_msgsize = size;
     attr.mq_curmsgs = 0;
 
-    _this_mq_server_name=name;
+    _q_name=name;
 
     _mq_server_fd = mq_open(name, O_RDWR | O_CREAT, 0660, &attr);
     if (_mq_server_fd == (mqd_t)-1) {
@@ -174,7 +208,7 @@ z_status MqServer::run(ctext name,int size) {
 z_status MqServer::send_msg(ctext remote_mq_name,ctext command,ctext data,size_t data_len) {
     MqMsg msg;
 
-    msg_create(&msg,_this_mq_server_name,command,mq_command_string,_send_msg_id,data_len,data);
+    msg_create(&msg,_q_name,command,mq_command_string,_send_msg_id,data_len,data);
     _send_msg_id++;
 
     mqd_t mq_server = mq_open(remote_mq_name, O_WRONLY);
@@ -202,4 +236,17 @@ z_status MqServer::send(z_string remote_mq_name, z_string msg) {
 z_status MqServer::stop() {
     shutdown();
     return zs_success;
+}
+void MqServer::register_consumer(CommandHandler *consumer) {
+
+    if(_cmdHandlers.find(consumer)==_cmdHandlers.end()) {
+
+        _cmdHandlers.insert(consumer);
+        //ZLOG("Registered consumer for RfidReader\n");
+    }
+}
+
+void MqServer::remove_consumer(CommandHandler *consumer) {
+    if(_cmdHandlers.find(consumer)!=_cmdHandlers.end())
+        _cmdHandlers.erase(consumer);
 }

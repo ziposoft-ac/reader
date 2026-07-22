@@ -8,15 +8,15 @@ include_directories(
 
 
 
-set(TARGET test_mongoose)
+set(TARGET test_curl)
 
 
 
-file(GLOB SRC "*.c")
+file(GLOB SRC "*.cpp")
 file(GLOB HEADERS "*.h")
 
 add_executable(${TARGET}  ${SRC}  ${HEADERS} )
 add_definitions( -DUNIX -DLINUX)
-target_link_libraries(${TARGET}  zipolib mongoose-7.22  )
+target_link_libraries(${TARGET}  zipolib curl gpiod )
 
 

@@ -4,21 +4,6 @@
 #include "zipolib/z_factory_controller.h"
 #include "zipolib/z_stream.h"
 
-class z_console_test_obj
-{
-public:
-	int _Aint;
-	int othercrap()
-	{
-		_Aint = 5678;
-		return 0;
-	}
-	virtual z_status act1()
-	{
-		printf("go running!!!");
-		return zs_ok;
-	};
-};
 
 
 class z_console : public z_console_base	,public   z_factory_controller

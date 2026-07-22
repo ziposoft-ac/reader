@@ -22,10 +22,7 @@ ZMETA(z_console)
 
 
 }
-ZMETA(z_console_test_obj)
-{
-	ZACT(act1);
-};
+
 Z_FC_COMMANDS(z_console)
 {
 	Z_FC_BASE(z_factory_controller);

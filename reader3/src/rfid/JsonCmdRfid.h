@@ -16,9 +16,25 @@ enum delayed_request_type {
 };
 
 #define CMDS \
-    CMD_POST(test500) \
-    CMD_POST(pong) \
+    CMD_GET(status) \
+    CMD_GET(reads_raw) \
+    CMD_GET(reads_filtered) \
+    CMD_GET(visits) \
+    CMD_GET(config) \
+    CMD_GET(gpio) \
+    CMD_POST(gpio) \
+    CMD_POST(program_bcd) \
+    CMD_POST(program_epc) \
+    CMD_GET(read_one) \
+    CMD_POST(config) \
     CMD_GET(delay) \
+    CMD_POST(stop_raw) \
+    CMD_POST(start_raw) \
+    CMD_POST(stop_visitProc) \
+    CMD_POST(start_visitProc) \
+    CMD_GET(beep) \
+    CMD_POST(beepon) \
+    CMD_POST(beepoff) \
     CMD_GET(pingpong)
 
 

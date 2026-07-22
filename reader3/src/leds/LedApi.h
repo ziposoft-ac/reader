@@ -37,31 +37,24 @@ struct LedFlash
     LedColor color;
     U32 time_ms;
     U32 count;
+    U32 dummy;
+};
+struct Dummy
+{
+    U32 dummy;
 
 };
 
-struct ApiEntry {
-    size_t dataSize;
-    ctext name;
-
-};
 
 #define LED_API \
-    API(LedService,LedService, \
+    API_NAME(LedService, \
     CMD(LedFlash)    \
+    CMD(LedSet)    \
+    CMD(Dummy)    \
     )
 
-
-
-
-
-
-
-constexpr auto MyStaticMap = make_static_map<std::string_view, int>({
-    {"apple",  1},
-    {"banana", 2},
-    {"cherry", 3}
-});
+#define API LED_API
+#include "api/ApiDeclare.inc"
 
 
 

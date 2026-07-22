@@ -5,45 +5,12 @@
 #ifndef ZIPOSOFT_IPCSERVER_H
 #define ZIPOSOFT_IPCSERVER_H
 #include "pch.h"
-#include "IpcRequests.h"
+#include "MqClient.h"
+
+#include "api/CommandHandler.h"
 
 
-#include <mqueue.h>
-
-
-#define MAX_MSG_SIZE 0x2000
-
-
-template<typename DATA_T> struct MqMsg_T {
-    U16 mq_reply_name_len;
-    U16 command_str_len;
-    U16 command_enum;
-    U32 data_len;
-    U32 msg_id;
-    ctext mq_reply_name;
-    ctext command_str;
-    DATA_T* data;
-
-    ctext buffer;
-    U32 buff_len;
-};
-typedef MqMsg_T<const char> MqMsg;
-
-z_status msg_create(
-    MqMsg* msg,
-    ctext mq_reply_name,
-    ctext command,
-    U16  command_enum,
-    U32 msg_id,
-    U32 data_len,
-    ctext data
-);
-enum mq_command_enum_t {
-    mq_command_string,
-    mq_command_quit,
-
-};
-
+// get rid of this
 template <class OBJ> class MqApiHandler {
 public:
 
@@ -74,21 +41,6 @@ public:
 };
 
 
-template <class OBJ,typename MSG_TYPE> class MqCallHandler {
-
-    MqCallHandler(OBJ* obj,z_status (OBJ::*callback)(MSG_TYPE* msg)) {
-
-    }
-
-};
-
-
-/*
-
-
-
-*/
-
 
 
 
@@ -98,23 +50,27 @@ class MqServer {
 private:
     U32 _send_msg_id=1;
     mqd_t _mq_server_fd=0;
-    bool is_running=false;
+    bool _is_running=false;
 
     virtual void thread() ;
 
+    std::set<CommandHandler*> _cmdHandlers;
 
     std::thread _thread_handle;
 protected:
-    z_string _this_mq_server_name="/mq_server";
+    z_string _q_name="/mq_server";
 
 public:
+    bool is_running() {  return _is_running;  }
+    void register_consumer(CommandHandler* consumer);
+    void remove_consumer(CommandHandler* consumer);
     MqServer();
     ~MqServer();
     //z_safe_queue<RfidRead*> _queue_reads;
-    z_status run(ctext name,int size=0x2000);
+    virtual z_status run(ctext name,int size=0x2000);
     z_status shutdown();
 
-
+    virtual  z_status process_command_handlers(MqMsg* msg);
     virtual  int process_message(MqMsg* msg) {
         return 0;
 
@@ -127,10 +83,74 @@ public:
     z_status send(z_string mq_name,z_string msg);
 
 };
+template <class T> class MqServerCb : public MqServer {
+public:
+
+    T* _object=0;
+    typedef int (T::*member_callback)(MqMsg* msg) ;
+    member_callback _member_callback=0;
+    virtual z_status run(ctext name,T* obj,member_callback callback) {
+        _object=obj;
+        _member_callback=callback;
+        _q_name=name;
+        return zs_ok;
+    };
+    int process_message(MqMsg* msg) override {
+        if (_member_callback)
+            return  (_object->*_member_callback)(msg);
+
+        return 0;
+
+    }
+};
+
+template <class T> class MqServerMap : public MqServer {
+
+public:
+    typedef z_status (T::*member_callback_t)(const char* data);
+    T* _object=0;
+    typedef struct  {
+        ctext name;
+        member_callback_t callback;
+        size_t data_size;
+    } entry_t;
+    static size_t map_size;
+    static entry_t  map[];
+
+    z_status run_map(ctext queue_name,T* obj) {
+        _object=obj;
+        return run(queue_name);
+    }
+    virtual  int process_message(MqMsg* msg) {
+        entry_t *entry=0;
+        for (int i=0;i<map_size;i++) {
+            if (strcmp(map[i].name,msg->command_str) == 0) {
+                entry=&map[i];
+                break;
+            }
+
+        }
+        if (!entry) {
+
+            return Z_ERROR_MSG(zs_bad_command,"MQ command not found: %s\n",msg->command_str);
+        }
+
+        if (entry->data_size != msg->data_len) {
+            return Z_ERROR_MSG(zs_bad_command,"MQ data size for command does not match: %s\n",msg->command_str);
+        }
+        member_callback_t callback=entry->callback;
+
+        return  (_object->*callback)(msg->data);
+
+    }
+
+};
+
 ZMETA_DECL(MqServer) {
     ZACT(stop);
     ZACT(start);
-    ZPROP(_this_mq_server_name);
+    ZSTAT(is_running);
+    ZPROP(_q_name);
     ZCMD(send, ZFF_CMD_DEF, "send",
         ZPRM(z_string, mq_name, "mq", "mq_name", ZFF_PARAM),
          ZPRM(z_string, msg, "hello there", "msg", ZFF_PARAM)

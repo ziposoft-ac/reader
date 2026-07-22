@@ -52,6 +52,7 @@ public:
 	{
 		
 	}
+
 };
 
 class z_json_str : public z_json_val
@@ -172,6 +173,11 @@ public:
 	{
 		return _keys.getobj(key);
 	}
+
+	virtual void print()
+	{
+		print(stdout_json);
+	}
 	virtual void print( z_json_stream &stream)
 	{
 		bool pp = false;
@@ -259,7 +265,7 @@ public:
 		return _array.get(i);
 	}
 
-	virtual void print( z_json_stream &stream)
+	void print( z_json_stream &stream) override
 	{
 		bool pp = false;
 		if (_array.size() == 0)

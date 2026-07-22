@@ -139,6 +139,8 @@ public:
 std::ostream & operator<<(std::ostream &os, const z_time_duration& td);
 std::ostream & operator<<(std::ostream &os, const z_time& zt);
 void z_sleep_ms(int ms);
+void z_sleep_us(int us);
+void z_sleep_ns(int us);
 
 
 #if 0
@@ -193,6 +195,8 @@ public:
 };
 #endif
 U64 z_time_get_ticks_ms();
+U64 z_time_get_ticks_us();
+U64 z_time_get_ticks_ns();
 U64 z_time_get_ms_elapsed(U64 ticks_start);
 
 

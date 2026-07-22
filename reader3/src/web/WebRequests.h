@@ -6,7 +6,7 @@
 #define ZIPOSOFT_MONGOOSE_H
 #include "pch.h"
 
-#include "mongoose/mongoose.h"
+#include "mongoose-7.22/mongoose.h"
 
 enum cmd_req_type
 {
@@ -27,7 +27,7 @@ typedef void (*fn_cmd_reply_t) (z_json_stream &js,size_t ctx1,size_t ctx2);
 typedef int (*fn_cmd_post_t) (http_request req,z_json_obj &jin);
 typedef int (*fn_cmd_get_t) (http_request req,z_string_map &vars);
 typedef int (*fn_cmd_t) (http_request req);
-void send_headers(struct mg_connection *c,int status);
+void send_default_headers(struct mg_connection *c,int status);
 
 
 /*
@@ -36,7 +36,6 @@ void send_headers(struct mg_connection *c,int status);
  */
 template<typename T> int send_json_response(http_request r,T callback) {
     z_string s;
-    z_string msg_out;
     z_json_stream js(s);
     js.obj_start();
     js.keyval_int("ts",z_time::get_now_ms());
@@ -44,7 +43,7 @@ template<typename T> int send_json_response(http_request r,T callback) {
 
     js.obj_end();
 
-    send_headers(r.c,status);
+    send_default_headers(r.c,status);
 
     mg_http_write_chunk(r.c, s.c_str(), s.length());
 

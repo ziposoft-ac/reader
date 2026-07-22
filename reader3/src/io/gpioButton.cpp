@@ -3,7 +3,7 @@
 //
 
 #include "gpioButton.h"
-#include "global.h"
+#include "../global.h"
 
 #include <sys/eventfd.h>
 ZMETA(gpioButton)

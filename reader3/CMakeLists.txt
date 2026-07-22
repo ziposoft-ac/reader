@@ -14,11 +14,13 @@ include_directories(
 set(SRC_DIR  ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
 file(GLOB SRC "src/*.cpp")
-file(GLOB SRC_TEST "src/tests/*.cpp")
-file(GLOB SRC_RFID "src/rfid/*.cpp")
-file(GLOB SRC_IO "src/io/*.cpp")
-file(GLOB SRC_COMMS "src/api/*.cpp")
+file(GLOB SRC_TEST "src/tests/*")
+file(GLOB SRC_RFID "src/rfid/*")
+file(GLOB SRC_IO "src/io/*")
+file(GLOB SRC_COMMS "src/api/*")
 file(GLOB SRC_WEB "src/web/*.cpp")
+file(GLOB SRC_API "src/leds/LedApi.cpp")
+file(GLOB SRC_MAIN "src/main/*.cpp")
 file(GLOB SRC_UTIL "src/util/*.cpp")
 file(GLOB HEADERS "src/*.h")
 add_link_options(  -pthread    )
@@ -43,7 +45,7 @@ add_custom_target(timestamp
 
 
 function(target_func TARGET )
-    add_executable(${TARGET} src/timestamp.cpp src/main.cpp ${ARGN}  ${SRC_IO}  ${SRC_UTIL} ${SRC_COMMS}  ${HEADERS}  )
+    add_executable(${TARGET} src/timestamp.cpp  ${ARGN} ${SRC_IO}  ${SRC_MAIN}  ${SRC_API}  ${SRC_UTIL} ${SRC_COMMS}  ${HEADERS}  )
     add_dependencies(${TARGET} timestamp)
     target_link_libraries(${TARGET}   zipolib libz.a   dl gpiod pthread parson )
     target_precompile_headers(${TARGET} PRIVATE src/pch.h  )
@@ -55,12 +57,12 @@ function(target_func TARGET )
 
         target_compile_definitions(${TARGET} PUBLIC ARM=1)
 
-        target_link_libraries(${TARGET} mongoose libcap.a)
+        target_link_libraries(${TARGET} mongoose-7.22 libcap.a)
 
         #add_custom_command(TARGET ${TARGET} POST_BUILD   COMMAND  scp ${TARGET} pi@timer2.local:/home/pi/rfid/        )
         #add_custom_command(TARGET ${TARGET} POST_BUILD   COMMAND  scp ${TARGET} pi@10.1.1.1:/home/pi/rfid/        )
     else()
-        target_link_libraries(${TARGET} mongoose cap)
+        target_link_libraries(${TARGET} mongoose-7.22 cap)
         target_compile_definitions(${TARGET} PUBLIC NOGPIO=1)
         message( "Default Build")
 
@@ -72,6 +74,8 @@ endfunction()
 target_func(omnibus src/rfid/ReaderService.cpp src/root.cpp ${SRC_RFID} src/leds/LedService.cpp)
 target_func(ledService src/leds/LedService.cpp src/leds/LedApi.cpp)
 target_func(beepService src/beep/BeepService.cpp)
+target_func(tester src/tests/Tester.cpp)
+target_func(testWeb src/tests/TestWeb.cpp  ${SRC_WEB})
 
 add_compile_options(
         $<$<CONFIG:DEBUG>-DDEBUG>

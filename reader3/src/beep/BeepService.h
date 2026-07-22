@@ -7,32 +7,18 @@
 
 #include "pch.h"
 
-#include "../util/Service.h"
+#include "main/Service.h"
+#include "io/BeepPwm.h"
 
-class BeepServiceMq : public MqServer{
-    friend z_factory_t<BeepServiceMq>;
-
-private:
-
-public:
-    BeepServiceMq() {
-        _this_mq_server_name="/BeepService";
-    }
-    virtual  int process_message(MqMsg* msg) {
-        printf("BeepServiceMq RX: %s\n",msg->command_str);
-        return 0;
-    }
-
-
-};
 
 
 class BeepService : public  Service{
     public:
 
     virtual ~BeepService() {}
+    BeepPwm beeper;
 
-    BeepServiceMq mq;
+    MqServerMap<BeepService> mq;
 };
 
 

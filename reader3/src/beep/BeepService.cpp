@@ -3,19 +3,14 @@
 //
 
 #include "BeepService.h"
-#include "global.h"
-ZMETA(BeepServiceMq) {
-    ZBASE(MqServer);
-};
-
+#include "../global.h"
 
 
 ZMETA(BeepService) {
     ZBASE(Service);
-    ZOBJ(mq);
+    ZOBJ(BeepService);
 };
 
 
-BeepService beepService;
 
-SET_ROOT_OBJ(beepService);
+ROOT_SERVICE(BeepService);

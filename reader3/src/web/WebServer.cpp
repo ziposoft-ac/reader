@@ -2,12 +2,11 @@
 // Created by ac on 12/15/24.
 //
 #include "WebRequests.h"
-#include "parson/parson.h"
+//#include "parson/parson.h"
 
 #include "WebServer.h"
 
-#include "../comms/JsonCmd.h"
-#include "../root.h"
+#include "JsonCmd.h"
 
 #if 1
 #define WS_DBG(...)
@@ -25,9 +24,9 @@ void get_var_map(mg_str buf,z_string_map& var_map) {
         if (mg_span(entry, &k, &v, '=')
             ) {
             z_string val;
-            val.assign(v.ptr,v.len);
+            val.assign(v.buf,v.len);
             z_string key;
-            key.assign(k.ptr,k.len);
+            key.assign(k.buf,k.len);
             var_map[key] = val;
 
 
@@ -128,7 +127,7 @@ z_status WebServer::complete_req_all()
 ctext HEADERS="HTTP/1.1 %d OK\r\nAccess-Control-Allow-Origin: *\r\nAccess-Control-Allow-Headers: Origin, Content-Type, X-Auth-Token\r\nAccess-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS\r\n"
               "Content-Type: application/json; charset=utf-8\r\n"
               "Transfer-Encoding: chunked\r\n\r\n";
-void send_headers(struct mg_connection *c,int status) {
+void send_default_headers(struct mg_connection *c,int status) {
     mg_printf(c, HEADERS,status);
 }
 
@@ -137,13 +136,13 @@ void send_headers(struct mg_connection *c,int status) {
 
 
 
-static int process_command(http_request req,cmd_req_type type) {
+int WebServer::process_command(http_request req,cmd_req_type type) {
 
     size_t i;
     for (i=0;i<cmd_list_size;i++)
     {
         auto cmd = cmd_list[i];
-        if (mg_http_match_uri(req.hm, cmd.cmd_name) && (type==cmd.type)) {
+        if (mg_match(req.hm->uri, mg_str(cmd.cmd_name),NULL) && (type==cmd.type)) {
             // Single-threaded code path, for performance comparison
             // The /fast URI responds immediately
             if (type==REQUEST_GET)
@@ -156,7 +155,7 @@ static int process_command(http_request req,cmd_req_type type) {
             if (type==REQUEST_POST)
             {
                 zp_text_parser p;
-                z_json_obj obj=p.parseJsonObj(req.hm->body.ptr,req.hm->body.len);
+                z_json_obj obj=p.parseJsonObj(req.hm->body.buf,req.hm->body.len);
                 fn_cmd_post_t fn=(fn_cmd_post_t)cmd_list[i].fn;
                 (*fn)(req,obj);
                 return 0;
@@ -165,9 +164,46 @@ static int process_command(http_request req,cmd_req_type type) {
 
         }
     }
+
+
+    z_string cmd;
+    cmd.assign(req.hm->uri.buf +1,req.hm->uri.len-1);
+
+    for(auto handler :_cmdHandlers )
+    {
+        if (handler->cmd_exists(cmd)==zs_ok) {
+            z_string return_buffer;
+            http_status_t http_status=HTTP_STATUS_OK;
+
+            z_status status=  handler->callback_rx(cmd,req.hm->body.buf,req.hm->body.len,return_buffer);
+            if (status==zs_ok) {
+                http_status=HTTP_STATUS_OK;
+            }
+            send_default_headers(req.c,http_status);
+
+            mg_http_write_chunk(req.c, return_buffer.c_str(), return_buffer.length());
+
+            mg_http_printf_chunk(req.c, ""); // Don't forget the last empty chunk
+            return 0;
+        }
+    }
     mg_http_reply(req.c, 404, "Access-Control-Allow-Origin: *\r\nContent-Type:text/plain\r\nAccess-Control-Allow-Headers: Origin, Content-Type, X-Auth-Token\r\nAccess-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS\r\n", "REQ not found\n");
 
     return 0;
+}
+
+void WebServer::register_consumer(CommandHandler *consumer) {
+
+    if(_cmdHandlers.find(consumer)==_cmdHandlers.end()) {
+
+        _cmdHandlers.insert(consumer);
+        //ZLOG("Registered consumer for RfidReader\n");
+    }
+}
+
+void WebServer::remove_consumer(CommandHandler *consumer) {
+    if(_cmdHandlers.find(consumer)!=_cmdHandlers.end())
+        _cmdHandlers.erase(consumer);
 }
 
 
@@ -205,7 +241,7 @@ void WebServer::event_handler(struct mg_connection *c, int ev, void *ev_data) {
 
         struct mg_str *data = (struct mg_str *) ev_data;
         mg_http_reply(c, 200, "Content-Type:application/json\r\nAccess-Control-Allow-Origin: *\r\nAccess-Control-Allow-Headers: Origin, Content-Type, X-Auth-Token\r\nAccess-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS\r\n", "%.*s\n",
-            data->len, data->ptr);
+            data->len, data->buf);
     }
     if (ev == MG_EV_HTTP_MSG) {
         _req_count++;
@@ -216,7 +252,7 @@ void WebServer::event_handler(struct mg_connection *c, int ev, void *ev_data) {
 
 
 
-        if (mg_http_match_uri(hm, "/")) {
+        if (mg_match(hm->uri, mg_str("/"),NULL)) {
             // Print some statistics about currently established connections
             mg_printf(c, "HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\n");
             mg_http_printf_chunk(c, "ID PROTO TYPE      LOCAL           REMOTE\n");
@@ -234,7 +270,7 @@ void WebServer::event_handler(struct mg_connection *c, int ev, void *ev_data) {
             return;
         }
         cmd_req_type type=REQUEST_INVALID;
-        if (hm->method.len == 4 && !memcmp(hm->method.ptr, "POST", 4)) {
+        if (hm->method.len == 4 && !memcmp(hm->method.buf, "POST", 4)) {
             // Verify it's a POST request
             // Extract POST data from hm->body
             // Example: print the received body
@@ -243,7 +279,7 @@ void WebServer::event_handler(struct mg_connection *c, int ev, void *ev_data) {
             type=REQUEST_POST;
 
         }
-        if (hm->method.len == 3 && !memcmp(hm->method.ptr, "GET", 3)) {
+        if (hm->method.len == 3 && !memcmp(hm->method.buf, "GET", 3)) {
 
             type=REQUEST_GET;
         }
@@ -294,7 +330,7 @@ z_status WebServer::start() {
         _req_timer=gTimerService.create_timer_t(this,&WebServer::timer_callback_req_wait_expire,0 );
 
     }
-    root.getReader().register_consumer(this);
+    //root.getReader().register_consumer(this);
 
     _req_timer->start(200);
     return zs_ok;
@@ -314,10 +350,7 @@ bool WebServer::callbackQueueEmpty()
     return true;
 }
 
-bool WebServer::callbackRead(RfidRead* read)
-{
-    return true;
-}
+
 //static const char *s_http_addr = "http://0.0.0.0:8000";    // HTTP port
 char s_http_addr[40];
 static void http_callback(struct mg_connection *c, int ev, void *ev_data) {
@@ -331,12 +364,21 @@ int WebServer::thread() {
     mg_mgr_init(&mgr); // Initialise event manager
     sprintf(s_http_addr, "http://0.0.0.0:%d", _port);
     printf("connecting to: %s\n", s_http_addr);
-    mg_http_listen(&mgr, s_http_addr, http_callback, this); // Create HTTP listener
-    mg_wakeup_init(&mgr); // Initialise wakeup socket pair
+    mg_connection *c=mg_http_listen(&mgr, s_http_addr, http_callback, this); // Create HTTP listener
+    if (c) {
+        mg_wakeup_init(&mgr); // Initialise wakeup socket pair
 
-    while (_running) {
-        mg_mgr_poll(&mgr, 100);
+        while (_running) {
+            mg_mgr_poll(&mgr, 100);
+        }
+
     }
+    else {
+        // Handle error here (e.g., log the failure or exit the program)
+        Z_ERROR_LOG ("Failed to start listener on port %d\n",_port);
+        perror("perror");
+    }
+
     mg_mgr_free(&mgr);
 
     return 0;

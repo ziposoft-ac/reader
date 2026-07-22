@@ -6,7 +6,7 @@
 #include <ctime>
 #include <time.h>
 
-
+//#include <x86intrin.h>
 
 
 
@@ -19,6 +19,22 @@ U64 z_time_get_ticks_ms()
 	clock_gettime(CLOCK_REALTIME, &t);
 	U64 milliseconds = t.tv_sec * 1000 + t.tv_nsec / 1000000;
 	return milliseconds;
+}
+U64 z_time_get_ticks_us()
+{
+	//return __rdtsc();
+	timespec t;
+	clock_gettime(CLOCK_REALTIME, &t);
+	U64 us = t.tv_sec * 1000000 + t.tv_nsec / 1000;
+	return us;
+}
+U64 z_time_get_ticks_ns()
+{
+	//return __rdtsc();
+	timespec t;
+	clock_gettime(CLOCK_REALTIME, &t);
+	U64 ns = t.tv_sec * 1000000000 + t.tv_nsec ;
+	return ns;
 }
 
 U64 z_time_get_ms_elapsed(U64 start_time) //millisec
@@ -505,10 +521,25 @@ std::ostream & operator<<(std::ostream &os, const z_time_duration& td)
 
 void z_sleep_ms(int ms)
 {
-#ifdef WINDOWS
-	Sleep(ms);
-#else
-	usleep(ms * 1000);
-#endif
+	struct timespec ts;
+	ts.tv_sec = 0;           // Seconds
+	ts.tv_nsec = ms*1000000;  // Nanoseconds (0.5 seconds)
+	nanosleep(&ts, NULL);
+
+}
+void z_sleep_us(int us)
+{
+	struct timespec ts;
+	ts.tv_sec = 0;           // Seconds
+	ts.tv_nsec = us*1000;  // Nanoseconds (0.5 seconds)
+	nanosleep(&ts, NULL);
+
+}
+void z_sleep_ns(int ns)
+{
+	struct timespec ts;
+	ts.tv_sec = 0;           // Seconds
+	ts.tv_nsec = ns;  // Nanoseconds (0.5 seconds)
+	nanosleep(&ts, NULL);
 
 }

@@ -16,8 +16,11 @@ typedef struct
 const st_error_msg status_text[]=
 {
 ERR(zs_success,	"success")
+ERR(zs_ok,	"ok")
 ERR(zs_no_match,	0)
-ERR(zs_skipped,	0)
+ERR(zs_pending,	0)
+ERR(zs_more_data_to_follow,"More data to follow")
+
 ERR(zs_unparsed_data,	0)
 ERR(zs_eof,	0)
 ERR(zs_end_of_list,	0)
@@ -56,7 +59,6 @@ ERR(zs_too_long,"Too Long")
 ERR(zs_invalid_conversion,"Invalid conversion")
 	ERR(zs_bad_command,"Bad Command")
 	ERR(zs_failed_on_device,"Failed on device")
-ERR(zs_more_data_to_follow,"More data to follow")
 
 };
 z_status z_get_os_error()
