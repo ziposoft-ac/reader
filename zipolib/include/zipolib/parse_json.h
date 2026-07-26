@@ -101,6 +101,8 @@ class z_json_bool : public z_json_val
 {
 public:
 	bool _val;
+	virtual z_json_bool*  get_as_json_bool() override { return this; };
+
 	virtual void print(z_json_stream &s)
 	{
 		s % _val;
@@ -197,7 +199,7 @@ public:
 
 	I64 get_int(ctext key,I64 def=0);
 	bool get_int_val(ctext key, I64 &i);
-	bool get_str(ctext key,z_string& s, ctext def);
+	bool get_str(ctext key,z_string& s);
 	z_string get_str_def(ctext key,ctext def);
 	bool get_bool(ctext key, bool def);
 	template <class VALTYPE> VALTYPE* get_val_t(ctext key)

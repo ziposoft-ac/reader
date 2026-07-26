@@ -54,7 +54,7 @@ struct Dummy
     )
 
 #define API LED_API
-#include "api/ApiDeclare.inc"
+#include "ApiDeclare.inc"
 
 
 

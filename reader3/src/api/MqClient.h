@@ -43,16 +43,23 @@ void msg_destroy(MqMsg* msg);
 
 enum mq_command_enum_t {
     mq_command_string,
-    mq_command_quit,
+    mq_command_json=1,
+    mq_command_internal_wakeup=2,
+    mq_command_ack=3,
+    mq_command_subscribe=10,
+    mq_command_subscribe_ack=11,
+    mq_command_unsubscribe=12,
+    mq_command_unsubscribe_ack=13,
+    mq_command_close=14,
 
 };
 
 
-z_status mq_send_msg_with_reply(ctext mq_name_dest,ctext mq_name_reply,ctext command,U32 msg_id,ctext data,size_t data_len);
-z_status mq_send_msg(ctext mq_name_dest,ctext command,ctext data="",size_t data_len=0);
-z_status mq_send_msg(ctext mq_name_dest,ctext command,z_string& s);
-template <typename T> z_status mq_send_msg_t(ctext mq_name_dest,ctext command,const T& data) {
-    return mq_send_msg(mq_name_dest,command,(ctext)&data,sizeof(T));
+z_status mq_send_msg_with_reply(ctext mq_name_dest,ctext mq_name_reply,mq_command_enum_t cmd_type,ctext command,U32 msg_id,ctext data,size_t data_len);
+z_status mq_send_msg(ctext mq_name_dest,mq_command_enum_t cmd_type,ctext command,ctext data="",size_t data_len=0);
+z_status mq_send_msg(ctext mq_name_dest,mq_command_enum_t cmd_type,ctext command,z_string* s);
+template <typename T> z_status mq_send_msg_t(ctext mq_name_dest,mq_command_enum_t cmd_type,ctext command,const T& data) {
+    return mq_send_msg(mq_name_dest,cmd_type,command,(ctext)&data,sizeof(T));
 
 
 }

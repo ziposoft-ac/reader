@@ -32,7 +32,7 @@ struct Visit {
 
 
 typedef std::vector<Visit> Visits;
-
+class VisitProcess;
 class RfidTag
 {
 public:
@@ -61,10 +61,10 @@ public:
     FilteredReadState _state=fr_type_arrived;
     // return time to check next
     //
-    z_time processRead (RfidRead* read,RfidReadConsumer& s);
+    z_time processRead (RfidRead* read,VisitProcess& s);
 
     // return true if it can be removed
-    bool processCheck (RfidReadConsumer& s,z_time now);
+    bool processCheck (VisitProcess& s,z_time now);
     bool isDeparted() {
         return _state==fr_type_departed;
     }

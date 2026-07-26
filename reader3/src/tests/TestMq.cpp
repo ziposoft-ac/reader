@@ -97,4 +97,4 @@ ROOT_SERVICE(Tester);
 
 #define MQ_HANDLER Tester
 #define API TEST_API
-#include "api/ApiMap.inc"
+#include "../disable/ApiMap.inc"

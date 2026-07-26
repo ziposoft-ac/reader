@@ -478,8 +478,17 @@ z_status z_stream_debug::write(const char* data, size_t len)
 
     std::unique_lock<std::mutex> mlock(_mutex);
 
-	if (_fPipe>0)
-		::write(_fPipe, data,len);
+	if (_fPipe>0) {
+
+		ssize_t bytes=::write(_fPipe, data,len);
+		if (bytes<0) {
+			if (errno==EPIPE) {
+				printf("Debugview app was closed\n");
+			}
+			_fPipe=-1;
+		}
+
+	}
 
 
 

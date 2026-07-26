@@ -7,6 +7,7 @@
 
 #include "global.h"
 
+#include "zipolib/http_status.h"
 
 
 
@@ -33,7 +34,7 @@ public:
 
 
     }
-    z_status test_post(z_json_obj& jin,z_json_stream& jout) {
+    int test_post(z_json_obj& jin,z_json_stream& jout) {
 
 
         int count=jin.get_int("count",0);
@@ -48,7 +49,7 @@ public:
         if (count %_print_stat_interval == 0) print_stat_count(count);
         return zs_ok;
     }
-    z_status test_post2(z_json_obj& jin,z_json_stream& jout) {
+    int test_post2(z_json_obj& jin,z_json_stream& jout) {
         int count=jin.get_int("count",0);
 
         printf("count=%d\n",count);
@@ -56,6 +57,37 @@ public:
         jout.keyval("hey2","what2?");
         return zs_ok;
     }
+    int test_get(z_string_map& params,z_json_stream& jout) {
+        for (auto i:params) {
+        jout.keyval(i.first,i.second);
+
+        }
+        jout.keyval("test_get","test_get?");
+        return zs_ok;
+    }
+    int test_simple(int x) {
+        printf("test_simple %d\n",x);
+        return zs_ok;
+    }
+    int test_delay(http_request req,z_string_map &vars,z_json_obj &jin, z_json_stream &jout) {
+        int delay=vars.get_as<int>("delay",1000);
+        int index=vars.get_as<int>("index",0);
+
+        jout.keyval_int("delay",delay);;
+        if (delay>0) {
+
+            _cd->add_pending(req,delay,[this,delay,index](z_json_stream& js) {
+                js.keyval_int("delay was",delay);;
+                js.keyval_int("index was",index);;
+                js.keyval_int("counter",_counter);;
+
+            });
+
+
+        }
+        return HTTP_STATUS_PROCESSING;
+    }
+    CommandDelayed* _cd=0;
     z_status initialize() override{
 
         U64 t1=z_time_get_ticks_us();
@@ -68,9 +100,18 @@ public:
         printf("diff_ns=%lld\n",diff_ns);
 
 
-        reg_fn("test",&TestWeb::test_post);
-        reg_fn("@test",&TestWeb::test_post_reply);
-        reg_fn("test2",&TestWeb::test_post2);
+        Command* cmd=reg_func("test_simple",&TestWeb::test_simple);
+        reg_func("test_get",&TestWeb::test_get);
+        reg_func("test_post",&TestWeb::test_post);
+        _cd=reg_func("test_delay",&TestWeb::test_delay);
+        cmd->invoke_callback(4,5);
+
+
+        //_delayedTest.init()
+
+        //reg_fn("test",&TestWeb::test_post);
+        //reg_fn("@test",&TestWeb::test_post_reply);
+        //reg_fn("test2",&TestWeb::test_post2);
         ws.register_consumer(this);
         mq.register_consumer(this);
         ws.start();
@@ -85,7 +126,11 @@ public:
 
         return zs_ok;
     };
-
+    z_status complete_delayed(int counter) {
+        _counter=counter;
+        _cd->complete_req_all();
+        return zs_ok;
+    }
     z_status test_post_reply(z_json_obj& jin,z_json_stream& jout) {
         I64 count_rx=jin.get_int("count");
         if (count_rx!= (_counter+1)) {
@@ -119,11 +164,11 @@ public:
         js.keyval_int("count",count);
 
         js.obj_end();
-        return mq_send_msg_with_reply("/test","/test","test",count,s,s.length());
+        return mq_send_msg_with_reply("/test","/test",mq_command_json,"test",count,s,s.length());
 
     }
     z_status runCounter(int max) {
-       mq_send_msg("/test","test");
+       mq_send_msg("/test",mq_command_string,"test");
 
         return zs_ok;
     }
@@ -139,6 +184,9 @@ ZMETA(TestWeb) {
          );
     ZCMD(runCounter, ZFF_CMD_DEF, "runCounter",
          ZPRM(int, count, 10, "count", ZFF_PARAM)
+         );
+    ZCMD(complete_delayed, ZFF_CMD_DEF, "complete_delayed",
+         ZPRM(int, count, 0, "count", ZFF_PARAM)
          );
 };
 

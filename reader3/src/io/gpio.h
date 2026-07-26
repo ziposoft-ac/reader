@@ -76,7 +76,8 @@ protected:
 
     int _delay_on=100;
     int _delay_off=100;
-    int _flashCount=0;
+    //int _flashCount=0;
+    int _toogleCount=0;
     int _flashCountMax=10;
 
 public:
@@ -125,12 +126,18 @@ class Gpio {
 
     Timer* _timer=0;
     int timer_callback(void*);
-
-public:
-    //z_obj_vector<GpioPin, false> _pins;
-
     Gpio();
+public:
+
     virtual ~Gpio();
+
+    //z_obj_vector<GpioPin, false> _pins;
+    static Gpio& getInstance() {
+        // Guaranteed to be destroyed and initialized thread-safely since C++11
+        static Gpio instance;
+        return instance;
+    }
+
     enum Led{
         GREEN=26,
         RED=20,
@@ -177,7 +184,7 @@ public:
 
 // currently only support 1 gpio chip
 // This is ugly, but I gotta get this shit done
-extern Gpio gGpio;
+extern Gpio& gGpio;
 
 
 #endif //ZIPOSOFT_GPIO_H

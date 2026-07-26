@@ -150,7 +150,7 @@ z_status Cfmu804::send_command(U8 code, U8* tx_data,
     z_status status=zs_timeout;
     if(open()!=zs_ok)
         return zs_not_open;
-    std::unique_lock<std::mutex> mlock(_mutex_command);
+    std::unique_lock mlock(_mutex_command);
 
     auto prev=_responses.pop(code); // remove previous response if there
     delete prev;
@@ -278,7 +278,7 @@ z_status Cfmu804::_hw_open()
         return zs_could_not_open_file;
     }
     catch (std::exception & e) {
-        zout << "Unhandled Exception: " << e.what() << '\n';
+       // zout << "Unhandled Exception: " << e.what() << '\n';
         return zs_could_not_open_file;
     }
     return zs_ok;

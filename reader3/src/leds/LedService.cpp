@@ -18,7 +18,7 @@ ZMETA(MqServerMap<LedService>) {
 
 #define MQ_HANDLER LedService
 #define API LED_API
-#include "api/ApiMap.inc"
+#include "../disable/ApiMap.inc"
 
 
 

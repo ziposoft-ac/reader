@@ -7,7 +7,7 @@
 #include "pch.h"
 #include "zipolib/lockfile.h"
 
-#include "../util/timers.h"
+#include "util/timers.h"
 #include "rfid.h"
 
 #include "recordFile.h"
@@ -16,7 +16,7 @@
 extern ctext default_record_path;
 extern ctext default_record_path_raw;
 
-class VisitProcess : public RfidReadConsumer{
+class VisitProcess {
     friend z_factory_t<VisitProcess>;
     int _write_count=0;
     bool _open=false;
@@ -36,7 +36,7 @@ class VisitProcess : public RfidReadConsumer{
     bool _buzzer=true;
     bool _record_raw=false;
     bool _record_visits=true;
-    bool _recording=false;
+    bool _running=false;
     RecordFile _file_raw;
     RecordFile _file_visits;
     bool _record_tod=true;
@@ -46,10 +46,11 @@ class VisitProcess : public RfidReadConsumer{
 
     RfidReader* _reader;
 
+
+
 public:
     VisitProcess();
-    virtual z_status open();
-    virtual z_status close();
+    virtual z_status initialize();
     virtual z_status run();
     virtual z_status shutdown();
 
@@ -57,6 +58,11 @@ public:
     virtual z_status start();
     z_time _t_started;
     bool _simulate=true;
+
+    int _presence_window_s = 5;
+    int _start_detection_s = 5;
+    //int _minimum_log_time_ms = 1000;
+    int _peak_window_ms = 500;
 
     z_string _file_path_record = default_record_path;
     z_string _file_path_record_raw =default_record_path_raw;
@@ -68,30 +74,25 @@ public:
             _last_write_timestamp=ts;
         return _last_write_timestamp;
     }
-    U64 getLastWriteTimestamp()  { return _last_write_timestamp; }
+    U64 getLastWriteTimestamp()   { return _last_write_timestamp; }
     bool is_reading() ;
-    bool is_recording() const { return _recording; }
+    bool is_recording()  { return _running; }
 
     virtual z_status setup_reader_live(z_json_obj &settings);
 
     z_status get_live_tag_visits(Visits &visits);
-    virtual z_status remote_quit();
 
     virtual z_status start_json(z_json_obj& o);
 
     void beep();
-    bool callbackRead(RfidRead* r) override;
-    bool callbackQueueEmpty() override;
+    bool callbackRead(RfidRead* r) ;
     virtual void signalWaitingRequests();
 
 
     int add_json_status(z_json_stream &js);
 
 
-    z_status simulate_on() ;
-    z_status simulate_off();
 
-    RfidReader& getReader() { return *_reader; }
 
 };
 
@@ -113,7 +114,7 @@ ZMETA_DECL(VisitProcess) {
    // ZPROP(_test_tag);
     ZPROP(_filter_epc);
     //ZPROP(_single_tag_test);
-    ZPROP(_recording);
+    ZPROP_F(_running,ZFF_READ_ONLY);
     //ZPROP(_broadcast);
     ZPROP(_debug_reads);
     //#define ZACT(_ACT_) ZACT_X(_ACT_,#_ACT_,ZFF_ACT_DEF,"")
@@ -121,10 +122,8 @@ ZMETA_DECL(VisitProcess) {
     ZACT(start);
    // ZACT(start_new_file);
     ZACT(run);
-    ZACT(open);
-    ZACT(close);
+    ZACT(initialize);
     ZACT(shutdown);
-    ZACT(remote_quit);
     ZSTAT(is_reading);
     ZSTAT(getLastWriteTimestamp);
 

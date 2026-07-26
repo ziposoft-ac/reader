@@ -157,6 +157,21 @@ public:
 		return true;
 	}
 
+	/**
+	 *
+	 * @param key
+	 * @return remove and delete the entry
+	 *
+	 * !! WARNING - do not call this function in a loop. the iterator must be incremented
+	 */
+	bool del(const KEY &key) {
+		DATA* data=nullptr;
+		if (m::pop(key,data)) {
+			delete data;
+			return true;
+		}
+		return false;
+	}
 	virtual ~z_obj_map_k() {
 		if (OWNER)
 			delete_all();

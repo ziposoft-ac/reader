@@ -18,6 +18,9 @@ enum BatteryChargeStatus {
 class Battery {
     friend z_factory_t<Battery>;
 
+    double _shunt_battery=0.008831f;
+    double _shunt_input=0.009058f;
+
     double _batt_volt=0;
     double _input_volt=0;
     double _batt_current=0;
@@ -35,6 +38,8 @@ class Battery {
 
     int _poll_interval=1000;
 
+    U16 read_reg(U16 reg);
+public:
     z_status init();
     z_status shutdown();
     z_status start();

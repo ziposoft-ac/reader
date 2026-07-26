@@ -19,7 +19,7 @@ void process_wait_for_quit()
     if (gConsole.is_console_running())
         return; //
 
-    std::unique_lock<std::mutex> mlock(g_process_quit_mutex);
+    std::unique_lock mlock(g_process_quit_mutex);
 
     g_process_quit_cv.wait(mlock);
 }
@@ -32,12 +32,15 @@ void process_quit_notify()
 
 }
 void ctrl_C_handler(int s) {
+    if (s==SIGPIPE) {
+        zout << "ignoring broken pipe\n";
+        return;
+    }
     gConsole.quit();
     process_quit_notify();
     zout << "ctrl C handler\n";
 };
 
-extern const  char* BUILD_TIME_STAMP;
 
 int main(int argc, char* argv[])
 {
@@ -66,11 +69,13 @@ int main(int argc, char* argv[])
         init_act->execute(cc);
     }
 #endif
-    service->initialize();
+
+    if (service->initialize()!=zs_ok)
+        return -1;
 
     gConsole.runapp(argc, argv, true, 0);
 
     service->shutdown();
 
-
+    return 0;
 }

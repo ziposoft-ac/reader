@@ -32,7 +32,7 @@ public:
     void register_consumer(CommandHandler* consumer);
     void remove_consumer(CommandHandler* consumer);
     z_status push_delayed_request(delayed_request* req) {
-        std::unique_lock<std::mutex> mlock(_mutex_req_list);
+        std::unique_lock mlock(_mutex_req_list);
 
         _outstanding_reqs.push_back(req);
         return zs_ok;

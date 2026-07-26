@@ -3,7 +3,7 @@
 //
 
 #include "tests.h"
-#include "../root.h"
+
 #include "zipolib/z_error.h"
 #include <fcntl.h>
 #include <sys/stat.h>

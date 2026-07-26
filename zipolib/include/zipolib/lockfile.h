@@ -28,7 +28,7 @@ public:
     {
         _fd = open(filename, O_RDWR | O_CREAT, 0666);
         if (_fd == -1) {
-            //perror("open");
+            perror("trying to open lock file");
             _fd=0;
             return false;
         }
@@ -39,6 +39,7 @@ public:
             if (errno == EWOULDBLOCK) {
                 //printf("Failed to acquire lock: Another process holds the lock.\n");
             } else {
+                perror("error locking file");
             }
             close(_fd);
             _fd=0;

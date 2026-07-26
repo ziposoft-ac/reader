@@ -6,6 +6,7 @@
 #define ZIPOSOFT_SERVICE_H
 #include "pch.h"
 #include "global.h"
+#include "zipolib/lockfile.h"
 
 #include "api/MqServer.h"
 class Service;
@@ -16,15 +17,39 @@ class Service;
 
 
 class Service {
+    LockFile _lock_file;
+
+    z_file_out _log_file;
 public:
     Service() {
     }
     virtual ~Service() {}
+    ctext getName() {
+        return get_factory_from_vobj((z_void_obj*)this)->get_name();
 
+    }
+    bool globalLock() {
+        z_string name;
+        name.format("/tmp/service_%s.lock",getName());
+        bool locked= _lock_file.lock(name);
+        if (!locked) {
+            Z_ERROR_LOG("Service is already locked\n");
+            return false;
+        }
+        return true;
+    }
     friend z_factory_t<Service>;
     virtual z_status shutdown();
+    virtual z_status service();
     virtual z_status initialize();
-    z_status run();
+    virtual z_status run();
+    z_status init_logfile();
+
+    virtual z_status remote_quit() {
+        process_quit_notify();
+        return zs_ok;
+
+    }
 
 };
 
@@ -39,7 +64,7 @@ template <class SERVICE> Service* getRootServiceT(z_factory** pfactory) {
 
 Service* getRootService(z_factory** factory);
 
-#define ROOT_SERVICE(_TYPE_) Service* getRootService(z_factory** factory) { return getRootServiceT<_TYPE_>(factory); }
+#define ROOT_SERVICE(_TYPE_) _TYPE_ g##_TYPE_; Service* getRootService(z_factory** factory) { *factory=GET_FACT(_TYPE_);return &g##_TYPE_; }
 
 
 

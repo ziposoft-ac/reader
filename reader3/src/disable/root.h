@@ -6,22 +6,22 @@
 #define ZIPOSOFT_ROOT_H
 
 
-#include "pch.h"
-#include "io/BeepPwm.h"
-#include "api/MqServer.h"
+#include "../pch.h"
+#include "../io/BeepPwm.h"
+#include "../api/MqServer.h"
 
-#include "rfid/cfmu804.h"
-#include "util/timers.h"
-#include "tests/tests.h"
-#include "rfid/simulator.h"
-#include "io/gpioButton.h"
-#include "battery/Battery.h"
-#include "io/gpio.h"
-#include "io/i2c.h"
-#include "web/WebServer.h"
-#include "rfid/VisitProcess.h"
-#include "rfid/ReaderService.h"
-#include "leds/LedService.h"
+#include "../rfid/cfmu804.h"
+#include "../util/timers.h"
+#include "../tests/tests.h"
+#include "../rfid/simulator.h"
+#include "../io/gpioButton.h"
+#include "../battery/Battery.h"
+#include "../io/gpio.h"
+#include "../io/i2c.h"
+#include "../web/WebServer.h"
+#include "../rfid/VisitProcess.h"
+#include "ReaderService.h"
+#include "../leds/LedService.h"
 //#include "processRunner.h"
 
 class Root
@@ -59,7 +59,7 @@ public:
     int _test_count=0;
     void wait_for_quit()
     {
-        std::unique_lock<std::mutex> mlock(_mutex_quit);
+        std::unique_lock mlock(_mutex_quit);
 
         _cv_quit.wait(mlock);
     }

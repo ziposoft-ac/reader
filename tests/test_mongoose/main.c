@@ -12,7 +12,7 @@
 //    1. See https://mongoose.ws/tutorials/tls/#how-to-build
 //    2. curl -k https://127.0.0.1:8443
 
-#include "mongoose-7.22/mongoose.h"
+#include "mongoose/mongoose.h"
 
 static const char *s_http_addr = "http://0.0.0.0:8000";    // HTTP port
 static const char *s_https_addr = "https://0.0.0.0:8443";  // HTTPS port

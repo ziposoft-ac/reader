@@ -4,7 +4,7 @@
 
 #include "BeepPwm.h"
 
-#include "../root.h"
+
 ZMETA(BeepPwm) {
     ZACT(init);
     ZACT(shutdown);

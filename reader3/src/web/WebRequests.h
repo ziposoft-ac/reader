@@ -6,7 +6,7 @@
 #define ZIPOSOFT_MONGOOSE_H
 #include "pch.h"
 
-#include "mongoose-7.22/mongoose.h"
+#include "mongoose/mongoose.h"
 
 enum cmd_req_type
 {
@@ -18,10 +18,12 @@ struct http_request
 {
     mg_connection *c;
     struct mg_http_message *hm;
-    int index;
+  //  int index;
 
 
 };
+
+class Command;
 
 typedef void (*fn_cmd_reply_t) (z_json_stream &js,size_t ctx1,size_t ctx2);
 typedef int (*fn_cmd_post_t) (http_request req,z_json_obj &jin);
@@ -69,4 +71,6 @@ struct delayed_request {
     size_t ctx2;
     fn_cmd_reply_t fn_complete;
 };
+void get_params_from_req(http_request r,z_string_map& var_map);
+
 #endif //ZIPOSOFT_MONGOOSE_H

@@ -3,7 +3,7 @@
 //
 #include "pch.h"
 #include "main/Service.h"
-#include "leds/LedApi.h"
+#include "../disable/LedApi.h"
 
 #include "global.h"
 
@@ -19,7 +19,7 @@ CMD(Counter)    \
 )
 
 #define API TEST_API
-#include "api/ApiDeclare.inc"
+#include "../disable/ApiDeclare.inc"
 #define API TEST_API
 
 #include "api/ApiDefine.inc"
@@ -118,4 +118,4 @@ ROOT_SERVICE(Tester);
 
 #define MQ_HANDLER Tester
 #define API TEST_API
-#include "api/ApiMap.inc"
+#include "../disable/ApiMap.inc"

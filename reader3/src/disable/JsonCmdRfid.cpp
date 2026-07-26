@@ -55,28 +55,6 @@ int fn_get_status(http_request r,z_string_map &vars)
     return send_full_status(r);
 }
 
-int fn_get_gpio(http_request r,z_string_map &vars)
-{
-    send_json_response(r,[](z_json_stream &js)
-    {
-        z_status status=root.gpio.json_config_get(js);
-        return (status?HTTP_STATUS_SERVICE_UNAVAILABLE: HTTP_STATUS_OK);
-    });
-    return 200;
-}
-int fn_post_gpio(http_request r,z_json_obj &o)
-{
-
-    z_status status=root.gpio.led_json_config_set(o);
-    send_json_response(r,[status](z_json_stream &js)
-    {
-        root.gpio.json_config_get(js);
-        return (status?HTTP_STATUS_INTERNAL_SERVER_ERROR: HTTP_STATUS_OK);
-    });
-
-
-    return 200;
-}
 int fn_post_program_bcd(http_request r,z_json_obj &o)
 {
     int bcd=o.get_int("bcd",0);

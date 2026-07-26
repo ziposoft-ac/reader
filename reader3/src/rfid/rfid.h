@@ -6,7 +6,7 @@
 #define ZIPOSOFT_RFID_H
 #include "pch.h"
 #include "epc.h"
-#include "../util/timers.h"
+#include "util/timers.h"
 
 #define ENABLE_PHASE 0
 #undef ENABLE_PHASE
@@ -59,13 +59,11 @@ public:
 
 
 
-
+/*
 class RfidReadConsumer {
 public:
-    int _presence_window_s = 5;
-    int _start_detection_s = 5;
-    //int _minimum_log_time_ms = 1000;
-    int _peak_window_ms = 500;
+
+
 
     virtual bool callbackRead(RfidRead* r)
     {
@@ -77,6 +75,7 @@ public:
     }
 
 };
+*/
 
 typedef struct {
     U8 qValue;
@@ -130,12 +129,15 @@ const rfid_config_t rfid_config_heattest={
 const rfid_config_t rfid_config_program={
     5,0,1,0,3,10,0,0
 };
+using cb_rfid_read_t = std::function<bool(RfidRead* r)>;
+using cb_rfid_queue_empty_t = std::function<bool()>;
 
 class RfidReader
 {
     friend z_factory_t<RfidReader>;
 
-    std::set<RfidReadConsumer*> _consumers;
+    z_stl_map<void*,cb_rfid_read_t> _callbacks_read;
+    z_stl_map<void*,cb_rfid_queue_empty_t> _callbacks_queue_empty;
     z_safe_queue<RfidRead*> _queue_reads;
     std::deque<RfidRead*> _queue_reads_all;
     std::mutex _queue_reads_all_mutex;
@@ -203,8 +205,8 @@ public:
     U32 get_queue_depth() { return _queue_reads.get_count(); }
     z_status get_reads_since(z_json_stream& s,U32 index,bool include_reads) ;
 
-    void register_consumer(RfidReadConsumer* consumer);
-    void remove_consumer(RfidReadConsumer* consumer);
+    void register_cb_read(void* caller,cb_rfid_read_t cb_read);
+    void register_cb_queue_empty(void* caller,cb_rfid_queue_empty_t cb_rfid_queue_empty);
 
     U32 getReadIndex(){return _indexReads;}
     z_time getTimeReadingStart(){return _ts_reading_started;}
@@ -255,7 +257,7 @@ public:
 	}
 };
 
-
+RfidReader& getRfidReader();
 
 ZMETA_DECL(RfidReader)
 {

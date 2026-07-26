@@ -119,7 +119,7 @@ int fn_post_pong(http_request r,z_json_obj &o)
 int fn_post_test500(http_request r,z_json_obj &o)
 {
     z_string hex;
-    bool found=o.get_str("epc",hex,"");
+    bool found=o.get_str("epc",hex);
     bool overwrite=o.get_bool("overwrite",false);
     z_status status=zs_bad_command;
 

@@ -168,7 +168,8 @@ public:
 	z_status parse_json_file(ctext filename,  z_json_val*& val);
 	z_status parse_json_obj_contents(z_json_obj& obj);
 	z_status parse_json_obj(const z_string& input,z_json_obj& obj);
-	z_json_obj parseJsonObj(ctext json, size_t len=-1);
+	z_json_obj makeJsonObj(ctext json, size_t len=-1);
+	z_status  parseJsonObj(z_json_obj& obj,ctext json, size_t len=-1);
 	//z_status parse_url_params(z_string_map& str_map, z_json_obj& obj);
 	z_status parse_url_param(z_json_obj& obj, const z_string& key_line, const z_string& value);
 

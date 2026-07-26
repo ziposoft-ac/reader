@@ -4,7 +4,7 @@
 
 ctext ZFF_PARSE_STRING = "PARSE";
 
-ZCLS_VIRT(zf_feature)
+ZMETA_NO_NEW(zf_feature)
 {
 	ZPROP(_desc);
 };

@@ -102,7 +102,7 @@ TimerService::TimerService()
 }
 z_status TimerService::stop()
 {
-    std::unique_lock<std::mutex> mlock(_mutex_sync);
+    std::unique_lock mlock(_mutex_sync);
 
     if(_running)
     {
@@ -115,9 +115,11 @@ z_status TimerService::stop()
     return zs_ok;
 }
 bool TimerService::remove_timer(Timer *timer) {
-    std::unique_lock<std::mutex> mlock(_mutex_sync);
-
+    // stop locks itself
     timer->stop();
+
+    std::unique_lock mlock(_mutex_sync);
+
     _timers.erase(timer);
     delete timer;
     return true;
@@ -129,7 +131,7 @@ Timer* TimerService::createTimer(TimerCallback callback, void* user_data, int ms
     Timer* timer=z_new Timer(this,callback,user_data);
 
     {
-        std::unique_lock<std::mutex> mlock(_mutex_sync);
+        std::unique_lock mlock(_mutex_sync);
         _timers.insert(timer);
     }
     timer_start(timer,ms_expire,true);
@@ -167,7 +169,7 @@ z_status TimerService::timer_start(Timer* t,int ms,bool reset)
 {
 
     bool external_context=false;
-    std::unique_lock<std::mutex> lock(_mutex_sync, std::defer_lock);
+    std::unique_lock lock(_mutex_sync, std::defer_lock);
     if (std::this_thread::get_id()!=_thread_id) {
         lock.lock();
         external_context=true;
@@ -175,7 +177,7 @@ z_status TimerService::timer_start(Timer* t,int ms,bool reset)
     else {
         _flag_reprocess_timers=true;
     }
-    //std::unique_lock<std::mutex> mlock(_mutex_sync);
+    //std::unique_lock mlock(_mutex_sync);
     t->_running=true;
     if(reset || (t->_ts_expire==0))
     {
@@ -211,7 +213,7 @@ void Timer::restart(int ms) {
 
 void TimerService::timer_stop(Timer *t) {
 
-    std::unique_lock<std::mutex> lock(_mutex_sync, std::defer_lock);
+    std::unique_lock lock(_mutex_sync, std::defer_lock);
     if (std::this_thread::get_id()!=_thread_id) {
         lock.lock();
     }
@@ -219,7 +221,7 @@ void TimerService::timer_stop(Timer *t) {
         _flag_reprocess_timers=true;
 
     }
-    //std::unique_lock<std::mutex> mlock(_mutex_sync);
+    //std::unique_lock mlock(_mutex_sync);
     t->_running=false;
     t->_ts_expire=0;
 }
@@ -228,7 +230,7 @@ void TimerService::timer_stop(Timer *t) {
 
 bool TimerService::update_timers()
 {
-    std::unique_lock<std::mutex> mlock(_mutex_sync);
+    std::unique_lock mlock(_mutex_sync);
 
     while (1) {
         _ts_next_expire=0;;
@@ -274,7 +276,7 @@ void TimerService::process_thread()
                 return;
             U64 ms_wait=_ts_next_expire-z_time::get_now_ms();
             if (ms_wait) {
-                std::unique_lock<std::mutex> m_wait(_mutex_stop_wait);
+                std::unique_lock m_wait(_mutex_stop_wait);
                 //ZDBG("waiting for %d ms\n",ms_next_wait);
                 if(_cond_stop_wait.wait_for(m_wait,std::chrono::milliseconds (ms_wait)) !=std::cv_status::timeout) {
 

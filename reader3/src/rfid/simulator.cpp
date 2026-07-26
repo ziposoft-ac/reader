@@ -4,7 +4,7 @@
 //
 
 #include "simulator.h"
-#include "../root.h"
+
 
 ZMETA(RfidSimulator)
 {
@@ -75,7 +75,7 @@ z_status RfidSimulator::_read_start() {
     if (_mode==MODE_FILE) {
 
         z_parse_csv_file csv;
-        z_string path=    root.visitProc._file_path_record+"/"+_source_file;
+        z_string path=   _source_file;
         z_status  status=csv.ParseFileData(path,_data);
         _index=0;
         if(!_timer)

@@ -3,7 +3,7 @@
 //
 
 #include "rfid.h"
-#include "../root.h"
+
 
 ZMETA_DEFV(RfidReader);
 #ifdef  ENABLE_PHASE
@@ -59,9 +59,9 @@ void RfidReader::process_reads_thread() {
 
             if (_queue_reads.get_count() == 0)
             {
-                for(auto consumer :_consumers )
+                for(auto i :_callbacks_queue_empty )
                 {
-                    consumer->callbackQueueEmpty();
+                    i.second();
                 }
                 //ZDBGS.flush();
 
@@ -142,9 +142,10 @@ void RfidReader::process_reads_thread() {
 
             }
 #endif
-            for(auto consumer :_consumers )
+            for(auto i :_callbacks_read )
             {
-                consumer->callbackRead(r);
+
+               i.second(r);
             }
 
             //delete read;
@@ -183,6 +184,7 @@ z_status RfidReader::open()
     }
     else {
         Z_ERROR_MSG(zs_io_error,"could not open reader");
+        return status;
     }
     status=_hw_init();
     if(zs_ok==status)
@@ -221,7 +223,7 @@ z_status RfidReader::start()
     _ts_reading_started.set_now();
     if(status==zs_ok) {
 
-        root.gpio.ledGreen.on();
+        //root.gpio.ledGreen.on();
 
         _reading=true;
 
@@ -303,7 +305,7 @@ void RfidReader::queueRead(U8 antnum,U8 rssi,U8* epc,size_t epc_len,U64 ts
     #endif
     )
 {
-	std::unique_lock<std::mutex> mlock(_queue_reads_all_mutex);
+	std::unique_lock mlock(_queue_reads_all_mutex);
     _indexReads++;
     RfidRead* r=new RfidRead(_indexReads,antnum,rssi,(U8*)epc,epc_len,ts);
 #ifdef  ENABLE_PHASE
@@ -313,7 +315,7 @@ void RfidReader::queueRead(U8 antnum,U8 rssi,U8* epc,size_t epc_len,U64 ts
     _queue_reads.push(r);
     _queue_reads_all.push_front(r);
 
-    //std::unique_lock<std::mutex> mlock(_queue_reads_all_mutex);
+    //std::unique_lock mlock(_queue_reads_all_mutex);
 
     while (_queue_reads_all.size()>_queue_max_depth) {
         RfidRead* old=_queue_reads_all.back();
@@ -329,7 +331,7 @@ z_status RfidReader::dump_queue(
         int since_index
 )
 {
-	std::unique_lock<std::mutex> mlock(_queue_reads_all_mutex);
+	std::unique_lock mlock(_queue_reads_all_mutex);
     bool complete=(since_index==0);
     int count=0;
     ZLOG("Queue size=%d\n",_queue_reads_all.size());
@@ -388,7 +390,7 @@ list:RfidRead[];
 */
 z_status RfidReader::get_reads_since(z_json_stream &js,U32 index,bool return_reads) {
 
-    std::unique_lock<std::mutex> mlock(_queue_reads_all_mutex);
+    std::unique_lock mlock(_queue_reads_all_mutex);
     bool complete=(index==0);
     int count=0;
     int diff=_indexReads-index;
@@ -418,6 +420,8 @@ z_status RfidReader::get_reads_since(z_json_stream &js,U32 index,bool return_rea
     return zs_ok;
 
 }
+
+
 z_status RfidReader::json_readmode_get(z_json_stream &js) {
 
 
@@ -502,7 +506,7 @@ z_status RfidReader::add_json_status(z_json_stream &js) {
     js.keyval_int("antenna_enabled",_antenna_enabled);
     js.keyval_int("ant_detected",_antenna_detected);
     js.obj_end();
-
+    add_json_config(js);
     return zs_ok;
 }
 
@@ -516,7 +520,7 @@ z_status RfidReader::stop()
     _read_stop();
     _reading = false;
     //root.gpio.ledRed.on();
-    root.gpio.ledGreen.off();
+    //root.gpio.ledGreen.off();
     return zs_ok;
 
 }
@@ -537,22 +541,18 @@ z_status RfidReader::close()
 
 
 }
+void RfidReader::register_cb_read(void* caller,cb_rfid_read_t cb_read) {
 
-void RfidReader::register_consumer(RfidReadConsumer *consumer) {
-    //todo error checking
+    if (!_callbacks_read.exists(caller))
+        _callbacks_read[caller]=cb_read;
 
-    if(_consumers.find(consumer)==_consumers.end()) {
-
-        _consumers.insert(consumer);
-        //ZLOG("Registered consumer for RfidReader\n");
-    }
-
-    //_consumers.add(consumer);
-}
-void RfidReader::remove_consumer(RfidReadConsumer *consumer)
-{
-    if(_consumers.find(consumer)!=_consumers.end())
-        _consumers.erase(consumer);
-    //if(_consumers.contains(consumer))
 
 }
+
+void RfidReader::register_cb_queue_empty(void* caller,cb_rfid_queue_empty_t cb_rfid_queue_empty) {
+    if (!_callbacks_queue_empty.exists(caller))
+        _callbacks_queue_empty[caller]=cb_rfid_queue_empty;
+
+
+}
+

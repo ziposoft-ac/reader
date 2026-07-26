@@ -5,7 +5,7 @@
 #include "zipolib/z_factory_vector.h"
 
 
-ZCLS_VIRT(zp_cfg_base) {}
+ZMETA_NO_NEW(zp_cfg_base) {}
 
 
 /*________________________________________________

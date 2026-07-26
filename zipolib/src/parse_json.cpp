@@ -209,8 +209,29 @@ z_status zp_text_parser::parse_json_file(ctext filename, z_json_val*& json_val)
 
 
 }
+z_status zp_text_parser::parseJsonObj(z_json_obj& obj,ctext input, size_t len)
+{
+	set_source(input,len);
 
-z_json_obj zp_text_parser::parseJsonObj(ctext input, size_t len)
+	z_status status;
+	do {
+		status = test_char('{');
+		if (status)
+			break;
+		status=parse_json_obj_contents(obj);
+		if (status)
+		{
+			obj.clear();
+			break;
+		}
+		status = test_char('}');
+		if (status) obj.clear();
+
+	}while(0);
+
+	return status;
+}
+z_json_obj zp_text_parser::makeJsonObj(ctext input, size_t len)
 {
     z_json_obj obj;
     set_source(input,len);
@@ -445,7 +466,7 @@ z_string z_json_obj::get_str_def(ctext key,ctext def)
 	return s;
 
 }
-bool z_json_obj::get_str(ctext key,z_string& s, ctext def)
+bool z_json_obj::get_str(ctext key,z_string& s)
 {
 	z_json_str* ji = get_val_t<z_json_str>(key);
 	if (ji)

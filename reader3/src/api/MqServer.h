@@ -7,8 +7,7 @@
 #include "pch.h"
 #include "MqClient.h"
 
-#include "api/CommandHandler.h"
-
+class CommandHandler;
 
 // get rid of this
 template <class OBJ> class MqApiHandler {
@@ -51,7 +50,7 @@ private:
     U32 _send_msg_id=1;
     mqd_t _mq_server_fd=0;
     bool _is_running=false;
-
+    bool _shutdown_flag=false;
     virtual void thread() ;
 
     std::set<CommandHandler*> _cmdHandlers;
@@ -61,14 +60,16 @@ protected:
     z_string _q_name="/mq_server";
 
 public:
+
+    bool _debug=false;
     bool is_running() {  return _is_running;  }
     void register_consumer(CommandHandler* consumer);
     void remove_consumer(CommandHandler* consumer);
     MqServer();
     ~MqServer();
     //z_safe_queue<RfidRead*> _queue_reads;
-    virtual z_status run(ctext name,int size=0x2000);
-    z_status shutdown();
+    virtual z_status run(ctext name);
+    virtual z_status shutdown();
 
     virtual  z_status process_command_handlers(MqMsg* msg);
     virtual  int process_message(MqMsg* msg) {
@@ -83,6 +84,40 @@ public:
     z_status send(z_string mq_name,z_string msg);
 
 };
+class FeedSubscriber {
+public:
+
+    z_string _name;
+    FeedSubscriber(ctext name) : _name(name) {
+
+    }
+
+};
+
+class MqFeed : public MqServer {
+    std::mutex _lock;
+    z_obj_map<FeedSubscriber> _subscribers;
+
+public:
+    friend z_factory_t<MqFeed>;
+
+    z_status sendToSub(ctext subname,mq_command_enum_t cmd_type,ctext command,z_string* buffer=0);
+
+    z_status remove_all_subscribers();
+
+    virtual z_status shutdown() override;
+
+    virtual z_status run(ctext name) override;
+
+    z_status publish(ctext command,z_string& buffer);
+    z_status publish(ctext command);
+
+    virtual int process_message(MqMsg* msg) override;
+
+
+
+};
+
 template <class T> class MqServerCb : public MqServer {
 public:
 
@@ -104,47 +139,6 @@ public:
     }
 };
 
-template <class T> class MqServerMap : public MqServer {
-
-public:
-    typedef z_status (T::*member_callback_t)(const char* data);
-    T* _object=0;
-    typedef struct  {
-        ctext name;
-        member_callback_t callback;
-        size_t data_size;
-    } entry_t;
-    static size_t map_size;
-    static entry_t  map[];
-
-    z_status run_map(ctext queue_name,T* obj) {
-        _object=obj;
-        return run(queue_name);
-    }
-    virtual  int process_message(MqMsg* msg) {
-        entry_t *entry=0;
-        for (int i=0;i<map_size;i++) {
-            if (strcmp(map[i].name,msg->command_str) == 0) {
-                entry=&map[i];
-                break;
-            }
-
-        }
-        if (!entry) {
-
-            return Z_ERROR_MSG(zs_bad_command,"MQ command not found: %s\n",msg->command_str);
-        }
-
-        if (entry->data_size != msg->data_len) {
-            return Z_ERROR_MSG(zs_bad_command,"MQ data size for command does not match: %s\n",msg->command_str);
-        }
-        member_callback_t callback=entry->callback;
-
-        return  (_object->*callback)(msg->data);
-
-    }
-
-};
 
 ZMETA_DECL(MqServer) {
     ZACT(stop);

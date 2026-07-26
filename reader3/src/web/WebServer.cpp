@@ -7,6 +7,7 @@
 #include "WebServer.h"
 
 #include "JsonCmd.h"
+#include "api/CommandHandler.h"
 
 #if 1
 #define WS_DBG(...)
@@ -32,6 +33,11 @@ void get_var_map(mg_str buf,z_string_map& var_map) {
 
             }
     }
+}
+void get_params_from_req(http_request req,z_string_map& var_map) {
+
+    get_var_map(req.hm->query,var_map);
+
 }
 
 
@@ -69,7 +75,17 @@ z_status WebServer::stop() {
     return zs_ok;
 }
 z_status WebServer::complete_by_id(unsigned long id) {
-    std::unique_lock<std::mutex> mlock(_mutex_req_list);
+
+
+    for(auto handler :_cmdHandlers )
+    {
+
+        handler->process_http_close(id);
+
+    }
+
+
+    std::unique_lock mlock(_mutex_req_list);
 
     delayed_request *dr;
     if (_outstanding_reqs.size()==0)
@@ -87,7 +103,7 @@ z_status WebServer::complete_by_id(unsigned long id) {
 }
 
 z_status WebServer::complete_req_type(int type) {
-    std::unique_lock<std::mutex> mlock(_mutex_req_list);
+    std::unique_lock mlock(_mutex_req_list);
 
     delayed_request *dr;
     if (_outstanding_reqs.size()==0)
@@ -109,7 +125,7 @@ z_status WebServer::complete_req_all()
     delayed_request *dr;
     if (_outstanding_reqs.size()==0)
         return zs_ok;
-    std::unique_lock<std::mutex> mlock(_mutex_req_list);
+    std::unique_lock mlock(_mutex_req_list);
 
 
     WS_DBG("completing %d reqs\n",_outstanding_reqs.size());
@@ -155,7 +171,7 @@ int WebServer::process_command(http_request req,cmd_req_type type) {
             if (type==REQUEST_POST)
             {
                 zp_text_parser p;
-                z_json_obj obj=p.parseJsonObj(req.hm->body.buf,req.hm->body.len);
+                z_json_obj obj=p.makeJsonObj(req.hm->body.buf,req.hm->body.len);
                 fn_cmd_post_t fn=(fn_cmd_post_t)cmd_list[i].fn;
                 (*fn)(req,obj);
                 return 0;
@@ -166,11 +182,19 @@ int WebServer::process_command(http_request req,cmd_req_type type) {
     }
 
 
-    z_string cmd;
-    cmd.assign(req.hm->uri.buf +1,req.hm->uri.len-1);
+    z_string command_name;
+    command_name.assign(req.hm->uri.buf +1,req.hm->uri.len-1);
+
 
     for(auto handler :_cmdHandlers )
     {
+
+        Command* command=handler->get_command(command_name);
+        if (command) {
+            return command->process_http_rx(req,type);
+        }
+
+        /*
         if (handler->cmd_exists(cmd)==zs_ok) {
             z_string return_buffer;
             http_status_t http_status=HTTP_STATUS_OK;
@@ -186,6 +210,7 @@ int WebServer::process_command(http_request req,cmd_req_type type) {
             mg_http_printf_chunk(req.c, ""); // Don't forget the last empty chunk
             return 0;
         }
+        */
     }
     mg_http_reply(req.c, 404, "Access-Control-Allow-Origin: *\r\nContent-Type:text/plain\r\nAccess-Control-Allow-Headers: Origin, Content-Type, X-Auth-Token\r\nAccess-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS\r\n", "REQ not found\n");
 
@@ -208,7 +233,7 @@ void WebServer::remove_consumer(CommandHandler *consumer) {
 
 
 void WebServer::event_handler(struct mg_connection *c, int ev, void *ev_data) {
-    std::unique_lock<std::mutex> mlock(_mutex);
+    std::unique_lock mlock(_mutex);
     if (ev == MG_EV_POLL) {
         return;
     }
@@ -283,7 +308,9 @@ void WebServer::event_handler(struct mg_connection *c, int ev, void *ev_data) {
 
             type=REQUEST_GET;
         }
-        process_command({c,hm,_req_count}, type);
+        process_command({c,hm
+        //    ,_req_count
+        }, type);
         return;
     }
     WS_DBG("[%d] ev=%d\n",c->id, ev);
@@ -300,7 +327,7 @@ int WebServer::timer_callback_req_wait_expire(void*) {
     delayed_request *dr;
     if (_outstanding_reqs.size()==0)
         return 200;
-    std::unique_lock<std::mutex> mlock(_mutex_req_list);
+    std::unique_lock mlock(_mutex_req_list);
 
     U64 now=z_time_get_ticks_ms();
 

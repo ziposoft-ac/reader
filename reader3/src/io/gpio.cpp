@@ -3,7 +3,7 @@
 //
 
 #include "gpio.h"
-#include "../root.h"
+
 
 const int RED=03;
 const int BLUE=22;
@@ -14,7 +14,7 @@ const char *chipname = "/dev/gpiochip0";
 
 // currently only support 1 gpio chip
 // This is ugly, but I gotta get this shit done
-Gpio gGpio; 
+Gpio& gGpio=Gpio::getInstance();
 
 
 
@@ -41,7 +41,7 @@ ZMETA(GpioPinLed)
     ZPROP(_delay_off);
     ZPROP(_flashCountMax);
     ZACT(toggling_start);
-    ZPROP_F(_flashCount,ZFF_READ_ONLY);
+    ZPROP_F(_toogleCount,ZFF_READ_ONLY);
     ZCMD(flash, ZFF_CMD_DEF, "flash",
          ZPRM(int, count, 1, "count", ZFF_PARAM)
          );
@@ -57,7 +57,7 @@ ZMETA(GpioBeep)
          );
 };
 
-ZMETA(Gpio)
+ZMETA_NO_NEW(Gpio)
 {
     ZOBJ_X(ledGreen,"green",ZFF_PROP_DEF,"Green LED, pin#26");
     ZOBJ_X(ledRed,"red",ZFF_PROP_DEF,"Red LED, pin#20");
@@ -93,13 +93,16 @@ int GpioPin::timer_callback(void *)
 
 void GpioPin::init(Gpio* chip,ctext name)
 {
+
+    ZDBG("calling init %s\n",name);
     Z_ASSERT(!_timer);
     _name=name;
     //_chip=chip;
     if(!_timer)
         _timer=gTimerService.create_timer_t(this,&GpioPin::timer_callback,0    );
 
-    _request=gGpio.getPinRequest((_output?GPIOD_LINE_DIRECTION_OUTPUT: GPIOD_LINE_DIRECTION_INPUT),_pin);
+    if (!_request)
+        _request=gGpio.getPinRequest((_output?GPIOD_LINE_DIRECTION_OUTPUT: GPIOD_LINE_DIRECTION_INPUT),_pin);
 
     /*
     if (_output ) {
@@ -169,6 +172,10 @@ void GpioPin::_on()
 {
     //gpioWrite(_pin,1);
     _state=1;
+    if (!_request) {
+        Z_ERROR_LOG("request is NULL!\n");
+        return;
+    }
     gpiod_line_request_set_value(_request, _pin, (gpiod_line_value)_state);
 
 }
@@ -244,7 +251,7 @@ z_status GpioPinLed::toggling_start()
     if(!gGpio.initialize())
         return zs_io_error;
     _timer->stop();
-    _flashCount=100000;
+    _toogleCount=100000;
     _timer->start(1,true);
 
     return zs_ok;
@@ -253,25 +260,24 @@ z_status GpioPinLed::flash(int count)
 {
     if(!gGpio.initialize())
         return zs_io_error;
-    if(!_flashCount)
+    if(!_toogleCount)
         _timer->start(1,false);
-    _flashCount+=count;
-    if(_flashCount>_flashCountMax)
-        _flashCount=_flashCountMax;
+    _toogleCount+=count*2;
+    if(_toogleCount>_flashCountMax)
+        _toogleCount=_flashCountMax;
     return zs_ok;
 }
 int GpioPinLed::timer_callback(void *)
 {
-    if(!_flashCount)
+    if(!_toogleCount)
         return 0;
+    _toogleCount--;
 
     if(_state)
     {
         _state=false;
         _off();
-        _flashCount--;
         return _delay_off;
-
     }
     else
     {
@@ -283,7 +289,7 @@ int GpioPinLed::timer_callback(void *)
 }
 void GpioPinLed::init(Gpio* chip,ctext name)
 {
-    _flashCount=0;
+    _toogleCount=0;
     GpioPin::init(chip,name);
 }
 
@@ -328,7 +334,7 @@ Gpio::~Gpio()
 }
 
 bool Gpio::initialize() {
-
+    ZDBG("Gpio init %d\n",_initialized);
     if(_initialized) return _initialized;
     auto fact=GET_FACT(Gpio);
     get_child_objs_type(fact,this,_led_map);
@@ -351,6 +357,8 @@ bool Gpio::initialize() {
         return false;
     }
     _initialized=true;
+    ZDBG("Gpio init leds\n");
+
     for(auto p : _led_map)
     {
         p.second->init(this,p.first);
@@ -533,6 +541,9 @@ struct gpiod_line_request* Gpio::getPinRequest(gpiod_line_direction dir, unsigne
     struct gpiod_line_settings *settings;
     struct gpiod_line_config *line_cfg;
 	struct gpiod_line_request *request = NULL;
+
+    ZDBG("getPinRequest pin# %d\n",pin);
+
     if (!initialize())
         return nullptr;
     settings = gpiod_line_settings_new();
@@ -546,9 +557,11 @@ struct gpiod_line_request* Gpio::getPinRequest(gpiod_line_direction dir, unsigne
     else {
         request = gpiod_chip_request_lines(_chip, 0, line_cfg);
         if (!request) {
+            perror("gpiod_chip_request_lines failed\n");
             Z_ERROR_MSG(zs_io_error,"gpiod_chip_request_lines failed chip=%x, linecfg=%x",_chip,line_cfg);
         }
         else {
+            ZDBG("pin#%d success\n",pin);
 
         }
     }
