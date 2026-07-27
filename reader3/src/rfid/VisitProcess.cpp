@@ -357,7 +357,7 @@ z_time RfidTag::processRead(RfidRead *r, VisitProcess& rc) {
 bool RfidTag::processCheck( VisitProcess& rc,z_time now) {
 
     const z_time_duration missing_time=now - _ts_last_time_seen;
-    DBGL("CHECK %s  last seen %llu ms\n",_epc.c_str(),missing_time);
+    DBGL("CHECK %s  last seen %llu ms\n",_epc.c_str(),missing_time.total_milliseconds());
 
     bool write_it_out=false;
     if (_state==fr_type_arrived) // Initial state on creation

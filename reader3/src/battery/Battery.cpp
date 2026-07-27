@@ -3,7 +3,8 @@
 //
 
 #include "Battery.h"
-#include "../io/i2c.h"
+#include "io/i2c.h"
+#include "io/gpio.h"
 
 
 
@@ -17,6 +18,8 @@ ZMETA(Battery) {
     ZPROP(_shunt_battery);
     ZPROP(_shunt_input);
 };
+
+
 
 
 constexpr U16 INA3221_RESET = 0x8000;
