@@ -57,7 +57,6 @@ public:
         _mode=MODE_MANUAL;
         return zs_ok;
     }
-    virtual z_status same() { return zs_ok; };
     virtual z_status burstSeq(int max,int interval_ms);
 
 

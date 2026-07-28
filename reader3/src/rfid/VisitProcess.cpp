@@ -414,8 +414,9 @@ antHi=0;
 
 
 */
-void RfidTag::writeOut(z_stream& s) {
+void RfidTag::writeOut(z_stream& s,z_time base) {
 
+    U64 ts=  _ts_rssi_high-base;
 
     s<<_ts_rssi_high.get_t() ,_ts_first_time_seen.get_t() ,_ts_last_time_seen.get_t() ,
     _epc.c_str(),_count_total,_rssi_high,_ant_mask,_ant_hi;

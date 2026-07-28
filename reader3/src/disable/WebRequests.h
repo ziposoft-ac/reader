@@ -1,0 +1,76 @@
+//
+// Created by ac on 9/19/25.
+//
+
+#ifndef ZIPOSOFT_MONGOOSE_H
+#define ZIPOSOFT_MONGOOSE_H
+#include "pch.h"
+
+#include "mongoose/mongoose.h"
+
+enum cmd_req_type
+{
+    REQUEST_INVALID,
+    REQUEST_POST,
+    REQUEST_GET,
+};
+struct http_request
+{
+    mg_connection *c;
+    struct mg_http_message *hm;
+    //  int index;
+
+
+};
+
+class Command;
+
+typedef void (*fn_cmd_reply_t) (z_json_stream &js,size_t ctx1,size_t ctx2);
+typedef int (*fn_cmd_post_t) (http_request req,z_json_obj &jin);
+typedef int (*fn_cmd_get_t) (http_request req,z_string_map &vars);
+typedef int (*fn_cmd_t) (http_request req);
+void send_default_headers(struct mg_connection *c,int status);
+
+
+/*
+ *
+ * TODO - this is an immediate reply, needs to combine this with complete_delayed_req()
+ */
+template<typename T> int send_json_response(http_request r,T callback) {
+    z_string s;
+    z_json_stream js(s);
+    js.obj_start();
+    js.keyval_int("ts",z_time::get_now_ms());
+    int status=callback(js);
+
+    js.obj_end();
+
+    send_default_headers(r.c,status);
+
+    mg_http_write_chunk(r.c, s.c_str(), s.length());
+
+    mg_http_printf_chunk(r.c, ""); // Don't forget the last empty chunk
+    return 0;
+}
+
+struct cmd_entry_t
+{
+    ctext cmd_name;
+    cmd_req_type type;
+    //fn_cmd_get_t fn;
+    size_t fn;
+    //fn_cmd_get_t fn;
+};
+
+struct delayed_request {
+    http_request r;
+    int type;
+    cmd_entry_t* cmd;
+    U64 ts_expire;
+    size_t ctx1;
+    size_t ctx2;
+    fn_cmd_reply_t fn_complete;
+};
+void get_params_from_req(http_request r,z_string_map& var_map);
+
+#endif //ZIPOSOFT_MONGOOSE_H

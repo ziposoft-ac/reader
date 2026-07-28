@@ -46,6 +46,7 @@ public:
     z_status read();
     z_status stop();
     z_status dump();
+    z_status json_get(z_json_stream &js);
 
 };
 

@@ -102,6 +102,7 @@ public:
 
         Command* cmd=reg_func("test_simple",&TestWeb::test_simple);
         reg_func("test_get",&TestWeb::test_get);
+        reg_func("",&TestWeb::test_get);
         reg_func("test_post",&TestWeb::test_post);
         _cd=reg_func("test_delay",&TestWeb::test_delay);
         cmd->invoke_callback(4,5);

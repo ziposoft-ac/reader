@@ -94,7 +94,7 @@ int GpioPin::timer_callback(void *)
 void GpioPin::init(Gpio* chip,ctext name)
 {
 
-    ZDBG("calling init %s\n",name);
+    //ZDBG("calling init %s\n",name);
     Z_ASSERT(!_timer);
     _name=name;
     //_chip=chip;
@@ -228,6 +228,7 @@ z_status GpioPin::off()
     setOutput();
 
     //_timer->stop();
+    //_on();
 
     _off();
     return zs_ok;
@@ -291,8 +292,31 @@ void GpioPinLed::init(Gpio* chip,ctext name)
 {
     _toogleCount=0;
     GpioPin::init(chip,name);
-}
 
+    setOutput();
+    off();
+
+}
+z_status GpioPinLed::off()
+{
+    if(!gGpio.initialize())
+        return zs_io_error;
+    //setOutput();
+
+    //_timer->stop();
+    //_on();
+
+    _on();
+    return zs_ok;
+}
+z_status GpioPinLed::on()
+{
+    if(!gGpio.initialize()) return zs_io_error;
+    //setOutput();
+    //_timer->stop();
+    _off();
+    return zs_ok;
+}
 
 /**************************************************************************************
  *
@@ -334,7 +358,7 @@ Gpio::~Gpio()
 }
 
 bool Gpio::initialize() {
-    ZDBG("Gpio init %d\n",_initialized);
+    //ZDBG("Gpio init %d\n",_initialized);
     if(_initialized) return _initialized;
     auto fact=GET_FACT(Gpio);
     get_child_objs_type(fact,this,_led_map);
@@ -357,7 +381,7 @@ bool Gpio::initialize() {
         return false;
     }
     _initialized=true;
-    ZDBG("Gpio init leds\n");
+    //ZDBG("Gpio init leds\n");
 
     for(auto p : _led_map)
     {
@@ -542,7 +566,7 @@ struct gpiod_line_request* Gpio::getPinRequest(gpiod_line_direction dir, unsigne
     struct gpiod_line_config *line_cfg;
 	struct gpiod_line_request *request = NULL;
 
-    ZDBG("getPinRequest pin# %d\n",pin);
+    //ZDBG("getPinRequest pin# %d\n",pin);
 
     if (!initialize())
         return nullptr;
@@ -561,7 +585,7 @@ struct gpiod_line_request* Gpio::getPinRequest(gpiod_line_direction dir, unsigne
             Z_ERROR_MSG(zs_io_error,"gpiod_chip_request_lines failed chip=%x, linecfg=%x",_chip,line_cfg);
         }
         else {
-            ZDBG("pin#%d success\n",pin);
+            //ZDBG("pin#%d success\n",pin);
 
         }
     }

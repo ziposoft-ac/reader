@@ -2,10 +2,10 @@
 // Created by ac on 7/27/21.
 //
 
-#include "JsonCmd.h"
+#include "../web/JsonCmd.h"
 
 #include "config.h"
-#include "WebServer.h"
+#include "../web/WebServer.h"
 
 #include "zipolib/z_time.h"
 #include "zipolib/http_status.h"

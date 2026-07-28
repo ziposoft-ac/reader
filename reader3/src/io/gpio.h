@@ -86,7 +86,8 @@ public:
     z_status flash(int count);
     z_status toggling_start();
     virtual void init(Gpio* chip,ctext name);
-
+    z_status off();
+    z_status on();
 };
 
 typedef std::pair<int,int> Beep;

@@ -72,8 +72,8 @@ public:
     virtual z_status shutdown();
 
     virtual  z_status process_command_handlers(MqMsg* msg);
-    virtual  int process_message(MqMsg* msg) {
-        return 0;
+    virtual  z_status process_message(MqMsg* msg) {
+        return Z_ERROR_MSG(zs_not_implemented,"MQ msg not processed\n");
 
     }
     z_status send_msg(ctext mq_name,ctext command,ctext data,size_t len);
@@ -112,7 +112,7 @@ public:
     z_status publish(ctext command,z_string& buffer);
     z_status publish(ctext command);
 
-    virtual int process_message(MqMsg* msg) override;
+    virtual z_status process_message(MqMsg* msg) override;
 
 
 
@@ -130,7 +130,7 @@ public:
         _q_name=name;
         return zs_ok;
     };
-    int process_message(MqMsg* msg) override {
+    z_status process_message(MqMsg* msg) override {
         if (_member_callback)
             return  (_object->*_member_callback)(msg);
 
@@ -145,6 +145,7 @@ ZMETA_DECL(MqServer) {
     ZACT(start);
     ZSTAT(is_running);
     ZPROP(_q_name);
+    ZPROP(_debug);
     ZCMD(send, ZFF_CMD_DEF, "send",
         ZPRM(z_string, mq_name, "mq", "mq_name", ZFF_PARAM),
          ZPRM(z_string, msg, "hello there", "msg", ZFF_PARAM)
@@ -159,9 +160,9 @@ private:
 
 public:
 
-    virtual  int process_message(MqMsg* msg) {
+    virtual  z_status process_message(MqMsg* msg) {
         printf("MqServerTest RX: %s\n",msg->command_str);
-        return 0;
+        return zs_ok;
     }
 
 

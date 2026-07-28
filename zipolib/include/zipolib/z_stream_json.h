@@ -33,6 +33,7 @@ public:
 	void key(ctext name);
 	void val(ctext name);
 	void val_str_array(z_strlist& list);
+	void keyval_float(ctext name, double val);
 	void keyval_int(ctext name, I64 val);
 	void keyval(ctext name,ctext val);
 	void key_bool(ctext name,bool val);

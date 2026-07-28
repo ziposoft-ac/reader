@@ -5,7 +5,7 @@
 #ifndef ZIPOSOFT_JSONCMD_H
 #define ZIPOSOFT_JSONCMD_H
 #include "pch.h"
-#include "WebRequests.h"
+#include "../web/WebRequests.h"
 #include "zipolib/http_status.h"
 
 

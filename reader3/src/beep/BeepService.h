@@ -8,7 +8,6 @@
 #include "pch.h"
 
 #include "main/Service.h"
-#include "io/BeepPwm.h"
 
 
 
@@ -16,7 +15,6 @@ class BeepService : public  Service{
     public:
 
     virtual ~BeepService() {}
-    BeepPwm beeper;
 
     MqServerMap<BeepService> mq;
 };

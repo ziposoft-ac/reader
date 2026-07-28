@@ -30,7 +30,16 @@ int Command::process_mq(MqMsg* msg) {
     http_status_t http_status=HTTP_STATUS_OK;
 
     z_string msg_out;
+    ZDBG("Command MQ handler: %s\n",_name.c_str());
 
+    switch ((mq_data_type_t)msg->data_type) {
+        case mq_data_binary:
+
+            break;
+        case mq_data_json:
+
+            break;
+    }
     int ret=call_post_raw_data(msg->data,msg->data_len,msg_out);
 
     if (ret!=0) {
@@ -100,4 +109,21 @@ int CommandHandler::process_http_close(ulong id) {
 
     return 0;
 }
+
+void DelayedHttpRequest::complete() {
+    ZDBG("delayed complete\n");
+
+    z_json_str_stream js;
+    js.obj_start();
+    _callback(js);
+    js.obj_end();
+
+    mg_wakeup(_r.c->mgr, _r.c->id, js.as_string(), js.as_string().length()); // Respond to parent
+
+}
+
+bool DelayedHttpRequest::isConnectionId(unsigned long id) {
+    return _r.c->id ==id;
+}
+
 

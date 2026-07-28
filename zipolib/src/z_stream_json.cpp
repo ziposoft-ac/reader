@@ -182,6 +182,14 @@ void z_json_stream::val_str_array(z_strlist& list)
 	array_end();
 
 }
+
+void z_json_stream::keyval_float(ctext name, double val) {
+	key(name);
+	_out.format_append("%g",val);
+	//_out << val;
+	_need_comma = true;
+}
+
 void z_json_stream::keyval_int(ctext name, I64 val)
 {
 	key(name);

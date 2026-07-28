@@ -11,11 +11,12 @@ void msg_destroy(MqMsg* msg) {
     msg->buff_len=0;
 }
 
-z_status mq_send_msg_with_reply(ctext mq_name_dest,ctext mq_name_reply,mq_command_enum_t cmd_type,ctext command,U32 msg_id,ctext data,size_t data_len) {
+z_status mq_send_msg_with_reply(ctext mq_name_dest,ctext mq_name_reply,mq_command_enum_t cmd_type,ctext command,U32 msg_id,
+    mq_data_type_t data_type,ctext data,size_t data_len) {
     MqMsg msg;
     z_status status=zs_fatal_error;
     ZDBG("sending %s,%s,%s,datlen=%d\n",mq_name_dest,mq_name_reply,command,data_len);
-    msg_create(&msg,mq_name_reply,(command?command:""),cmd_type,msg_id,data_len,data);
+    msg_create(&msg,mq_name_reply,(command?command:""),cmd_type,msg_id,data_type,data_len,data);
 
     mqd_t mq_server = mq_open(mq_name_dest, O_WRONLY|O_NONBLOCK);
     if (mq_server == (mqd_t)-1) {
@@ -50,18 +51,18 @@ z_status mq_send_msg_with_reply(ctext mq_name_dest,ctext mq_name_reply,mq_comman
 
     return status;
 }
-z_status mq_send_msg(ctext mq_name_dest,mq_command_enum_t cmd_type,ctext command,ctext data,size_t data_len) {
+z_status mq_send_msg(ctext mq_name_dest,mq_command_enum_t cmd_type,ctext command,mq_data_type_t data_type,ctext data,size_t data_len) {
 
     if (data && (data_len==0))
         data_len=strlen(data);
-    return mq_send_msg_with_reply(mq_name_dest,"",cmd_type,command,0,data,data_len);
+    return mq_send_msg_with_reply(mq_name_dest,"",cmd_type,command,0,data_type,data,data_len);
 
 
 }
-z_status mq_send_msg(ctext mq_name_dest,mq_command_enum_t cmd_type,ctext command,z_string* s) {
+z_status mq_send_msg(ctext mq_name_dest,mq_command_enum_t cmd_type,ctext command,mq_data_type_t data_type,z_string* s) {
 
 
-    return mq_send_msg_with_reply(mq_name_dest,"",cmd_type,command,0,(s?s->c_str():0),(s?s->length():0));
+    return mq_send_msg_with_reply(mq_name_dest,"",cmd_type,command,0,data_type,(s?s->c_str():0),(s?s->length():0));
 
 
 }

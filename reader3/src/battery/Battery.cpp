@@ -178,6 +178,19 @@ z_status Battery::dump() {
     return zs_ok;
 }
 
+z_status Battery::json_get(z_json_stream &js) {
+    js.set_pretty_print(true);
+    js.obj_val_start("battery");
+
+    js.keyval_float("batt_v", _batt_volt);
+    js.keyval_float("input_v", _input_volt);
+    js.keyval_float("batt_current", _batt_current);
+    js.keyval_float("input_current", _input_current);
+    js.obj_end();
+
+    return zs_ok;
+}
+
 z_status Battery::init() {
     if (_i2c_fd > 0)
         return zs_ok;

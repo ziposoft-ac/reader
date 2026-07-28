@@ -7,15 +7,10 @@
 
 
 
-#include "pch.h"
 
 #include "zipolib/z_static_map.h"
 
-enum LedColor {
-    LedRed=1,
-    LedGreen=2,
-    LedYellow=3
-};
+
 enum LedOperation {
     LedBlink,
     LedOn,
@@ -26,19 +21,7 @@ struct LedCommand {
     LedOperation operation;
 
 };
-struct LedSet
-{
-    LedColor color;
-    bool on;
 
-};
-struct LedFlash
-{
-    LedColor color;
-    U32 time_ms;
-    U32 count;
-    U32 dummy;
-};
 struct Dummy
 {
     U32 dummy;

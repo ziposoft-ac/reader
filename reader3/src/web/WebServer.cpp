@@ -1,12 +1,13 @@
 //
 // Created by ac on 12/15/24.
 //
-#include "WebRequests.h"
+//#include "WebRequests.h"
 //#include "parson/parson.h"
 
 #include "WebServer.h"
+#include "mongoose/mongoose.h"
 
-#include "JsonCmd.h"
+//#include "JsonCmd.h"
 #include "api/CommandHandler.h"
 
 #if 1
@@ -40,7 +41,7 @@ void get_params_from_req(http_request req,z_string_map& var_map) {
 
 }
 
-
+/*
 void complete_delayed_req(delayed_request *dr) {
     z_string s;
     z_json_stream js(s);
@@ -60,11 +61,11 @@ void complete_delayed_req(delayed_request *dr) {
 
 
 }
-
+*/
 z_status WebServer::stop() {
     if (!_running)
         return zs_ok;
-    _req_timer->stop();
+   // _req_timer->stop();
 
     _running = false;
     if (_h_thread.joinable())
@@ -74,6 +75,35 @@ z_status WebServer::stop() {
 
     return zs_ok;
 }
+
+z_status WebServer::complete_req_all()
+{
+    for(auto handler :_cmdHandlers )
+    {
+
+        handler->process_http_close(CONNECTION_CLOSE_ALL);
+
+    }
+
+    return zs_ok;
+}
+
+void WebServer::page_show_stats( mg_connection *c) {
+    mg_printf(c, "HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\n");
+    mg_http_printf_chunk(c, "ID PROTO TYPE      LOCAL           REMOTE\n");
+    for (struct mg_connection *t = c->mgr->conns; t != NULL; t = t->next) {
+        mg_http_printf_chunk(c, "%-3lu %4s %s %M %M\n", t->id,
+                             t->is_udp ? "UDP" : "TCP",
+                             t->is_listening
+                                 ? "LISTENING"
+                                 : t->is_accepted
+                                       ? "ACCEPTED "
+                                       : "CONNECTED",
+                             mg_print_ip, &t->loc, mg_print_ip, &t->rem);
+    }
+    mg_http_printf_chunk(c, ""); // Don't forget the last empty chunk
+}
+
 z_status WebServer::complete_by_id(unsigned long id) {
 
 
@@ -84,7 +114,7 @@ z_status WebServer::complete_by_id(unsigned long id) {
 
     }
 
-
+    /*
     std::unique_lock mlock(_mutex_req_list);
 
     delayed_request *dr;
@@ -99,9 +129,10 @@ z_status WebServer::complete_by_id(unsigned long id) {
         return false;
 
     });
+    */
     return zs_ok;
 }
-
+/*
 z_status WebServer::complete_req_type(int type) {
     std::unique_lock mlock(_mutex_req_list);
 
@@ -120,26 +151,8 @@ z_status WebServer::complete_req_type(int type) {
     return zs_ok;
 }
 
-z_status WebServer::complete_req_all()
-{
-    delayed_request *dr;
-    if (_outstanding_reqs.size()==0)
-        return zs_ok;
-    std::unique_lock mlock(_mutex_req_list);
 
-
-    WS_DBG("completing %d reqs\n",_outstanding_reqs.size());
-
-    _outstanding_reqs.filter_out([](delayed_request *dr) {
-        complete_delayed_req( dr);
-
-        return true;
-    });
-
-
-    return zs_ok;
-}
-
+*/
 ctext HEADERS="HTTP/1.1 %d OK\r\nAccess-Control-Allow-Origin: *\r\nAccess-Control-Allow-Headers: Origin, Content-Type, X-Auth-Token\r\nAccess-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS\r\n"
               "Content-Type: application/json; charset=utf-8\r\n"
               "Transfer-Encoding: chunked\r\n\r\n";
@@ -153,7 +166,7 @@ void send_default_headers(struct mg_connection *c,int status) {
 
 
 int WebServer::process_command(http_request req,cmd_req_type type) {
-
+/*
     size_t i;
     for (i=0;i<cmd_list_size;i++)
     {
@@ -181,7 +194,7 @@ int WebServer::process_command(http_request req,cmd_req_type type) {
         }
     }
 
-
+*/
     z_string command_name;
     command_name.assign(req.hm->uri.buf +1,req.hm->uri.len-1);
 
@@ -194,23 +207,7 @@ int WebServer::process_command(http_request req,cmd_req_type type) {
             return command->process_http_rx(req,type);
         }
 
-        /*
-        if (handler->cmd_exists(cmd)==zs_ok) {
-            z_string return_buffer;
-            http_status_t http_status=HTTP_STATUS_OK;
 
-            z_status status=  handler->callback_rx(cmd,req.hm->body.buf,req.hm->body.len,return_buffer);
-            if (status==zs_ok) {
-                http_status=HTTP_STATUS_OK;
-            }
-            send_default_headers(req.c,http_status);
-
-            mg_http_write_chunk(req.c, return_buffer.c_str(), return_buffer.length());
-
-            mg_http_printf_chunk(req.c, ""); // Don't forget the last empty chunk
-            return 0;
-        }
-        */
     }
     mg_http_reply(req.c, 404, "Access-Control-Allow-Origin: *\r\nContent-Type:text/plain\r\nAccess-Control-Allow-Headers: Origin, Content-Type, X-Auth-Token\r\nAccess-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS\r\n", "REQ not found\n");
 
@@ -276,24 +273,12 @@ void WebServer::event_handler(struct mg_connection *c, int ev, void *ev_data) {
         WS_DBG("[%d] MG_EV_HTTP_MSG: %*.s\n",c->id,hm->uri.len,hm->uri.ptr);
 
 
-
+        /*
         if (mg_match(hm->uri, mg_str("/"),NULL)) {
-            // Print some statistics about currently established connections
-            mg_printf(c, "HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\n");
-            mg_http_printf_chunk(c, "ID PROTO TYPE      LOCAL           REMOTE\n");
-            for (struct mg_connection *t = c->mgr->conns; t != NULL; t = t->next) {
-                mg_http_printf_chunk(c, "%-3lu %4s %s %M %M\n", t->id,
-                                     t->is_udp ? "UDP" : "TCP",
-                                     t->is_listening
-                                         ? "LISTENING"
-                                         : t->is_accepted
-                                               ? "ACCEPTED "
-                                               : "CONNECTED",
-                                     mg_print_ip, &t->loc, mg_print_ip, &t->rem);
-            }
-            mg_http_printf_chunk(c, ""); // Don't forget the last empty chunk
+            page_show_stats(c);
             return;
         }
+        */
         cmd_req_type type=REQUEST_INVALID;
         if (hm->method.len == 4 && !memcmp(hm->method.buf, "POST", 4)) {
             // Verify it's a POST request
@@ -323,6 +308,7 @@ z_status WebServer::connect(ctext address, int port) {
     _port = port;
     return start();
 }
+/*
 int WebServer::timer_callback_req_wait_expire(void*) {
     delayed_request *dr;
     if (_outstanding_reqs.size()==0)
@@ -346,6 +332,7 @@ int WebServer::timer_callback_req_wait_expire(void*) {
 
 
 }
+*/
 
 z_status WebServer::start() {
     if (is_running())
@@ -353,13 +340,15 @@ z_status WebServer::start() {
 
     _running = true;
     _h_thread = std::thread(&WebServer::thread, this);
+    /*
     if(!_req_timer) {
         _req_timer=gTimerService.create_timer_t(this,&WebServer::timer_callback_req_wait_expire,0 );
 
     }
+    */
     //root.getReader().register_consumer(this);
 
-    _req_timer->start(200);
+    //_req_timer->start(200);
     return zs_ok;
 }
 
@@ -368,13 +357,6 @@ z_status WebServer::set_log_level(int ll) {
     mg_log_set(_log_level); // Set log level
 
     return zs_ok;
-}
-bool WebServer::callbackQueueEmpty()
-{
-    //ZTF;
-    complete_req_type(DELAYED_REQUEST_READS_RAW);
-
-    return true;
 }
 
 

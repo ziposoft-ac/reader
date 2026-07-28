@@ -19,13 +19,15 @@ MqServer::~MqServer() {
 
 }
 
-z_status msg_create(MqMsg* msg,ctext mq_reply_name, ctext command,U16  command_enum, U32 msg_id, U32 data_len, ctext data) {
+z_status msg_create(MqMsg* msg,ctext mq_reply_name, ctext command,mq_command_enum_t  command_enum,
+    U32 msg_id,mq_data_type_t data_type, U32 data_len, ctext data) {
     size_t len_cmd= strlen(command)+1;
     size_t len_name= strlen(mq_reply_name)+1;
     size_t len_total=len_cmd+len_name+data_len+
         sizeof(U16)+ // mq_reply_name_len
         sizeof(U16)+ // command_str_len
-        sizeof(U16)+ // command_enum
+        sizeof(U8)+ // command_enum
+        sizeof(U8)+ // data_type
         sizeof(U32)+ // data_len
         sizeof(U32); // msg_id
 
@@ -39,7 +41,8 @@ z_status msg_create(MqMsg* msg,ctext mq_reply_name, ctext command,U16  command_e
     ctext b=msg->buffer=new char[len_total];
     *(U16*)b=len_name;b+=sizeof(U16);
     *(U16*)b=len_cmd;b+=sizeof(U16);
-    *(U16*)b=command_enum;b+=sizeof(U16);
+    *(U8*)b=command_enum;b+=sizeof(U8);
+    *(U8*)b=data_type;b+=sizeof(U8);
     *(U32*)b=data_len;b+=sizeof(U32);
     *(U32*)b=msg_id;;b+=sizeof(U32);
     memcpy((void*)b,mq_reply_name,len_name);b+=len_name;
@@ -64,9 +67,10 @@ z_status msg_deserialize(MqMsg* msg,ctext buff,size_t len) {
     msg->command_str_len=*(U16*)p;p+=sizeof(U16);
     if (p>end) return zs_parse_error;
 
-    msg->command_enum=*(U16*)p;p+=sizeof(U16);
+    msg->command_enum=*(U8*)p;p+=sizeof(U8);
     if (p>end) return zs_parse_error;
-
+    msg->data_type=*(U8*)p;p+=sizeof(U8);
+    if (p>end) return zs_parse_error;
     msg->data_len=*(U32*)p;p+=sizeof(U32);
     if (p>end) return zs_parse_error;
 
@@ -99,9 +103,10 @@ z_status MqServer::process_command_handlers(MqMsg* msg) {
     for(auto handler :_cmdHandlers ) {
         Command* cmd=handler->get_command(msg->command_str);
         if (cmd) {
+
             int ret= cmd->process_mq(msg);
 
-            return zs_ok;
+            return zs_ok;;
 
         }
     }
@@ -173,7 +178,7 @@ z_status MqServer::shutdown() {
 z_status MqServer::send_msg_self(mq_command_enum_t command_enum) {
     MqMsg msg;
 
-    msg_create(&msg,"","",command_enum,_send_msg_id,0,0);
+    msg_create(&msg,"","",command_enum,_send_msg_id,mq_data_none,0,0);
     _send_msg_id++;
     if (mq_send(_mq_server_fd, msg.buffer, msg.buff_len, 10000) == -1) {
         perror("Client: mq_send failed");
@@ -212,26 +217,7 @@ z_status MqServer::run(ctext name) {
 
     return zs_success;
 }
-z_status MqServer::send_msg(ctext remote_mq_name,ctext command,ctext data,size_t data_len) {
-    MqMsg msg;
 
-    msg_create(&msg,_q_name,command,mq_command_string,_send_msg_id,data_len,data);
-    _send_msg_id++;
-
-    mqd_t mq_server = mq_open(remote_mq_name, O_WRONLY);
-    if (mq_server == (mqd_t)-1) {
-        perror("Failed to open Server  queue");
-        return zs_could_not_open_file;
-    }
-    // Send the response back to the specific client
-    if (mq_send(mq_server, msg.buffer, msg.buff_len, 0) == -1) {
-        perror("Server: mq_send  failed");
-    }
-
-    msg_destroy(&msg);
-    mq_close(mq_server);
-    return zs_success;
-}
 
 z_status MqServer::send(z_string remote_mq_name, z_string msg) {
 

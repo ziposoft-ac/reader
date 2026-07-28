@@ -2,7 +2,7 @@
 // Created by ac on 7/27/21.
 //
 
-#include "web/JsonCmd.h"
+#include "JsonCmd.h"
 
 #include "root.h"
 #include "config.h"

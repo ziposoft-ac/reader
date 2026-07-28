@@ -71,7 +71,7 @@ z_status MqFeed::remove_all_subscribers() {
             if (subname.starts_with(_q_name.c_str())) {
 
                 ZDBG("deleting client queue: %s\n",subname.c_str());
-                z_status status=mq_send_msg(subname.c_str(),mq_command_close,"close");
+                z_status status=mq_send_msg(subname.c_str(),mq_command_feed_close,"close");
 
                 //mq_unlink(subname.c_str());
 
@@ -108,7 +108,7 @@ z_status MqFeed::run(ctext feedname) {
 
 }
 
-int MqFeed::process_message(MqMsg *msg) {
+z_status MqFeed::process_message(MqMsg *msg) {
 
     if ((msg->command_enum < mq_command_subscribe)||(msg->command_enum > mq_command_unsubscribe))
         return MqServer::process_message(msg);
@@ -124,12 +124,14 @@ int MqFeed::process_message(MqMsg *msg) {
         FeedSubscriber* sub=new FeedSubscriber(sub_name);
         _subscribers.add(sub_name,sub);
         z_status status=sendToSub(sub_name,mq_command_subscribe_ack,0);
+        return status;
 
     }
     if (msg->command_enum == mq_command_unsubscribe) {
         _subscribers.del(sub_name);
+        return zs_ok;
 
     }
-    return 0;
+    return Z_ERROR_MSG(zs_not_found,"MqFeed unhandled command \n");
 
 }

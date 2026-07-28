@@ -9,9 +9,8 @@
 
 #include "pch.h"
 #include <concepts>
-#include "web/WebRequests.h"
 #include "api/MqServer.h"
-#include "zipolib/http_status.h"
+#include "web/WebServer.h"
 
 class CommandHandler;
 
@@ -23,7 +22,7 @@ class CommandHandler;
 
 class Command {
 public:
-
+    size_t binary_size=0;
     z_string _name;
     Command() {
 
@@ -42,6 +41,10 @@ public:
     virtual int callback_http(http_request req,z_string_map &vars,z_json_obj &jin, z_json_stream &jout) {
         return -1;
     }
+
+    virtual int callback_mq_json(z_json_obj &jin, z_json_stream &jout) {
+        return -1;
+    }
     virtual void process_http_close(u_long id) {}
 
 
@@ -53,9 +56,10 @@ public:
 };
 template <class C, typename... Args> using callback_t = int (C::*)(Args...);
 template <class C> using callback_simple_t = int (C::*)(int);
-template <class C> using callback_post_t = int (C::*)(z_json_obj &jin, z_json_stream &j);
+template <class C> using callback_post_json_t = int (C::*)(z_json_obj &jin, z_json_stream &j);
 template <class C> using callback_get_t = int (C::*)(z_string_map &vars, z_json_stream &j);
 template <class C> using callback_http_delayed_t = int (C::*)(http_request req,z_string_map &vars,z_json_obj &jin, z_json_stream &jout);
+template <class C> using callback_mq_binary_t = int (C::*)(const char*);
 
 
 template <typename C,typename F> class Command_t  : public Command {
@@ -72,10 +76,20 @@ public:
         }
         return -1;
     }
-    virtual int callback_http(http_request req,z_string_map &vars,z_json_obj &jin, z_json_stream &jout) {
-        if constexpr (std::is_same_v<F,callback_post_t<C>>) { return  (_obj->*_func)(jin,jout);   }
+    virtual z_status callback_mq(MqMsg* msg) {
+        if constexpr (std::is_same_v<F,callback_post_json_t<C>>) { return  (_obj->*_func)(jin,jout);   }
         if constexpr (std::is_same_v<F,callback_get_t<C>>) { return  (_obj->*_func)(vars,jout);   }
         if constexpr (std::is_same_v<F,callback_http_delayed_t<C>>) { return  (_obj->*_func)(req,vars,jin,jout);   }
+        Z_ERROR_LOG("No matching template for http command %s\n",_name.c_str());
+        return -1;
+    }
+
+
+    virtual int callback_http(http_request req,z_string_map &vars,z_json_obj &jin, z_json_stream &jout) {
+        if constexpr (std::is_same_v<F,callback_post_json_t<C>>) { return  (_obj->*_func)(jin,jout);   }
+        if constexpr (std::is_same_v<F,callback_get_t<C>>) { return  (_obj->*_func)(vars,jout);   }
+        if constexpr (std::is_same_v<F,callback_http_delayed_t<C>>) { return  (_obj->*_func)(req,vars,jin,jout);   }
+        Z_ERROR_LOG("No matching template for http command %s\n",_name.c_str());
         return -1;
     }
 };
@@ -93,17 +107,8 @@ public:
     http_request _r;
     U64 _ts_expire;
     std::function<void(z_json_stream& json_out)> _callback;
-    void complete() {
-        ZDBG("delayed complete\n");
-
-        z_json_str_stream js;
-        js.obj_start();
-        _callback(js);
-        js.obj_end();
-
-        mg_wakeup(_r.c->mgr, _r.c->id, js.as_string(), js.as_string().length()); // Respond to parent
-
-    }
+    void complete() ;
+    bool isConnectionId(unsigned long id);
 };
 template <typename C> class CommandDelayed_t : public Command_t<C,callback_http_delayed_t<C>> {
 public:
@@ -122,7 +127,7 @@ public:
     int timer_callback_req_wait_expire(void*) {
         delayed_request *dr;
         if (_outstanding_reqs.size()==0)
-            return 200;
+            return 200; // todo this should be calculated to be the next exipiring
         std::unique_lock mlock(_mutex_req_list);
 
         U64 now=z_time_get_ticks_ms();
@@ -137,7 +142,7 @@ public:
 
             return true;
         });
-        return 200;
+        return 200;// todo this should be calculated to be the next exipiring
 
 
 
@@ -148,8 +153,8 @@ public:
         std::unique_lock mlock(_mutex_req_list);
 
         _outstanding_reqs.filter_out([id](DelayedHttpRequest *dr) {
-            if (dr->_r.c->id ==id) {
-                ZDBG("removing delayed request\n");
+            if ((id==CONNECTION_CLOSE_ALL) || (dr->isConnectionId(id))) {
+                //ZDBG("removing delayed request\n");
                 return true;
             }
             return false;
@@ -210,6 +215,7 @@ public:
     }
 };
 
+
 typedef CommandDelayed_t<CommandHandler> CommandDelayed;
 
 class CommandHandler {
@@ -242,15 +248,29 @@ public:
         return zs_ok;
 
     }
-    template < typename SUBCLASS, typename... Args>
-    Command* reg_func(ctext name,int (SUBCLASS::*func)(Args...))
+    template < typename DATATYPE,typename C>
+    Command* reg_bin_func(ctext name,int (C::*func)(DATATYPE*))
     {
         if (_map.exists(name)) {
             Z_ERROR(zs_already_exists);
             return nullptr;
         }
         std::unique_lock mlock(_map_mutex);
-        Command *cmd = new Command_t(name,(SUBCLASS*)this,func);
+
+        Command *cmd = new Command_t<C,callback_mq_binary_t<C>>(name,(C*)this,(callback_mq_binary_t)func);
+        cmd->binary_size=sizeof(DATATYPE);
+        _map.add(name, cmd);
+        return cmd;
+    }
+    template < typename C, typename... Args>
+    Command* reg_func(ctext name,int (C::*func)(Args...))
+    {
+        if (_map.exists(name)) {
+            Z_ERROR(zs_already_exists);
+            return nullptr;
+        }
+        std::unique_lock mlock(_map_mutex);
+        Command *cmd = new Command_t(name,(C*)this,func);
         _map.add(name, cmd);
         return cmd;
     }
