@@ -48,7 +48,7 @@ int Command::process_mq(MqMsg* msg) {
     if (msg->mq_reply_name && msg->mq_reply_name_len > 1) {
         z_string reply="@";
         reply+=msg->command_str;
-        mq_send_msg_with_reply(msg->mq_reply_name,"",mq_command_ack,reply,msg->msg_id,return_buffer.c_str(),return_buffer.length());
+        //mq_send_msg_with_reply(msg->mq_reply_name,"",mq_command_ack,reply,msg->msg_id,return_buffer.c_str(),return_buffer.length());
     }
     return ret;
 

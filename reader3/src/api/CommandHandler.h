@@ -22,7 +22,7 @@ class CommandHandler;
 
 class Command {
 public:
-    size_t binary_size=0;
+    size_t _binary_size=0;
     z_string _name;
     Command() {
 
@@ -41,10 +41,8 @@ public:
     virtual int callback_http(http_request req,z_string_map &vars,z_json_obj &jin, z_json_stream &jout) {
         return -1;
     }
+    virtual z_status callback_mq(MqMsg* msg);
 
-    virtual int callback_mq_json(z_json_obj &jin, z_json_stream &jout) {
-        return -1;
-    }
     virtual void process_http_close(u_long id) {}
 
 
@@ -77,11 +75,18 @@ public:
         return -1;
     }
     virtual z_status callback_mq(MqMsg* msg) {
-        if constexpr (std::is_same_v<F,callback_post_json_t<C>>) { return  (_obj->*_func)(jin,jout);   }
-        if constexpr (std::is_same_v<F,callback_get_t<C>>) { return  (_obj->*_func)(vars,jout);   }
-        if constexpr (std::is_same_v<F,callback_http_delayed_t<C>>) { return  (_obj->*_func)(req,vars,jin,jout);   }
+        if constexpr (std::is_same_v<F,callback_mq_binary_t<C>>)
+        {
+            if (_binary_size!= msg->data_len)
+            {
+                return Z_ERROR(zs_data_error);
+            }
+
+            return  (_obj->*_func)(msg->data);
+        }
+
         Z_ERROR_LOG("No matching template for http command %s\n",_name.c_str());
-        return -1;
+        return Z_ERROR(zs_internal_error);
     }
 
 
@@ -257,8 +262,8 @@ public:
         }
         std::unique_lock mlock(_map_mutex);
 
-        Command *cmd = new Command_t<C,callback_mq_binary_t<C>>(name,(C*)this,(callback_mq_binary_t)func);
-        cmd->binary_size=sizeof(DATATYPE);
+        Command *cmd = new Command_t<C,callback_mq_binary_t<C>>(name,(C*)this,(callback_mq_binary_t<C>)func);
+        cmd->_binary_size=sizeof(DATATYPE);
         _map.add(name, cmd);
         return cmd;
     }

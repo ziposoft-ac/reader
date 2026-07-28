@@ -34,8 +34,8 @@ z_status msg_create(
     ctext mq_reply_name,
     ctext command,
     U8  command_enum,
-    U8  data_type,
     U32 msg_id,
+    U8  data_type,
     U32 data_len,
     ctext data
 );
@@ -64,7 +64,7 @@ enum mq_command_enum_t {
 
 
 z_status mq_send_msg_with_reply(ctext mq_name_dest,ctext mq_name_reply,mq_command_enum_t cmd_type,ctext command,U32 msg_id,mq_data_type_t data_type,ctext data,size_t data_len);
-z_status mq_send_msg(ctext mq_name_dest,mq_command_enum_t cmd_type,ctext command,mq_data_type_t data_type,ctext data="",size_t data_len=0);
+z_status mq_send_msg(ctext mq_name_dest,mq_command_enum_t cmd_type,ctext command,mq_data_type_t data_type=mq_data_none,ctext data="",size_t data_len=0);
 z_status mq_send_msg(ctext mq_name_dest,mq_command_enum_t cmd_type,ctext command,mq_data_type_t data_type,z_string* s);
 template <typename T> z_status mq_send_msg_t(ctext mq_name_dest,ctext command,const T& data) {
     return mq_send_msg(mq_name_dest,mq_command_string,command,mq_data_binary,(ctext)&data,sizeof(T));

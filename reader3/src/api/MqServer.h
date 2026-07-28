@@ -101,7 +101,7 @@ class MqFeed : public MqServer {
 public:
     friend z_factory_t<MqFeed>;
 
-    z_status sendToSub(ctext subname,mq_command_enum_t cmd_type,ctext command,z_string* buffer=0);
+    z_status sendToSub(ctext subname,mq_command_enum_t cmd_type,ctext command,mq_data_type_t data_type,z_string* buffer=0);
 
     z_status remove_all_subscribers();
 

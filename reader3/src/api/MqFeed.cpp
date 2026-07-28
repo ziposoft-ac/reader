@@ -14,13 +14,14 @@ z_status MqFeed::publish(ctext command) {
     return publish(command,s);
 
 }
-z_status MqFeed::sendToSub(ctext subname,mq_command_enum_t cmd_type,ctext command,z_string* buffer) {
+z_status MqFeed::sendToSub(ctext subname,mq_command_enum_t cmd_type,ctext command,mq_data_type_t data_type,
+    z_string* buffer) {
 
     z_string rx_q_name=_q_name;
     rx_q_name<<"-"<<subname;
     ZDBG("sending to %s\n",rx_q_name.c_str());
 
-    z_status status=mq_send_msg(rx_q_name,cmd_type,command,buffer);
+    z_status status=mq_send_msg(rx_q_name,cmd_type,command,data_type,buffer);
     return status;
 
 }
@@ -33,7 +34,7 @@ z_status MqFeed::publish(ctext command,z_string& buffer) {
     while (it != _subscribers.end())
     {
         ctext name=it->first;
-        z_status status=sendToSub(name,mq_command_json,command,&buffer);
+        z_status status=sendToSub(name,mq_command_string,command,mq_data_json,&buffer);
         if (status==zs_ok) {
             it++;
         }
@@ -123,7 +124,7 @@ z_status MqFeed::process_message(MqMsg *msg) {
         ZDBG("got subscribe request from :%s\n",sub_name.c_str());
         FeedSubscriber* sub=new FeedSubscriber(sub_name);
         _subscribers.add(sub_name,sub);
-        z_status status=sendToSub(sub_name,mq_command_subscribe_ack,0);
+        z_status status=sendToSub(sub_name,mq_command_subscribe_ack,"",mq_data_none);
         return status;
 
     }

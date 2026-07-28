@@ -4,6 +4,39 @@
 #include "MqClient.h"
 #include <mqueue.h>
 
+
+z_status msg_create(MqMsg* msg,ctext mq_reply_name, ctext command,mq_command_enum_t  command_enum,
+    U32 msg_id,mq_data_type_t data_type, U32 data_len, ctext data) {
+    size_t len_cmd= strlen(command)+1;
+    size_t len_name= strlen(mq_reply_name)+1;
+    size_t len_total=len_cmd+len_name+data_len+
+        sizeof(U16)+ // mq_reply_name_len
+        sizeof(U16)+ // command_str_len
+        sizeof(U8)+ // command_enum
+        sizeof(U8)+ // data_type
+        sizeof(U32)+ // data_len
+        sizeof(U32); // msg_id
+
+    if (data==nullptr)
+        data="";
+
+    if (len_total >= MAX_MSG_SIZE) {
+        return Z_ERROR_MSG(zs_bad_parameter,"total msg exceeds max len: %s",command);
+    }
+    msg->buff_len=len_total;
+    ctext b=msg->buffer=new char[len_total];
+    *(U16*)b=len_name;b+=sizeof(U16);
+    *(U16*)b=len_cmd;b+=sizeof(U16);
+    *(U8*)b=command_enum;b+=sizeof(U8);
+    *(U8*)b=data_type;b+=sizeof(U8);
+    *(U32*)b=data_len;b+=sizeof(U32);
+    *(U32*)b=msg_id;;b+=sizeof(U32);
+    memcpy((void*)b,mq_reply_name,len_name);b+=len_name;
+    memcpy((void*)b,command,len_cmd);;b+=len_cmd;
+    memcpy((void*)b,data,data_len);
+    return zs_ok;
+}
+
 void msg_destroy(MqMsg* msg) {
     if (msg->buffer)
         delete []msg->buffer;
