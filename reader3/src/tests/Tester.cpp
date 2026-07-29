@@ -3,9 +3,9 @@
 //
 #include "pch.h"
 #include "main/Service.h"
-#include "../disable/LedApi.h"
 
 #include "global.h"
+#include "api/CommandHandler.h"
 
 
 struct Counter {
@@ -13,33 +13,20 @@ struct Counter {
 
 };
 
-#define TEST_API \
-API_NAME(Tester, \
-CMD(Counter)    \
-)
-
-#define API TEST_API
-#include "../disable/ApiDeclare.inc"
-#define API TEST_API
-
-#include "api/ApiDefine.inc"
 
 
 
-
-class Tester : public  Service{
+class Tester : public  Service,public  CommandHandler{
 public:
 
     Tester(){}
     virtual ~Tester() {}
-    MqServerMap<Tester> mq1;
-    MqServerMap<Tester> mq2;
+    MqServer mq1;
+    MqServer mq2;
     z_status initialize() override{
-
-        mq1._object=this;
-        mq2._object=this;
-        //mq1.run_map("/test1",this);
-        //mq2.run_map("/test2",this);
+        reg_bin_func("count",&Tester::handlerCount);
+        mq1.register_consumer(this);
+        mq2.register_consumer(this);
         return zs_ok;
     };
     z_status shutdown() override{
@@ -49,16 +36,21 @@ public:
     };
     U64 _counter=0;
 
-    z_status runCounter(int max) {
+    z_status runCounter(z_string dest,int max) {
         U64 count=0;
         U64 us_start= z_time_get_ticks_us();
 
 
 
         while (count<=max) {
-
-            if (apiTester.Counter({count})!=zs_ok) {
+            z_status s=mq_send_msg_t<Counter>(dest,"count",{count});
+            if (s==zs_device_busy) {
+                z_sleep_us(100);
+                continue;
+            }
+            if (s!=zs_ok) {
                 Z_ERROR_LOG("sending count failed\n");
+                perror("mq error");
                 break;
             }
 
@@ -73,7 +65,7 @@ public:
         printf("%d iters in %lu us, %lu per call, %lf calls per sec \n",max,diff,diff/max,calls_per_sec);
         return zs_ok;
     }
-    z_status Counter(Counter* data) {
+    z_status handlerCount(Counter* data) {
         U64 countIn=data->count;
 
         if (countIn) {
@@ -92,12 +84,12 @@ public:
         return zs_ok;
     }
     z_status LedFlash() {
-        z_status s=apiLedService.LedFlash({LedGreen,1000,3});
+        z_status s=zs_not_implemented;
 
         return s;
     }
     z_status Dummy() {
-        z_status s=apiLedService.Dummy({1000});
+        z_status s=zs_not_implemented;
 
         return s;
     }
@@ -107,15 +99,10 @@ ZMETA(Tester) {
     ZOBJ(mq1);
     ZOBJ(mq2);
     ZCMD(runCounter, ZFF_CMD_DEF, "runCounter",
+         ZPRM(z_string, dest, "/mq1", "count", ZFF_PARAM),
          ZPRM(int, count, 10, "count", ZFF_PARAM)
          );
-};
-ZMETA(MqServerMap<Tester>) {
-    ZBASE(MqServer);
 };
 
 ROOT_SERVICE(Tester);
 
-#define MQ_HANDLER Tester
-#define API TEST_API
-#include "../disable/ApiMap.inc"

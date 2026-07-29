@@ -10,12 +10,33 @@
 
 z_status create_log_directory();
 
+enum z_log_level {
+	z_log_level_error,
+	z_log_level_warning,
+	z_log_level_info,
+	z_log_level_verbose,
+	z_log_level_debug,
+	z_log_level_debug2,
+	z_log_level_debug3,
+
+};
 
 class z_logger : public z_stream_multi {
 	z_file_out _file;
+    std::mutex _mutex;
+	size_t _buff_size=200;
+	char* _buff=0;
 
 public:
+	z_logger() {
+		_buff=new char[_buff_size];
+	}
+	virtual ~z_logger() {
+		delete[] _buff;
+	}
 	z_status create_file_out(ctext file_name);
+	z_log_level _level=z_log_level_info;
+	void loglevel(z_log_level lvl,ctext pFormat, ...);
 
 };
 
@@ -68,6 +89,7 @@ public:
 class z_logger_debug : public z_logger {
 public:
 	z_logger_debug();
+	int _level=z_log_level_debug;
 
 };
 z_logger_debug& get_debug_logger();
@@ -76,6 +98,12 @@ z_logger_debug& get_debug_logger();
 #define	ZDBG(...) get_debug_logger().format_append(__VA_ARGS__)
 #define	ZDBG_LINE(...) get_debug_logger().format_append(__VA_ARGS__)
 #define	ZDBG_HEX(data,len) get_debug_logger().dump_hex(data,len)
+#define	ZDBG1(...) get_debug_logger().loglevel(1,__VA_ARGS__)
+#define	ZDBG2(...) get_debug_logger().loglevel(2,__VA_ARGS__)
+#define	ZDBG3(...) get_debug_logger().loglevel(3,__VA_ARGS__)
+#define	ZDBG4(...) get_debug_logger().loglevel(4,__VA_ARGS__)
+#define	ZDBG5(...) get_debug_logger().loglevel(5,__VA_ARGS__)
+
 #endif
 
 #ifdef Z_TRACE_ENABLE
@@ -127,7 +155,11 @@ z_status z_debug_warn_t(z_status status,  ctext file, ctext func, int line);
 #define	ZDBG(...)
 #define ZDBGS  gz_stream_null
 #define	ZDBG_HEX(data,len)
-
+#define	ZDBG1(...)
+#define	ZDBG2(...)
+#define	ZDBG3(...)
+#define	ZDBG4(...)
+#define	ZDBG5(...)
 #endif
 
 #ifndef Z_TRACE_ENABLE

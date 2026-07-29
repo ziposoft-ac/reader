@@ -12,7 +12,7 @@ include_directories(
 
 
 set(SRC_DIR  ${CMAKE_CURRENT_SOURCE_DIR}/src)
-
+set(SRC_COMMON "src/io/ioApi.cpp")
 file(GLOB SRC "src/*.cpp")
 file(GLOB SRC_TEST "src/tests/*")
 file(GLOB SRC_RFID "src/rfid/*")

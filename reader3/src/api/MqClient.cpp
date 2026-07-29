@@ -48,7 +48,7 @@ z_status mq_send_msg_with_reply(ctext mq_name_dest,ctext mq_name_reply,mq_comman
     mq_data_type_t data_type,ctext data,size_t data_len) {
     MqMsg msg;
     z_status status=zs_fatal_error;
-    ZDBG("sending %s,%s,%s,datlen=%d\n",mq_name_dest,mq_name_reply,command,data_len);
+    //ZDBG("sending %s,%s,%s,datlen=%d\n",mq_name_dest,mq_name_reply,command,data_len);
     msg_create(&msg,mq_name_reply,(command?command:""),cmd_type,msg_id,data_type,data_len,data);
 
     mqd_t mq_server = mq_open(mq_name_dest, O_WRONLY|O_NONBLOCK);
@@ -60,7 +60,7 @@ z_status mq_send_msg_with_reply(ctext mq_name_dest,ctext mq_name_reply,mq_comman
     int ret=mq_send(mq_server, msg.buffer, msg.buff_len, 0);
 
     if (ret==0) {
-        ZDBG("sent ok\n");
+        //ZDBG("sent ok\n");
         status=zs_ok;
 
     }
@@ -68,7 +68,7 @@ z_status mq_send_msg_with_reply(ctext mq_name_dest,ctext mq_name_reply,mq_comman
     {
         if (errno == EAGAIN) {
             status=zs_device_busy;
-            ZDBG("queue is full\n");
+            ZDBG("MQ is full, %s:%s\n",mq_name_dest,command);
 
             // The queue is full.
             // Implement your fallback here (e.g., retry later, log, or drop).

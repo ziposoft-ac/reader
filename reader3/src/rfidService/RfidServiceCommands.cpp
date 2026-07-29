@@ -2,6 +2,7 @@
 // Created by ac on 7/25/26.
 //
 #include "RfidService.h"
+#include "zipolib/http_status.h"
 
 int RfidService::getRawReads(http_request req, z_string_map &vars, z_json_obj &jin, z_json_stream &jout) {
     RfidReader &reader = getRfidReader();
@@ -15,7 +16,7 @@ int RfidService::getRawReads(http_request req, z_string_map &vars, z_json_obj &j
         ZDBG("RAW requested index %d greater than current, using 0\n",fromIndex);
     }
     if (fromIndex==currentReadIndex) {
-        ZDBG("queueing req\n");
+        //ZDBG("queueing req\n");
 
         _getRawReadsCd->add_pending(req,WAIT_FOR_NEW_READS_TIMEOUT,
             [this,fromIndex,return_reads](z_json_stream& js) {
@@ -103,3 +104,4 @@ int RfidService::post_config(z_json_obj& o,z_json_stream& jout) {
     }
     return CMD_FAILED;
 }
+

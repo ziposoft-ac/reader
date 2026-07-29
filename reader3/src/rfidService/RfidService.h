@@ -79,6 +79,7 @@ public:
     RfidReader& getRfidReader() {
         return *_reader;
     }
+    z_status setLed(int color, int onoff);
 };
 
 #endif //ZIPOSOFT_RFIDSERVICE_H

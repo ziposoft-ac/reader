@@ -76,7 +76,7 @@ public:
         return Z_ERROR_MSG(zs_not_implemented,"MQ msg not processed\n");
 
     }
-    z_status send_msg(ctext mq_name,ctext command,ctext data,size_t len);
+    //z_status send_msg(ctext mq_name,ctext command,ctext data,size_t len);
     z_status send_msg_self(mq_command_enum_t command);
 
     z_status start();

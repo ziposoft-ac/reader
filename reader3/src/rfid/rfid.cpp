@@ -4,6 +4,7 @@
 
 #include "rfid.h"
 
+#include "io/IoApi.h"
 
 ZMETA_DEFV(RfidReader);
 #ifdef  ENABLE_PHASE
@@ -223,9 +224,10 @@ z_status RfidReader::start()
     _ts_reading_started.set_now();
     if(status==zs_ok) {
 
-        //root.gpio.ledGreen.on();
+    ioLedSet({LedGreen,true  });
+    ioLedSet({LedRed,false  });
 
-        _reading=true;
+    _reading=true;
 
     }
     return status;
@@ -519,6 +521,8 @@ z_status RfidReader::stop()
     ZTF;
     _read_stop();
     _reading = false;
+    ioLedSet({LedGreen,false  });
+    ioLedSet({LedRed,true  });
     //root.gpio.ledRed.on();
     //root.gpio.ledGreen.off();
     return zs_ok;

@@ -13,11 +13,15 @@ ZMETA(RfidSimulator)
     ZPROP(_max_interval);
     ZPROP(_seq_max);
     ZPROP(_interval);
+    ZPROP(_file_reads_delay);
     ZPROP(_mode);
     ZACT(setRandomMode);
     ZACT(setFileMode);
     ZACT(setManMode);
-    ZACT(same);
+
+    ZCMD(loadFile, ZFF_CMD_DEF, "loadFile",
+     ZPRM(z_string, fn, "raw_reads.csv", "raw reads input file", ZFF_PARAM)
+);
     ZCMD(manRead, ZFF_CMD_DEF, "manRead",
          ZPRM(z_string, epc, "0001", "epc", ZFF_PARAM),
          ZPRM(int, rssi, 50, "rssi", ZFF_PARAM),
@@ -71,27 +75,38 @@ z_status RfidSimulator::burstSeq(int count,int interval_ms) {
 
 z_status RfidSimulator::_read_start() {
     ZTF;
-
+    if(!_timer)
+        _timer=gTimerService.create_timer_t(this,&RfidSimulator::timer_callback,0    );
     if (_mode==MODE_FILE) {
-
+        printf("Loading file: %s\n ",_source_file.c_str());
         z_parse_csv_file csv;
         z_string path=   _source_file;
         z_status  status=csv.ParseFileData(path,_data);
+
+        if (status!=zs_ok) {
+            return Z_ERROR(status);
+        }
         _index=0;
+        /*
         if(!_timer)
             _timer=gTimerService.create_timer_t(this,&RfidSimulator::timer_callback_file,0    );
         _timer->start(_interval);
         return zs_ok;
+        */
+        _timer->start(1);
+
+    }
+    if (_mode==MODE_SEQ) {
+        _timer->start(1);
 
     }
 
-    if(!_timer)
-        _timer=gTimerService.create_timer_t(this,&RfidSimulator::timer_callback,0    );
-    _timer->start(1);
     return zs_ok;
 }
-int RfidSimulator::timer_callback(void *) {
-
+int RfidSimulator::timer_callback(void *p) {
+    if (_mode==MODE_FILE) {
+        return timer_callback_file(p);
+    }
     Epc epc;
     epc.set_bcd_from_int(_index);
     if (_mode==MODE_RANDOM) {
@@ -143,15 +158,26 @@ z_status RfidSimulator::manRead(z_string hex,int rssi,int ant) {
     return zs_ok;
 
 }
+
+z_status RfidSimulator::loadFile(z_string fn) {
+
+
+    return zs_ok;
+}
+
 int RfidSimulator::timer_callback_file(void *) {
-    if(_index>=_data.size())
+    if(_index>=_data.size()) {
+        printf("File complete\n");
         return 0;
+
+    }
     auto row=_data[_index];
     if(row.size()<3)
         return 0;
 
-    U64 ts=row[0].get_u64_val();
-    U8 ant=row[1].get_int_val();
+    U64 ts=row[1].get_u64_val();
+    U8 ant=row[2].get_int_val();
+    U8 rssi=row[3].get_int_val();
     if(!_time_offset)
     {
         _time_offset=z_time::get_now();
@@ -159,17 +185,22 @@ int RfidSimulator::timer_callback_file(void *) {
     }
     U64 adj_ts=ts+_time_offset;
     //zout<< ts<<"\n";
-    ZDBG("read %d %s\n",adj_ts,row[2].c_str());
+    //ZDBG("read %d %s\n",adj_ts,row[2].c_str());
     Epc epc;
-    epc.setFromHexString(row[2]);
+    epc.setFromHexString(row[4]);
 
-    queueRead(ant,54,epc.get_data(),epc.get_len(),adj_ts);
+    queueRead(ant,rssi,epc.get_data(),epc.get_len(),adj_ts);
     _index++;
-    if(_index>=_data.size())
+    if(_index>=_data.size()) {
+        printf("File complete\n");
         return 0;
+    }
     row=_data[_index];
-    U64 delay=row[0].get_u64_val() - ts;
-    ZDBG("next read %d\n",delay/1000);
+    U64 delay=row[1].get_u64_val() - ts;
+
+    if (_file_reads_delay)
+        delay=_file_reads_delay;
+    ZDBG("next read %d\n",delay);
     if(_max_interval)
         if(_max_interval<delay)
             delay=_max_interval;

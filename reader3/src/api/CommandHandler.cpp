@@ -111,7 +111,7 @@ int CommandHandler::process_http_close(ulong id) {
 }
 
 void DelayedHttpRequest::complete() {
-    ZDBG("delayed complete\n");
+    //ZDBG("delayed complete\n");
 
     z_json_str_stream js;
     js.obj_start();

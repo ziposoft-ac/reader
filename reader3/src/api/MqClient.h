@@ -29,16 +29,6 @@ template<typename DATA_T> struct MqMsg_T {
 };
 typedef MqMsg_T<const char> MqMsg;
 
-z_status msg_create(
-    MqMsg* msg,
-    ctext mq_reply_name,
-    ctext command,
-    U8  command_enum,
-    U32 msg_id,
-    U8  data_type,
-    U32 data_len,
-    ctext data
-);
 
 void msg_destroy(MqMsg* msg);
 
@@ -61,6 +51,16 @@ enum mq_command_enum_t {
     mq_command_internal_wakeup=100,
 
 };
+z_status msg_create(
+    MqMsg* msg,
+    ctext mq_reply_name,
+    ctext command,
+    mq_command_enum_t  command_enum,
+    U32 msg_id,
+    mq_data_type_t  data_type,
+    U32 data_len,
+    ctext data
+);
 
 
 z_status mq_send_msg_with_reply(ctext mq_name_dest,ctext mq_name_reply,mq_command_enum_t cmd_type,ctext command,U32 msg_id,mq_data_type_t data_type,ctext data,size_t data_len);

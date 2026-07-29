@@ -17,9 +17,14 @@ class Service;
 
 
 class Service {
+    friend z_factory_t<Service>;
+
     LockFile _lock_file;
 
     z_file_out _log_file;
+
+    int _log_level=z_log_level_info;
+    int _debug_level=z_log_level_debug;
 public:
     Service() {
     }
@@ -50,6 +55,11 @@ public:
         return zs_ok;
 
     }
+    z_status debugLevelSet(int level) {
+        get_debug_logger()._level=level;
+        _debug_level=level;
+        return zs_ok;
+    }
 
 };
 
@@ -69,6 +79,11 @@ Service* getRootService(z_factory** factory);
 
 
 ZMETA_DECL(Service) {
+    ZCMD(debugLevelSet , ZFF_CMD_DEF, "debugLevelSet",
+     ZPRM(int, level, 4, "level", ZFF_PARAM)
+    );
+    ZPROP(_log_level);
+    ZPROP(_debug_level);
     ZACT(initialize);
     ZACT(shutdown);
     ZOBJ_EX(gConsole,"console",ZFF_PROP_DEF,"Console");

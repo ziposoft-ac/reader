@@ -222,7 +222,7 @@ int  VisitProcess::timer_callback(void*)
     z_time now;
     now.set_now();
     U64 next_callback=_default_timer_period;
-    DBGL("timer callback ");
+    //DBGL("timer callback ");
 
 
 
@@ -246,7 +246,7 @@ int  VisitProcess::timer_callback(void*)
                 if (t->isDeparted()) {
 
                     if (_record_visits) {
-                        t->writeOut(_file_visits.get_stream());
+                        t->writeOut(_file_visits.get_stream(),_t_started);
 
                     }
                     //Z_ERROR_LOG("deleting: %s ",t->_epc.c_str());
@@ -418,8 +418,13 @@ void RfidTag::writeOut(z_stream& s,z_time base) {
 
     U64 ts=  _ts_rssi_high-base;
 
-    s<<_ts_rssi_high.get_t() ,_ts_first_time_seen.get_t() ,_ts_last_time_seen.get_t() ,
-    _epc.c_str(),_count_total,_rssi_high,_ant_mask,_ant_hi;
+    I64 in=_ts_first_time_seen.get_t()- _ts_rssi_high.get_t();
+    I64 out= _ts_last_time_seen.get_t()- _ts_rssi_high.get_t();
+    s<< _epc.c_str(), _ts_rssi_high.to_readable_string(), _ts_rssi_high.get_t(),
+    in,out,_count_total,_rssi_high,_ant_mask,_ant_hi;
+
+
+    //s<<_ts_rssi_high.get_t() ,_ts_first_time_seen.get_t() ,_ts_last_time_seen.get_t() ,    _epc.c_str(),_count_total,_rssi_high,_ant_mask,_ant_hi;
 
 
     s<<'\n';

@@ -2,6 +2,7 @@
 // Created by ac on 7/17/26.
 //
 #include "RfidService.h"
+#include "io/IoApi.h"
 
 
 struct Counter {
@@ -9,6 +10,10 @@ struct Counter {
 
 };
 
+z_status RfidService::setLed(int color, int onoff) {
+
+    return ioLedSet({(LedColor)color,(bool)onoff});
+}
 
 z_status RfidService::initialize() {
     if (!globalLock())
@@ -18,6 +23,9 @@ z_status RfidService::initialize() {
         _reader= &simulator;
     else
         _reader= &cfmu804;
+
+    ioLedSet({LedRed,true  });
+    ioLedSet({LedGreen,false  });
     ws.start();
     _reader->open();
     _visits.initialize();
@@ -30,7 +38,7 @@ z_status RfidService::initialize() {
 
 
     getRfidReader().register_cb_queue_empty(this,[this]() {
-        ZDBG("rfid queue empty\n");
+        //ZDBG("rfid queue empty\n");
         if (_getRawReadsCd)
             _getRawReadsCd->complete_req_all();
         return true;
@@ -51,6 +59,10 @@ ZMETA(RfidService) {
     ZOBJ(_visits);
     ZACT(simulate_on);
     ZACT(simulate_off);
+    ZCMD(setLed, ZFF_CMD_DEF, "setLed",
+        ZPRM(int, color, 1, "color", ZFF_PARAM),
+        ZPRM(int, on, 1, "onoff", ZFF_PARAM)
+     );
 
 
 };

@@ -41,7 +41,9 @@ public:
     virtual int callback_http(http_request req,z_string_map &vars,z_json_obj &jin, z_json_stream &jout) {
         return -1;
     }
-    virtual z_status callback_mq(MqMsg* msg);
+    virtual z_status callback_mq(MqMsg* msg) {
+        return zs_not_implemented;
+    }
 
     virtual void process_http_close(u_long id) {}
 
@@ -57,7 +59,7 @@ template <class C> using callback_simple_t = int (C::*)(int);
 template <class C> using callback_post_json_t = int (C::*)(z_json_obj &jin, z_json_stream &j);
 template <class C> using callback_get_t = int (C::*)(z_string_map &vars, z_json_stream &j);
 template <class C> using callback_http_delayed_t = int (C::*)(http_request req,z_string_map &vars,z_json_obj &jin, z_json_stream &jout);
-template <class C> using callback_mq_binary_t = int (C::*)(const char*);
+template <class C> using callback_mq_binary_t = z_status (C::*)(const char*);
 
 
 template <typename C,typename F> class Command_t  : public Command {
@@ -254,7 +256,7 @@ public:
 
     }
     template < typename DATATYPE,typename C>
-    Command* reg_bin_func(ctext name,int (C::*func)(DATATYPE*))
+    Command* reg_bin_func(ctext name,z_status (C::*func)(DATATYPE*))
     {
         if (_map.exists(name)) {
             Z_ERROR(zs_already_exists);

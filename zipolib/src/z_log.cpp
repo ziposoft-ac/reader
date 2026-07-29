@@ -3,7 +3,35 @@
 #include "zipolib/z_strlist.h"
 #include <stdarg.h>
 
+void z_logger::loglevel(z_log_level lvl,ctext pFormat, ...) {
 
+    if (lvl > _level) {
+        return;
+    }
+    std::unique_lock<std::mutex> mlock(_mutex);
+
+    va_list ArgList;
+    int i=2;
+    while (i--)
+    {
+        va_start(ArgList, pFormat);
+        int len = vsnprintf(_buff, _buff_size-1, pFormat, ArgList);
+        va_end(ArgList);
+        if (len<_buff_size) {
+            write_str(_buff, len);
+            write_str("\n",1);
+            return;
+
+        }
+        if (len >= _buff_size) {
+            _buff_size=len+10;
+		    delete[] _buff;
+		    _buff=new char[_buff_size];
+            continue;
+        }
+    }
+
+}
 
 
 z_status z_logger::create_file_out(ctext logname)
@@ -92,6 +120,8 @@ z_status z_log_warn_msg_t(z_status status,  ctext file, ctext func, int line, co
     va_start(ArgList, pFormat);
 
     get_error_logger().trace_vargs(file,func,line,pFormat,ArgList);
+    va_end(ArgList);
+
     return status;
 }
 void z_log_error_msg( ctext file, ctext func, int line, const char*  pFormat, ...) {
@@ -99,6 +129,7 @@ void z_log_error_msg( ctext file, ctext func, int line, const char*  pFormat, ..
     va_start(ArgList, pFormat);
 
     get_error_logger().trace_vargs(file,func,line,pFormat,ArgList);
+    va_end(ArgList);
 
 }
 
@@ -107,6 +138,8 @@ z_status z_log_error_msg_return(z_status status,  ctext file, ctext func, int li
     va_start(ArgList, pFormat);
 
     get_error_logger().trace_vargs(file,func,line,pFormat,ArgList);
+    va_end(ArgList);
+
     return status;
 
 }

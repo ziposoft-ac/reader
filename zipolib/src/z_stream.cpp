@@ -131,6 +131,7 @@ bool z_stream::format_args(ctext pFormat, va_list ArgList)
 	return true;
 
 }
+
 /*
 returns zero on success or new required buff size
 */

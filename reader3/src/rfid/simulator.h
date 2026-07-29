@@ -24,6 +24,7 @@ class RfidSimulator : public RfidReader,public z_parse_csv {
     std::vector<z_strlist> _data;
     int _index=0;
     U64 _time_offset=0;
+    U64 _ts_last_read=0;
 public:
 
     RfidSimulator() {
@@ -32,6 +33,7 @@ public:
     int _max_interval=3000;
     int _interval=1000;
     int _seq_max=10;
+    int _file_reads_delay=0;
     z_string _mode=MODE_SEQ;
     virtual z_status _read_start()  ;
     virtual z_status _read_stop()  ;
@@ -44,6 +46,7 @@ public:
             U8 qValue
     );
     virtual z_status manRead(z_string epc,int rssi,int ant) ;
+    virtual z_status loadFile(z_string fn) ;
 
     virtual z_status setRandomMode() {
         _mode=MODE_RANDOM;

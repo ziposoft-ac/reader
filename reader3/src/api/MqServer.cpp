@@ -191,7 +191,7 @@ z_status MqServer::run(ctext name) {
 z_status MqServer::send(z_string remote_mq_name, z_string msg) {
 
 
-    return send_msg(remote_mq_name,msg,0,0);
+    return mq_send_msg(remote_mq_name,mq_command_string,msg);
 
 }
 

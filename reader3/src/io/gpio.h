@@ -5,7 +5,7 @@
 #ifndef ZIPOSOFT_GPIO_H
 #define ZIPOSOFT_GPIO_H
 #include "pch.h"
-#include "../util/timers.h"
+#include "util/timers.h"
 
 #ifndef NO_GPIO
 #include <gpiod.h>

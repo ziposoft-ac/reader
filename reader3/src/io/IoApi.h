@@ -11,12 +11,13 @@ constexpr ctext ioServiceName="/ioservice";
 enum LedColor {
     LedRed=1,
     LedGreen=2,
-    LedYellow=3
+    LedYellow=3,
+    LedMax=4
 };
 struct LedSet_t
 {
     LedColor color;
-    U8 on;
+    bool on;
 
 };
 struct LedFlash_t
@@ -27,5 +28,7 @@ struct LedFlash_t
     U32 dummy;
 };
 
+z_status ioLedSet(LedSet_t set);
+z_status ioLedFlash(LedFlash_t flash);
 
 #endif //ZIPOSOFT_IOAPI_H

@@ -30,11 +30,25 @@ public:
     //Gpio gpio;
     IoService(){}
     virtual ~IoService() {}
-    int handleSetLed(LedSet_t* set) {
-        printf("setled:%d,%d\n",set->color,set->on);
-        return zs_ok;
+    z_status handleSetLed(LedSet_t* set) {
+
+        GpioPinLed* leds[]={0,
+            &gGpio.ledRed,&gGpio.ledGreen,&gGpio.ledYellow
+        };
+        GpioPinLed* led=0;
+        U8 color=set->color;
+        if (color<LedMax)
+            led=leds[color];
+        if (led) {
+            (set->on? led->on():led->off());
+            return zs_ok;
+
+        }
+        return zs_bad_parameter;
+
     }
-    int handleFlashLed(LedFlash_t* set) {
+    z_status handleFlashLed(LedFlash_t* set) {
+        printf("handleFlashLed:%d,%d\n",set->color,set->count);
 
         return zs_ok;
     }
@@ -63,7 +77,7 @@ public:
         bat.init();
         mq.run(ioServiceName);
         gGpio.initialize();
-        reg_func("setLed",&IoService::handleSetLed);
+        reg_bin_func("setLed",&IoService::handleSetLed);
         reg_func("stat",&IoService::get_status_json);
         reg_func("",&IoService::get_status_json);
         ws.register_consumer(this);
