@@ -246,7 +246,9 @@ int  VisitProcess::timer_callback(void*)
                 if (t->isDeparted()) {
 
                     if (_record_visits) {
-                        t->writeOut(_file_visits.get_stream(),_t_started);
+
+                        t->writeOut(_file_visits.get_stream(),_write_index);
+                        _write_index++;
 
                     }
                     //Z_ERROR_LOG("deleting: %s ",t->_epc.c_str());
@@ -357,6 +359,8 @@ z_time RfidTag::processRead(RfidRead *r, VisitProcess& rc) {
 bool RfidTag::processCheck( VisitProcess& rc,z_time now) {
 
     const z_time_duration missing_time=now - _ts_last_time_seen;
+    const z_time_duration decline_time=now - _ts_rssi_high;
+
     DBGL("CHECK %s  last seen %llu ms\n",_epc.c_str(),missing_time.total_milliseconds());
 
     bool write_it_out=false;
@@ -410,17 +414,17 @@ antMask=0;
 antHi=0;
 }
 
-
+index,epc,ts,in,out,count,rssi,ant,ant_hi
 
 
 */
-void RfidTag::writeOut(z_stream& s,z_time base) {
+void RfidTag::writeOut(z_stream& s,int index) {
 
-    U64 ts=  _ts_rssi_high-base;
+    U64 ts=  _ts_rssi_high.get_t();
 
-    I64 in=_ts_first_time_seen.get_t()- _ts_rssi_high.get_t();
-    I64 out= _ts_last_time_seen.get_t()- _ts_rssi_high.get_t();
-    s<< _epc.c_str(), _ts_rssi_high.to_readable_string(), _ts_rssi_high.get_t(),
+    I64 in=_ts_first_time_seen.get_t()- ts;
+    I64 out= _ts_last_time_seen.get_t()- ts;
+    s<< index, _epc.c_str(), ts,
     in,out,_count_total,_rssi_high,_ant_mask,_ant_hi;
 
 

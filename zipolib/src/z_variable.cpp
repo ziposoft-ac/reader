@@ -419,6 +419,7 @@ template class z_variable<int>;
 template class z_variable<char>;
 template class z_variable<ctext>;
 template class z_variable<unsigned long>;
+template class z_variable<unsigned short>;
 template class z_variable<unsigned int>;
 template class z_variable<bool>;
 //template class z_variable<z_strlist>;

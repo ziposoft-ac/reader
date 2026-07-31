@@ -11,6 +11,7 @@
 #include "rfid/cfmu804.h"
 #include "rfid/simulator.h"
 #include "web/WebServer.h"
+#include "../api/IoApi.h"
 
 #include "global.h"
 #include "rfid/VisitProcess.h"
@@ -22,6 +23,16 @@ class RfidService : public  Service,public CommandHandler{
     RfidReader* _reader;
 public:
     bool _simulate=true;
+    Cfmu804 cfmu804;
+    WebServer ws;
+    MqServer mq;
+    VisitProcess _visits;
+    IoApiTest apiTest;
+    RfidSimulator simulator;
+    RfidReader& getRfidReader() {
+        return *_reader;
+    }
+
     z_status simulate_on() {
         _reader->close();
 
@@ -58,28 +69,23 @@ public:
 
         ws.stop();
         mq.stop();
+        mq.shutdown();
 
-        _reader->close();
+        simulator.close();
+        cfmu804.close();
 
         return zs_ok;
     };
     int getRawReads(http_request req,z_string_map &vars,z_json_obj &jin, z_json_stream &jout);
 
     int post_start_stop_raw(z_json_obj& o,z_json_stream& jout);
+    int post_start_stop_visits(z_json_obj& o,z_json_stream& jout);
     int get_status(z_string_map& params,z_json_stream& jout);
     int get_raw_reads(z_string_map& params,z_json_stream& jout);
     int post_config(z_json_obj& o,z_json_stream& jout);
 
     U64 _counter=0;
-    Cfmu804 cfmu804;
-    WebServer ws;
-    MqServer mq;
-    VisitProcess _visits;
-    RfidSimulator simulator;
-    RfidReader& getRfidReader() {
-        return *_reader;
-    }
-    z_status setLed(int color, int onoff);
+
 };
 
 #endif //ZIPOSOFT_RFIDSERVICE_H

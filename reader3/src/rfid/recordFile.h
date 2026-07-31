@@ -56,7 +56,7 @@ public:
     U32 _count_total = 0;
     U32 _count_hi = 0;
     //int _index=0;
-    void writeOut(z_stream& s,z_time base);
+    void writeOut(z_stream& s,int index);
     FilteredReadState _state=fr_type_arrived;
     // return time to check next
     //

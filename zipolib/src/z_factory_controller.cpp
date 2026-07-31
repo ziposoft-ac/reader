@@ -305,8 +305,11 @@ z_status zf_command_line_parser::evaluate_start(ctext text, uint len)
 
 			}
 			if (!feature) //TODO throw parse error
-				Z_THROW("'%s' is not a feature of '%s'",
-					feature_str.c_str(), node.get_name());
+			{
+				//Z_THROW("'%s' is not a feature of '%s'",	feature_str.c_str(), node.get_name());
+				return zs_not_found;
+			}
+
 
 
 			set_cc(node, ZFF_ALL, _fc->get_default_stream());

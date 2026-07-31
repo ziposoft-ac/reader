@@ -4,7 +4,7 @@
 
 #include "rfid.h"
 
-#include "io/IoApi.h"
+#include "../api/IoApi.h"
 
 ZMETA_DEFV(RfidReader);
 #ifdef  ENABLE_PHASE
@@ -45,7 +45,7 @@ int RfidReader::stat_timer_callback(void* context)
 
 void RfidReader::process_reads_thread() {
     _queue_reads.wait_enable();
-    U64 stats_report_last_index=0;
+    U64 stats_report_last_index=_indexReads;
     U64 stats_report_last_bytes=0;
     U64 stats_report_last_ts=z_time::get_now_ms();
 
@@ -125,18 +125,19 @@ void RfidReader::process_reads_thread() {
 
 
             }
-            if (_read_stats) {
+            if (_show_read_stats) {
                 U64 now=z_time::get_now_ms();
-                if (stats_report_last_index != _indexReads) {
-                    U64 elap=now - stats_report_last_ts;
-                    if (elap> 1000) {
-                        U64 reads=(_indexReads-stats_report_last_index)*1000;
-                        U64 bytes=(_total_bytes_read-stats_report_last_bytes)*1000;
-                        ZDBG("Reads per second:%d (%d bytes)\n",reads/elap,bytes/elap);
-                        stats_report_last_bytes=_total_bytes_read;
-                        stats_report_last_index=_indexReads;
-                        stats_report_last_ts=now;
-                    }
+                if (stats_report_last_index != _indexReads)
+                {
+                        U64 elap=now - stats_report_last_ts;
+                        if (elap> 1000) {
+                            U64 reads=(_indexReads-stats_report_last_index)*1000;
+                            U64 bytes=(_total_bytes_read-stats_report_last_bytes)*1000;
+                            ZDBG("Reads per second:%d (%d bytes)\n",reads/elap,bytes/elap);
+                            stats_report_last_bytes=_total_bytes_read;
+                            stats_report_last_index=_indexReads;
+                            stats_report_last_ts=now;
+                        }
 
                 }
 

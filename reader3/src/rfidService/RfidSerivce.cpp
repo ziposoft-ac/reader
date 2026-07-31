@@ -2,7 +2,7 @@
 // Created by ac on 7/17/26.
 //
 #include "RfidService.h"
-#include "io/IoApi.h"
+#include "../api/IoApi.h"
 
 
 struct Counter {
@@ -10,28 +10,29 @@ struct Counter {
 
 };
 
-z_status RfidService::setLed(int color, int onoff) {
-
-    return ioLedSet({(LedColor)color,(bool)onoff});
-}
 
 z_status RfidService::initialize() {
     if (!globalLock())
         return zs_already_open;
 
-    if (_simulate)
+    if (_simulate) {
+        ZDBG("Simulate is on\n");
         _reader= &simulator;
+
+    }
     else
         _reader= &cfmu804;
 
     ioLedSet({LedRed,true  });
     ioLedSet({LedGreen,false  });
     ws.start();
+    mq.run("/rfidservice");
     _reader->open();
     _visits.initialize();
     //ZDBGS.add_stdout();
 
     reg_func("stopstart_raw",&RfidService::post_start_stop_raw);
+    reg_func("stopstart_visits",&RfidService::post_start_stop_visits);
     reg_func("status",&RfidService::get_status);
     _getRawReadsCd=reg_func("reads_raw",&RfidService::getRawReads);
 
@@ -57,12 +58,10 @@ ZMETA(RfidService) {
     ZOBJ(simulator);
     ZPROP(_simulate);
     ZOBJ(_visits);
+    ZOBJ(apiTest);
+
     ZACT(simulate_on);
     ZACT(simulate_off);
-    ZCMD(setLed, ZFF_CMD_DEF, "setLed",
-        ZPRM(int, color, 1, "color", ZFF_PARAM),
-        ZPRM(int, on, 1, "onoff", ZFF_PARAM)
-     );
 
 
 };

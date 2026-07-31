@@ -22,6 +22,8 @@ class VisitProcess {
     bool _open=false;
     bool _reading=false;
 
+    int _write_index=0;
+
     int timer_callback(void*);
     Timer* _timer=0;
     std::mutex _mutex_tags;

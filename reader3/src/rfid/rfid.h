@@ -150,7 +150,7 @@ protected:
     bool _reading=false;
 
     bool _debug_reads=false;
-    bool _read_stats=false;
+    bool _show_read_stats=false;
 	U64 _total_bytes_read=0;
 
     U32 _queue_max_depth=1000;
@@ -281,7 +281,7 @@ ZMETA_DECL(RfidReader)
 
     //ZPROP(_fixed_lap_time_seconds);
     ZPROP(_debug_reads);
-    ZPROP(_read_stats);
+    ZPROP(_show_read_stats);
 
     ZPROP_X(_reading, "Running", ZFF_READ_ONLY, "Reader is started");
     ZCMD(power_set, ZFF_CMD_DEF, "power_set", ZPRM(int, val, 30, "val", ZFF_PARAM));

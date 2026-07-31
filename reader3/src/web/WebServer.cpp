@@ -253,6 +253,12 @@ void WebServer::event_handler(struct mg_connection *c, int ev, void *ev_data) {
         WS_DBG("[%d] MG_EV_OPEN\n",c->id);
         return;
     }
+    if (ev == MG_EV_ACCEPT && c->is_tls) {
+        struct mg_tls_opts opts;
+        memset(&opts, 0, sizeof(opts));
+
+        mg_tls_init(c, &opts);
+    }
     if (ev == MG_EV_ACCEPT) {
         WS_DBG("[%d] MG_EV_ACCEPT\n",c->id);
         return;

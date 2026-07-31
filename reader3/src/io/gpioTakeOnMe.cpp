@@ -4,13 +4,13 @@
 
 #include "BeepPwm.h"
 
-extern int melody[] ;
+extern U16 melody[] ;
 int getLed(int note);
 int setPwmFreq(int freq,int duty);
 
 
 // The note duration, 8 = 8th note, 4 = quarter note, etc.
-int durations[] = {
+U16 durations[] = {
         8, 8, 8, 4, 4, 4,
         4, 5, 8, 8, 8, 8,
         8, 8, 8, 4, 4, 4,
@@ -32,7 +32,7 @@ z_status BeepPwm::takeOnMe()
     for (int thisNote = 0; thisNote < songLength; thisNote++){
         // determine the duration of the notes that the computer understands
         // divide 1000 by the value, so the first note lasts for 1000/8 milliseconds
-        int duration = 1000/ durations[thisNote];
+        U16 duration = 1000/ durations[thisNote];
 
         int led=getLed(melody[thisNote]);
 
@@ -61,10 +61,11 @@ z_status BeepPwm::takeOnMePush()
     for (int thisNote = 0; thisNote < songLength; thisNote++){
         // determine the duration of the notes that the computer understands
         // divide 1000 by the value, so the first note lasts for 1000/8 milliseconds
-        int duration = 1000/ durations[thisNote];
-        pushBeeps( {
-            {melody[thisNote],duration*.8},
-            {0,duration*0.6},
+        U16 duration = ( 1000/ durations[thisNote]) *0.8;
+        U16 delay = ( 1000/ durations[thisNote]) *0.6;
+        pushNotes( {
+            { melody[thisNote],  duration, _duty},
+            {0,delay,_duty},
                           });
 
     }
@@ -161,7 +162,7 @@ z_status BeepPwm::takeOnMePush()
 #define NOTE_DS8 4978
 
 // The melody array
-int melody[] = {
+U16 melody[] = {
         NOTE_FS5, NOTE_FS5, NOTE_D5, NOTE_B4, NOTE_B4, NOTE_E5,
         NOTE_E5, NOTE_E5, NOTE_GS5, NOTE_GS5, NOTE_A5, NOTE_B5,
         NOTE_A5, NOTE_A5, NOTE_A5, NOTE_E5, NOTE_D5, NOTE_FS5,

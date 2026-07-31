@@ -69,11 +69,12 @@ int main(int argc, char* argv[])
         init_act->execute(cc);
     }
 #endif
-
+    gConsole.loadcfg();
     if (service->initialize()!=zs_ok)
         return -1;
 
-    gConsole.runapp(argc, argv, true, 0);
+    gConsole.runapp(argc, argv, false, 0);
+    gConsole.savecfg();
 
     service->shutdown();
 

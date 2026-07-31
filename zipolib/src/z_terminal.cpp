@@ -717,6 +717,12 @@ void z_console_base::OnEnter()
         //parse_line(_buffer,_zc);
         LogInput(_buffer);
         result = ExecuteLine(_buffer);
+
+
+        if (result==zs_not_found) {
+            zout << "Feature not found\n";
+
+        }
         /*
         Let the subclass handle errors
         if (result)

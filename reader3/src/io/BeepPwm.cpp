@@ -78,56 +78,90 @@ int setPwmFreq(int freq,int duty_percent) {
 
 int BeepPwm::timer_callback(void *)
 {
-    Tone beep;
-    int delay=0;
-    int freq=0;
-    if(_queue.pop(beep))
-    {
-        delay=beep.second;
-        freq=beep.first;
-        printf("beep: %d,%d\n",freq,delay);
+    Note beep;
+    if(!_queue.pop(beep)) {
+        setPwmFreq(0,0);
+        return 0;
 
-        if(delay>2000)
-        {
-            Z_WARN_MSG(zs_bad_parameter,"Buzzer Delay Too Long");
-            delay=100;
-        }
-        if(!delay)
-            delay=1;
     }
-    if (_enabled)
-        if(!_quiet) {
 
-
-
-            setPwmFreq(freq,_duty);
+    auto  [freq, delay, duty] = beep;
+    printf("beep: %d,%d,%d\n",freq,delay,duty);
+    if(delay>2000)
+    {
+        Z_WARN_MSG(zs_bad_parameter,"Buzzer Delay Too Long");
+        delay=100;
+    }
+    if(!delay)
+        delay=1;
+    if (_enabled) {
+        if(_quiet) {
+            ZDBG("buzzer set to quiet\n");
 
         }
+        else
+            setPwmFreq(freq,duty);
+    }
+    else {
+        ZDBG("buzzer not enabled\n");
+
+    }
+
     return delay;
 }
-void BeepPwm::pushBeeps(std::initializer_list<Tone> const beeps)
+void BeepPwm::pushTones(std::initializer_list<Tone> const beeps)
 {
     z_status status=init();  if (status) return;
-
-    if (!_timer) {
-        Z_ERROR_MSG(zs_not_open,"Buzzer not initialized");
-        return;
-    }
 
     if(_queue.get_count()>1000)
         return;
     for(auto i : beeps)
+    {
+        Note n={i.freq,i.duration,_duty};
+        _queue.push(n);
+    }
+    _timer->start(1,false);
+}
+
+void BeepPwm::pushNotes(std::initializer_list<Note> const notes)
+{
+    z_status status=init();  if (status) return;
+
+    if(_queue.get_count()>1000)
+        return;
+    for(auto i : notes)
     {
         _queue.push(i);
     }
     _timer->start(1,false);
 }
 
+z_status BeepPwm::pushRemoteBeep(RemoteBeep_t *r) {
+    z_status status=init();  if (status) return status;
+    if (r->count>RemoteBeepMaxLength)
+        return zs_bad_parameter;
+    if(_queue.get_count()>1000)
+        return zs_device_busy;
+    for(int i=0;i<r->count;i++)
+    {
+
+        _queue.push(r->notes[i]);
+    }
+    _timer->start(1,false);
+    return zs_ok;
+
+}
+
+
 z_status BeepPwm::toneRise()
 {
     z_status status=init();  if (status) return status;
 
-    pushBeeps({{1000,50},{800,20},{1100,20}});
+    pushTones({
+        {1000,50},{0,1000},
+        {800,20},{0,50},
+        {800,20},{0,50},
+        {600,400},{0,200} });
     return zs_ok;
 }
 
@@ -135,9 +169,18 @@ z_status BeepPwm::buzz(int f0,int d0,int f1,int d1,int f2,int d2) {
 
     z_status status=init();  if (status) return status;
 
-    pushBeeps({{f0,d0},{f1,d1},{f2,d2}});
+    pushTones({{f0,d0},{f1,d1},{f2,d2}});
     return zs_ok;
 }
+
+z_status BeepPwm::beep(int tone, int duration, int volume) {
+    z_status status=init();  if (status) return status;
+
+    pushNotes({{tone,duration,volume}});
+    return zs_ok;
+
+}
+
 z_status BeepPwm::init() {
     if (!_enabled)
         return zs_not_open;

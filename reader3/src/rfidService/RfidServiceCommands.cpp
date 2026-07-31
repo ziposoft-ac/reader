@@ -105,3 +105,38 @@ int RfidService::post_config(z_json_obj& o,z_json_stream& jout) {
     return CMD_FAILED;
 }
 
+int RfidService::post_start_stop_visits(z_json_obj& o,z_json_stream& jout) {
+    bool start= o.get_bool("start",false);
+    bool is_reading=getRfidReader().isReading();
+    bool visit_running=_visits.is_recording();
+
+    int ret=CMD_FAILED;
+    ctext msg="Unexpected error";
+    if (start) {
+        if (visit_running)
+            msg="already reading";
+        else {
+            if (getRfidReader().start())
+                msg="start command failed";
+            else {
+                ret=CMD_SUCCESS;
+                msg="Reader started";
+            }
+        }
+    }
+    else {
+        if (!visit_running)
+            msg="not running";
+        else {
+            if (getRfidReader().stop())
+                msg="start command failed";
+            else {
+                ret=CMD_SUCCESS;
+                msg="Reader stopped";
+            }
+        }
+    }
+    jout.keyval("result",msg);
+    getRfidReader().add_json_status(jout);
+    return CMD_SUCCESS;
+}

@@ -165,7 +165,9 @@ public:
         js.keyval_int("count",count);
 
         js.obj_end();
-        return mq_send_msg_with_reply("/test","/test",mq_command_json,"test",count,s,s.length());
+        return mq_send_msg_with_reply("/test","/test",mq_command_string,"test",count,
+            mq_data_json,
+            s,s.length());
 
     }
     z_status runCounter(int max) {
