@@ -5,6 +5,7 @@
 #include "Service.h"
 #include <filesystem>
 
+#include "global.h"
 
 Service *gService = NULL;
 
@@ -27,8 +28,12 @@ z_status Service::initialize() {
 
 }
 
-z_status Service::run() {
+z_status Service::run_as_service() {
+    if (gConsole.is_console_running())
+        return zs_already_open;
+    process_wait_for_quit();
     return zs_ok;
+
 
 }
 

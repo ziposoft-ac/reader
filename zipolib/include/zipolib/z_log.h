@@ -92,6 +92,7 @@ public:
 	int _level=z_log_level_debug;
 
 };
+//z_logger_debug& get_debug_logger();
 z_logger_debug& get_debug_logger();
 
 #define ZDBGS get_debug_logger()

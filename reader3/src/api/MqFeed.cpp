@@ -14,6 +14,27 @@ z_status MqFeed::publish(ctext command) {
     return publish(command,s);
 
 }
+
+FeedSubscriber::FeedSubscriber(MqFeed *feed, ctext name): _name(name) {
+    _rx_q_name=feed->_q_name + "-" + name;
+    _feed=feed;
+}
+
+z_status FeedSubscriber::send(mq_command_enum_t cmd_type, ctext command, mq_data_type_t data_type, z_string *buffer) {
+
+
+
+
+    z_status status=mq_send_msg(_rx_q_name,cmd_type,command,data_type,buffer);
+
+    if (status==zs_ok) {
+        _timer->start(feed_keep_alive_ms,true);
+    }
+    return status;
+}
+
+
+
 z_status MqFeed::sendToSub(ctext subname,mq_command_enum_t cmd_type,ctext command,mq_data_type_t data_type,
     z_string* buffer) {
 
@@ -122,7 +143,7 @@ z_status MqFeed::process_message(MqMsg *msg) {
 
     if (msg->command_enum == mq_command_subscribe) {
         ZDBG("got subscribe request from :%s\n",sub_name.c_str());
-        FeedSubscriber* sub=new FeedSubscriber(sub_name);
+        FeedSubscriber* sub=new FeedSubscriber(this,sub_name);
         _subscribers.add(sub_name,sub);
         z_status status=sendToSub(sub_name,mq_command_subscribe_ack,"",mq_data_none);
         return status;

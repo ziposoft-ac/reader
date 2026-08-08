@@ -21,16 +21,22 @@ public:
     Tester(){}
     virtual ~Tester() {}
     MqServerCb<Tester> mq1;
-    MqServerCb<Tester> mq2;
+    //MqServerCb<Tester> mq2;
+    z_status rxMsg(MqMsg* msg) {
+
+        printf("got msg %d,%s\n",msg->msg_id,msg->mq_reply_name);
+        z_status status=mq_send_msg(msg->mq_reply_name,mq_command_pong,"",mq_data_none);
+        Z_ERROR(status);
+        return zs_ok;
+
+    }
     z_status initialize() override{
 
-        mq1.run("/t1",this);
-        mq2.run("/t2");
+        mq1.run("/test",this,&Tester::rxMsg);
         return zs_ok;
     };
     z_status shutdown() override{
         mq1.shutdown();
-        mq2.shutdown();
         return zs_ok;
     };
     U64 _counter=0;
@@ -40,10 +46,7 @@ public:
 
         while (count<=max) {
 
-            if (apiTester.Counter({count})!=zs_ok) {
-                Z_ERROR_LOG("sending count failed\n");
-                break;
-            }
+
 
             count++;
             if (count%10000 ==0) {
@@ -70,31 +73,14 @@ public:
         _counter++;
         return zs_ok;
     }
-    z_status LedFlash() {
-        z_status s=apiLedService.LedFlash({LedGreen,1000,3});
-
-        return s;
-    }
-    z_status Dummy() {
-        z_status s=apiLedService.Dummy({1000});
-
-        return s;
-    }
 };
 ZMETA(Tester) {
     ZBASE(Service);
-    ZOBJ(mq1);
-    ZOBJ(mq2);
+    //ZOBJ(mq1);
     ZCMD(runCounter, ZFF_CMD_DEF, "runCounter",
          ZPRM(int, count, 10, "count", ZFF_PARAM)
          );
 };
-ZMETA(MqServerMap<Tester>) {
-    ZBASE(MqServer);
-};
 
 ROOT_SERVICE(Tester);
 
-#define MQ_HANDLER Tester
-#define API TEST_API
-#include "../disable/ApiMap.inc"

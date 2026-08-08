@@ -4,10 +4,11 @@
 #include "pch.h"
 #include "main/Service.h"
 #include "battery/Battery.h"
+#include "io/gpioButton.h"
 #include "io/gpio.h"
 #include "web/WebServer.h"
 #include "io/BeepPwm.h"
-#include "../api/IoApi.h"
+#include "api/IoApi.h"
 
 #include "global.h"
 
@@ -22,12 +23,12 @@ struct Counter {
 
 class IoService : public  Service,public CommandHandler{
 public:
-    BeepPwm beeper;
+    //BeepPwm beeper;
     IoApiTest apiTest;
     WebServer ws;
     MqServer mq;
     Battery bat;
-    //Gpio gpio;
+    GpioButton button;
     IoService(){}
     virtual ~IoService() {}
     z_status handleSetLed(LedSet_t* set) {
@@ -51,7 +52,7 @@ public:
     z_status handleBeep(RemoteBeep_t* set) {
 
 
-        beeper.pushRemoteBeep(set);
+        gBeepPwm.pushRemoteBeep(set);
         return zs_ok;
     }
     z_status handleFlashLed(LedFlash_t* set) {
@@ -68,17 +69,16 @@ public:
         int freq=params.get_as<int>("freq",500);
         int len=params.get_as<int>("len",50);
         int duty=params.get_as<int>("duty",10);
-        beeper.beep(freq,len,duty);
+        gBeepPwm.beep(freq,len,duty);
         return 0;
     }
     z_status initialize() override{
         //ZDBGS.add_stdout();
-        ws._port=8001;
-        ws.start();
-        beeper.init();
-        bat.init();
-        mq.run(ioServiceName);
         gGpio.initialize();
+        gBeepPwm.init();
+        bat.init();
+
+
         reg_bin_func("setLed",&IoService::handleSetLed);
         reg_func("stat",&IoService::get_status_json);
         reg_func("",&IoService::get_status_json);
@@ -86,13 +86,18 @@ public:
         reg_bin_func("beepMq",&IoService::handleBeep);
         ws.register_consumer(this);
         mq.register_consumer(this);
-        printf("sizeof beep=%d\n",sizeof(Note));
         bat.start();
+
+        ws._port=8001;
+        ws.start();
+        mq.run(ioServiceName);
+        button.start();
         return zs_ok;
     };
     z_status shutdown() override{
+        button.stop();
         ws.stop();
-        beeper.shutdown();
+        gBeepPwm.shutdown();
         mq.shutdown();
         gGpio.shutdown();
         bat.shutdown();
@@ -104,12 +109,13 @@ public:
 };
 ZMETA(IoService) {
     ZBASE(Service);
-    ZOBJ(beeper);
     ZOBJ(apiTest);
+    ZOBJ(button);
     ZOBJ(mq);
     ZOBJ(ws);
     ZOBJ(bat);
     ZOBJ_EX(gGpio,"gpio",ZFF_PROP_DEF,"global gpio object");
+    ZOBJ_EX(gBeepPwm,"beeper",ZFF_PROP_DEF,"global beep PWM");
 };
 
 ROOT_SERVICE(IoService);

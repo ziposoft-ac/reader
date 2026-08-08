@@ -9,6 +9,8 @@ ZMETA(CommandDelayed) {
 
 };*/
 
+
+#if DELETE
 int Command::call_post_raw_data(ctext buffer,size_t len,z_string &return_buffer) {
     zp_text_parser p;
     z_json_obj json_in=p.makeJsonObj(buffer,len);
@@ -46,15 +48,16 @@ int Command::process_mq(MqMsg* msg) {
         return ret;
     }
     if (msg->mq_reply_name && msg->mq_reply_name_len > 1) {
-        z_string reply="@";
-        reply+=msg->command_str;
+        mq_send_msg(msg->mq_reply_name,mq_command_data_reply,msg->command_str,mq_data_json,msg->msg_id,msg_out, msg_out.length());
+
+
         //mq_send_msg_with_reply(msg->mq_reply_name,"",mq_command_ack,reply,msg->msg_id,return_buffer.c_str(),return_buffer.length());
     }
     return ret;
 
 
 }
-
+#endif
 
 int Command::process_http_rx(http_request req,cmd_req_type type) {
 

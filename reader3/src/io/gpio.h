@@ -42,8 +42,8 @@ protected:
     Timer* _timer=0;
 
     z_string _name;
-    virtual void _off();
-    virtual void _on();
+    virtual z_status _off();
+    virtual z_status _on();
     virtual int timer_callback(void*);
     int _state=0;
     bool _output=true;
@@ -61,7 +61,7 @@ public:
     z_status toggle();
     z_status off();
     z_status on();
-    virtual void init(Gpio* chip,ctext name);
+    virtual z_status init(Gpio* chip,ctext name);
     virtual void shutdown();
     z_status json_config_get(z_json_stream &js);
 
@@ -81,11 +81,11 @@ protected:
     int _flashCountMax=10;
 
 public:
-    GpioPinLed(int pin=0) : GpioPin(pin){}
+    GpioPinLed() : GpioPin(){}
     virtual ~GpioPinLed(){}
     z_status flash(int count);
     z_status toggling_start();
-    virtual void init(Gpio* chip,ctext name);
+    virtual z_status init(Gpio* chip,ctext name);
     z_status off();
     z_status on();
 };
@@ -104,8 +104,8 @@ protected:
 
 
     int timer_callback(void*) override;
-    virtual void _off() override;
-    virtual void _on() ;
+    virtual z_status _off() override;
+    virtual z_status _on() ;
 public:
     bool _quiet=false;
     bool _enabled=false;
@@ -121,13 +121,33 @@ public:
     z_status beep(int duration);
 
 };
+
+
+/*
+ *
+
+Orange PI Zero 2W
+
+GPIO chip =1
+PIN#40 = PI3, GPIO21, gpio offset=259
+
+http://www.orangepi.org/orangepiwiki/index.php/Orange_Pi_Zero_2W#How_to_set_the_pull-down_resistor_of_40_Pin_GPIO_port
+
+*/
 class Gpio {
+    friend z_factory_t<Gpio>;
+    friend GpioPin;
+
     bool _initialized=false;
     bool _simulate=false;
+    int _chip_number=0;
 
     Timer* _timer=0;
     int timer_callback(void*);
     Gpio();
+
+	gpiod_chip *_chip=0;
+
 public:
 
     virtual ~Gpio();
@@ -138,25 +158,28 @@ public:
         static Gpio instance;
         return instance;
     }
-
+    gpiod_chip* getDriverHandle() {
+        return _chip;
+    }
     enum Led{
         GREEN=26,
         RED=20,
         YELLOW=21,
     };
-    //GpioPinLed ledRed=RED;
-    //GpioPinLed ledBlue=BLUE;
-    //GpioPinLed ledGreen=GREEN;
-    //GpioPinLed g2=2;
+    /*
 
-    // DO NOT USE PINS 2 and 3
-
+     Octopi
 
     GpioPinLed ledRed=20;
     GpioPinLed ledGreen=26;
     GpioPinLed ledYellow=21;
     GpioPinLed readBeep=23;
-    //GpioPinLed ledYellow=YELLOW;
+    */
+    GpioPinLed ledRed;
+    GpioPinLed ledGreen;
+    GpioPinLed ledYellow;
+    GpioPinLed readBeep;
+
     //GpioBeep beeper=2; - TIMER 3A, confilicts with I2C
     GpioBeep beeper=5;
     const int led_gpio[4]={GREEN,YELLOW,RED};
@@ -167,7 +190,6 @@ public:
     z_status dump_pins();
     //z_status beep();
     z_status lightShow();
-	struct gpiod_chip *_chip=0;
     z_status json_config_get(z_json_stream &js);
     z_status led_json_config_set(z_json_obj &jo);
 

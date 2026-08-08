@@ -3,10 +3,11 @@
 //
 
 #include "gpioButton.h"
-#include "../global.h"
+#include "BeepPwm.h"
+#include "global.h"
 
 #include <sys/eventfd.h>
-ZMETA(gpioButton)
+ZMETA(GpioButton)
 {
 
     ZPROP(_pin);
@@ -17,15 +18,15 @@ ZMETA(gpioButton)
     ZACT(stop);
 };
 
-void gpioButton::press_counter_start() {
+void GpioButton::press_counter_start() {
     _timer_counter_function->start(_press_counter_window_ms,true);
 
 }
 
-void gpioButton::press_counter_stop() {
+void GpioButton::press_counter_stop() {
 }
 
-int gpioButton::timer_callback_debounce(void *) {
+int GpioButton::timer_callback_debounce(void *) {
 
     val_steady=val_candidate;
 
@@ -34,7 +35,7 @@ int gpioButton::timer_callback_debounce(void *) {
 
         // Button released
         _timer_hold_function->stop();
-        if (_hold_count>8) {
+        if (_hold_count>=6) {
             system("sudo /sbin/poweroff");
             process_quit_notify();
 
@@ -51,36 +52,47 @@ int gpioButton::timer_callback_debounce(void *) {
         // Button pressed
         _hold_count=0;
         _timer_hold_function->start(1000,true);
-        //root.beeper.pushBeeps({{500,10}});
+        gBeepPwm.pushTones({{500,10}});
 
     }
 
     return 0;
 }
-int gpioButton::timer_callback_hold_function(void *) {
+int GpioButton::timer_callback_hold_function(void *) {
     _hold_count++;
     ZDBG("hold count=%d\n",_hold_count);
-    if (_hold_count<3) {
+    if (_hold_count<2) {
         // change to service call
         ZDBG("hold count LEVEL 1\n");
 
-        //root.gpio.ledGreen.flash(1);
-        //root.beeper.pushBeeps({{1000,20}});
+        gGpio.ledGreen.flash(1);
+        gBeepPwm.pushTones({{1000,20}});
 
     }else {
+        if (_hold_count<4)
+        {
+            ZDBG("hold count LEVEL 3\n");
+
+            gGpio.ledYellow.flash(1);
+            gBeepPwm.pushTones({{1500,20}});
+
+        }
+        else
         if (_hold_count<6)
         {
             ZDBG("hold count LEVEL 3\n");
 
-            //root.gpio.ledYellow.flash(1);
-            //root.beeper.pushBeeps({{1500,20}});
+            gGpio.ledRed.flash(1);
+            gBeepPwm.pushTones({{2000,20}});
 
         }
         else {
             ZDBG("hold count LEVEL 6!!\n");
 
-            //root.gpio.ledRed.flash(1);
-            //root.beeper.pushBeeps({{2000,30}});
+            gGpio.ledRed.flash(1);
+            gGpio.ledYellow.flash(1);
+            gGpio.ledGreen.flash(1);
+            gBeepPwm.pushTones({{2000,100}});
         }
     }
 
@@ -88,24 +100,27 @@ int gpioButton::timer_callback_hold_function(void *) {
 
     return 1000;
 }
-int gpioButton::timer_callback_counter_function(void *) {
+int GpioButton::timer_callback_counter_function(void *) {
     // this expires after 2 seconds of pressing
 
     ZDBG("Press counter=%d\n",_press_counter);
     if (_press_counter==5) {
-        //root.beeper.takeOnMePush();
+        gBeepPwm.takeOnMePush();
         printf("take on me");
     }
     _press_counter=0;
     return 0;
 }
-z_status gpioButton::start() {
+z_status GpioButton::start() {
     if (_running)
         return zs_already_open;
     _quit = false;
-    const char *chip_path = "/dev/gpiochip0";
+    if (!gGpio.initialize())
+        return zs_io_error;
 
-    _chip = gpiod_chip_open(chip_path);
+
+
+    _chip = gGpio.getDriverHandle();
     _settings = gpiod_line_settings_new();
     // Set line direction to INPUT and listen for both RISING and FALLING edges
     gpiod_line_settings_set_direction(_settings, GPIOD_LINE_DIRECTION_INPUT);
@@ -125,18 +140,18 @@ z_status gpioButton::start() {
     _pollfds[0]={_event_line,POLLIN,0};
     _pollfds[1]={_event_quit,POLLIN,0};
 
-    _thread_handle = std::thread(&gpioButton::thread, this);
+    _thread_handle = std::thread(&GpioButton::thread, this);
     _running = true;
     if(!_timer_debounce)
-        _timer_debounce=gTimerService.create_timer_t(this,&gpioButton::timer_callback_debounce,0    );
+        _timer_debounce=gTimerService.create_timer_t(this,&GpioButton::timer_callback_debounce,0    );
     if(!_timer_hold_function)
-        _timer_hold_function=gTimerService.create_timer_t(this,&gpioButton::timer_callback_hold_function,0    );
+        _timer_hold_function=gTimerService.create_timer_t(this,&GpioButton::timer_callback_hold_function,0    );
     if(!_timer_counter_function)
-        _timer_counter_function=gTimerService.create_timer_t(this,&gpioButton::timer_callback_counter_function,0    );
+        _timer_counter_function=gTimerService.create_timer_t(this,&GpioButton::timer_callback_counter_function,0    );
     return zs_ok;
 }
 
-void gpioButton::thread() {
+void GpioButton::thread() {
     val_steady=gpiod_line_request_get_value(_request, _pin);
 
     while (!_quit) {
@@ -182,11 +197,11 @@ void gpioButton::thread() {
             printf("Event detected: %s\n",             type == GPIOD_EDGE_EVENT_RISING_EDGE ? "RISING (Pressed)" : "FALLING (Released)");
         }*/
     }
-    printf(" gpioButton::thread EXIT");
+    printf(" GpioButton::thread EXIT");
 
 }
 
-z_status gpioButton::stop() {
+z_status GpioButton::stop() {
     if (!_running)
         return zs_not_open;
     _quit = true;
@@ -211,7 +226,6 @@ z_status gpioButton::stop() {
 
     _running = false;
 
-    gpiod_chip_close(_chip);
 
     if (_line_cfg) {
         gpiod_line_config_free(_line_cfg);

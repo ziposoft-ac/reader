@@ -79,6 +79,7 @@ z_status z_debug_warn_t(z_status status,  ctext file, ctext func, int line) {
     return status;
 
 }
+#else
 
 #endif
 

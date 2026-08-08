@@ -6,6 +6,7 @@
 #define ZIPOSOFT_IPCSERVER_H
 #include "pch.h"
 #include "MqClient.h"
+#include "util/timers.h"
 
 class CommandHandler;
 
@@ -57,9 +58,9 @@ private:
 
     std::thread _thread_handle;
 protected:
-    z_string _q_name="/mq_server";
 
 public:
+    z_string _q_name="/mq_server";
 
     bool _debug=false;
     bool is_running() {  return _is_running;  }
@@ -84,19 +85,37 @@ public:
     z_status send(z_string mq_name,z_string msg);
 
 };
+class MqFeed;
+constexpr uint feed_keep_alive_ms=30*1000;
 class FeedSubscriber {
 public:
 
     z_string _name;
-    FeedSubscriber(ctext name) : _name(name) {
+    z_string _rx_q_name;
+    MqFeed* _feed;
+    z_time _last_msg_time=0;
+    FeedSubscriber(MqFeed* feed,ctext name);
 
+    z_status send(mq_command_enum_t cmd_type,ctext command,mq_data_type_t data_type,z_string* buffer=0);
+    int timer_callback(void*) {
+
+        // send keep alive
+        return -1;
     }
 
+    Timer* _timer=0;
+    void init() {
+        if(!_timer) {
+            _timer=gTimerService.create_timer_t(this,&FeedSubscriber::timer_callback,0,feed_keep_alive_ms );
+
+        }
+    }
 };
 
 class MqFeed : public MqServer {
     std::mutex _lock;
     z_obj_map<FeedSubscriber> _subscribers;
+    friend z_factory_t<FeedSubscriber>;
 
 public:
     friend z_factory_t<MqFeed>;
@@ -122,19 +141,18 @@ template <class T> class MqServerCb : public MqServer {
 public:
 
     T* _object=0;
-    typedef int (T::*member_callback)(MqMsg* msg) ;
+    typedef z_status (T::*member_callback)(MqMsg* msg) ;
     member_callback _member_callback=0;
     virtual z_status run(ctext name,T* obj,member_callback callback) {
         _object=obj;
         _member_callback=callback;
-        _q_name=name;
-        return zs_ok;
+        return MqServer::run(name);
     };
     z_status process_message(MqMsg* msg) override {
         if (_member_callback)
             return  (_object->*_member_callback)(msg);
 
-        return 0;
+        return zs_ok;
 
     }
 };

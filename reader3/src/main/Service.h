@@ -47,7 +47,7 @@ public:
     virtual z_status shutdown();
     virtual z_status service();
     virtual z_status initialize();
-    virtual z_status run();
+    virtual z_status run_as_service();
     z_status init_logfile();
 
     virtual z_status remote_quit() {
@@ -56,7 +56,9 @@ public:
 
     }
     z_status debugLevelSet(int level) {
+#ifdef DEBUG
         get_debug_logger()._level=level;
+#endif
         _debug_level=level;
         return zs_ok;
     }
@@ -87,6 +89,8 @@ ZMETA_DECL(Service) {
     ZACT(initialize);
     ZACT(shutdown);
     ZOBJ_EX(gConsole,"console",ZFF_PROP_DEF,"Console");
+    ZACT_X(run_as_service,"service", ZFF_ACT_DEF,"Run as service");
+
 }
 
 #endif //ZIPOSOFT_SERVICE_H

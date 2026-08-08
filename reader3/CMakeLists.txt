@@ -74,10 +74,15 @@ endfunction()
 
 target_func(omnibus src/disable/ReaderService.cpp src/disable/root.cpp ${SRC_RFID} src/leds/LedService.cpp)
 target_func(beepService src/beep/BeepService.cpp)
+target_func(testBlankService src/tests/TestBlankService.cpp)
 target_func(tester src/tests/Tester.cpp)
+
+
+
 target_func(testWeb src/tests/TestWeb.cpp src/tests/testChtml.cpp )
 target_func(TestBattery src/tests/TestBattery.cpp  ${SRC_BATTERY})
 target_func(testSubscribe src/tests/TestMqSubscribe.cpp  ${SRC_WEB})
+target_func(testMqReq src/tests/TestMq.cpp )
 target_func(ioService src/apps/IoService.cpp  ${SRC_BATTERY})
 target_func(rfidSerivce  ${SRC_RFID_SERVICE} ${SRC_RFID})
 

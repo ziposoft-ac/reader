@@ -84,7 +84,7 @@ z_status mq_send_msg_with_reply(ctext mq_name_dest,ctext mq_name_reply,mq_comman
 
     return status;
 }
-z_status mq_send_msg(ctext mq_name_dest,mq_command_enum_t cmd_type,ctext command,mq_data_type_t data_type,ctext data,size_t data_len) {
+z_status mq_send_msg(ctext mq_name_dest, mq_command_enum_t cmd_type, ctext command, mq_data_type_t data_type, U32 msg_id, ctext data, size_t data_len) {
 
     if (data && (data_len==0))
         data_len=strlen(data);
@@ -92,6 +92,13 @@ z_status mq_send_msg(ctext mq_name_dest,mq_command_enum_t cmd_type,ctext command
 
 
 }
+
+z_status mq_send_json_reply(ctext mq_name_dest,ctext command,U32 msg_id,z_string& js) {
+    return mq_send_msg_with_reply(mq_name_dest,"",mq_command_data_reply,command,msg_id,mq_data_json,js,js.length());
+
+
+}
+
 z_status mq_send_msg(ctext mq_name_dest,mq_command_enum_t cmd_type,ctext command,mq_data_type_t data_type,z_string* s) {
 
 

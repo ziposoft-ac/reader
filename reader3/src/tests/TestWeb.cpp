@@ -42,9 +42,9 @@ public:
 
             _us_start= z_time_get_ticks_us();
         }
+        //printf("count=%d\n",count);
 
         count++;
-        //printf("count=%d\n",count);
         jout.keyval_int("count",count);;
         if (count %_print_stat_interval == 0) print_stat_count(count);
         return zs_ok;
@@ -63,6 +63,9 @@ public:
 
         }
         jout.keyval("test_get","test_get?");
+        return zs_ok;
+    }
+    int test_mq_ping() {
         return zs_ok;
     }
     int test_simple(int x) {

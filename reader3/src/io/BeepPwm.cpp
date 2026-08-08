@@ -28,6 +28,11 @@ ZMETA(BeepPwm) {
 #define PWM_CHIP  "/sys/class/pwm/pwmchip0/export"
 
 
+// TODO, globals, ugh
+
+// will this avoid valgrind memmleak?
+BeepPwm& gBeepPwm=BeepPwm::getInstance();
+
 bool pwm_is_init=false;
 
 
@@ -35,9 +40,9 @@ int syswr(ctext filename,int i) {
     z_string s=i;
     FILE* fd = fopen(filename, "wb");
     if (!fd) {
-        return zs_io_error;
-        //perror("Failed to open export file");
+        perror("pwm write error");
         return Z_ERROR_MSG(zs_io_error,"PWM Error writing %d to %s\n",i,filename);
+
     }
     fwrite(s.c_str(), s.size(),1,fd); // Export PWM channel 0
     //ZLOG("Writing %s:%s\n",filename,s.c_str());
@@ -86,7 +91,10 @@ int BeepPwm::timer_callback(void *)
     }
 
     auto  [freq, delay, duty] = beep;
+#ifdef NO_GPIO
     printf("beep: %d,%d,%d\n",freq,delay,duty);
+#endif
+
     if(delay>2000)
     {
         Z_WARN_MSG(zs_bad_parameter,"Buzzer Delay Too Long");

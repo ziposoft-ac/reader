@@ -5,6 +5,7 @@
 #include "Battery.h"
 #include "io/i2c.h"
 #include "io/gpio.h"
+#include "io/BeepPwm.h"
 
 
 
@@ -78,16 +79,16 @@ int Battery::timer_callback(void *) {
             case batt_charge_status_charged: {
                 ZDBG("batt_charge_status_charged\n");
 
-                //root.gpio.ledGreen.off();
-                //root.gpio.ledRed.on();
+                gGpio.ledGreen.off();
+                gGpio.ledRed.on();
             }
             break;
 
             case batt_charge_status_discharging: {
                 ZDBG("batt_charge_status_discharging\n");
                // root.gpio.ledGreen.on();
-                //root.gpio.ledRed.off();
-                //root.beeper.pushBeeps({{1500, 50}, {1000, 50}, {500, 50}});
+                gGpio.ledRed.off();
+                gBeepPwm.pushTones({{1500, 50}, {1000, 50}, {500, 50}});
             }
             break;
             case batt_charge_status_charging: {
@@ -197,10 +198,20 @@ z_status Battery::init() {
     _i2c_fd = i2c_init();
     if (_i2c_fd < 1) {
         _i2c_fd = 0;
-        return zs_access_denied;
+
+        return Z_ERROR_MSG(zs_access_denied,"I2C initialization of battery failed\n");
     }
-    i2c_write_word(_i2c_fd, slave_address, 0, INA3221_RESET);
-    i2c_write_word(_i2c_fd, slave_address, 0, INA3221_CONFIG);
+    int res=i2c_write_word(_i2c_fd, slave_address, 0, INA3221_RESET);
+    if (res<0) {
+        shutdown();
+        return Z_ERROR_MSG(zs_io_error,"I2C initialization of battery failed\n");
+
+
+    }
+
+    res=i2c_write_word(_i2c_fd, slave_address, 0, INA3221_CONFIG);
+    if (res<0)
+        return zs_io_error;
     if (!_timer)
         _timer = gTimerService.create_timer_t(this, &Battery::timer_callback, 0);
     return zs_ok;

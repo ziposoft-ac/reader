@@ -5,7 +5,7 @@
 #ifndef ZIPOSOFT_BEEPPWM_H
 #define ZIPOSOFT_BEEPPWM_H
 #include "pch.h"
-#include "../util/timers.h"
+#include "util/timers.h"
 
 
 //typedef std::pair<U16,U16> Tone; // freq,dur
@@ -36,6 +36,12 @@ protected:
     bool _open=false;
 
 public:
+
+    static BeepPwm& getInstance() {
+        // Guaranteed to be destroyed and initialized thread-safely since C++11
+        static BeepPwm instance;
+        return instance;
+    }
     bool _exists=false;
     bool _quiet=false;
     bool _enabled=false;
@@ -58,6 +64,7 @@ public:
     void pushTones(std::initializer_list<Tone> const beeps);
     void pushNotes(std::initializer_list<Note> const beeps);
 };
-
+// TODO, globals, ugh
+extern BeepPwm& gBeepPwm;
 
 #endif //ZIPOSOFT_BEEPPWM_H

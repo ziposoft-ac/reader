@@ -10,20 +10,18 @@ const int BLUE=22;
 const int GREEN=17;
 const int YELLOW=27;
 
-const char *chipname = "/dev/gpiochip0";
+//const char *chipname_rasp = "/dev/gpiochip0";
+//const char *chipname_orange = "/dev/gpiochip1";
 
 // currently only support 1 gpio chip
 // This is ugly, but I gotta get this shit done
 Gpio& gGpio=Gpio::getInstance();
 
 
-
-const int led_gpio[]={RED,GREEN,YELLOW,BLUE};
-const int num_leds=sizeof(led_gpio)/sizeof(int);
 ZMETA(GpioPin)
 {
 
-    ZPROP_F(_pin,ZFF_READ_ONLY);
+    ZPROP(_pin);
 
     ZACT(off);
     ZACT(setOutput);
@@ -76,6 +74,7 @@ ZMETA_NO_NEW(Gpio)
     //ZACT(beep);
     ZACT(lightShow);
     ZACT(dump_pins);
+    ZPROP(_chip_number);
 };
 /**************************************************************************************
  *
@@ -91,18 +90,27 @@ int GpioPin::timer_callback(void *)
     return 0;
 }
 
-void GpioPin::init(Gpio* chip,ctext name)
+z_status GpioPin::init(Gpio* chip,ctext name)
 {
 
+    if (_timer)
+        return zs_already_open;
     //ZDBG("calling init %s\n",name);
     Z_ASSERT(!_timer);
     _name=name;
     //_chip=chip;
-    if(!_timer)
-        _timer=gTimerService.create_timer_t(this,&GpioPin::timer_callback,0    );
+
+    if (!_pin) {
+        return Z_ERROR_MSG(zs_not_open,"GPIO: %s pin is disabled, set to 0\n",name);
+    }
 
     if (!_request)
         _request=gGpio.getPinRequest((_output?GPIOD_LINE_DIRECTION_OUTPUT: GPIOD_LINE_DIRECTION_INPUT),_pin);
+
+    if (!_request)
+        return zs_io_error;
+    if(!_timer)
+        _timer=gTimerService.create_timer_t(this,&GpioPin::timer_callback,0    );
 
     /*
     if (_output ) {
@@ -114,6 +122,7 @@ void GpioPin::init(Gpio* chip,ctext name)
     */
     //gpioSetMode(_pin,1);
     //gpioWrite(_pin,0);
+    return zs_ok;
 }
 void GpioPin::shutdown()
 {
@@ -134,15 +143,28 @@ z_status GpioPin::toggle()
     gpiod_line_request_set_value(_request, _pin, (gpiod_line_value)_state);
     return zs_ok;
 }
-void GpioPin::_off()
+z_status GpioPin::_off()
 {
+    if (!_request)
+        return zs_not_open;
     _state=0;
-
-    //gpioWrite(_pin,0);
-    gpiod_line_request_set_value(_request, _pin, (gpiod_line_value)_state);
-
+    int ret=gpiod_line_request_set_value(_request, _pin, (gpiod_line_value)_state);
+    if (ret==0) {
+        return zs_ok;
+    }
+    return zs_io_error;
 }
-
+z_status GpioPin::_on()
+{
+    if (!_request)
+        return zs_not_open;
+    _state=1;
+    int ret=gpiod_line_request_set_value(_request, _pin, (gpiod_line_value)_state);
+    if (ret==0) {
+        return zs_ok;
+    }
+    return zs_io_error;
+}
 z_status GpioPin::setInput()
 {
     //if (!_chip)  return zs_not_open;
@@ -168,17 +190,7 @@ z_status GpioPin::setOutput()
 
     return zs_ok;
 }
-void GpioPin::_on()
-{
-    //gpioWrite(_pin,1);
-    _state=1;
-    if (!_request) {
-        Z_ERROR_LOG("request is NULL!\n");
-        return;
-    }
-    gpiod_line_request_set_value(_request, _pin, (gpiod_line_value)_state);
 
-}
 z_status GpioPin::show()
 {
     if(!gGpio.initialize()) return zs_io_error;
@@ -288,13 +300,20 @@ int GpioPinLed::timer_callback(void *)
 
     }
 }
-void GpioPinLed::init(Gpio* chip,ctext name)
+z_status GpioPinLed::init(Gpio* chip,ctext name)
 {
-    _toogleCount=0;
-    GpioPin::init(chip,name);
+    //_pin=pin;
+    z_status s=GpioPin::init(chip,name);
+    if (s)
+        return s;
 
-    setOutput();
-    off();
+    s=setOutput();
+    if (s)
+        return s;
+    s=off();
+    _toogleCount=0;
+
+    return s;
 
 }
 z_status GpioPinLed::off()
@@ -369,13 +388,15 @@ bool Gpio::initialize() {
         _timer=gTimerService.create_timer_t(this,&Gpio::timer_callback,0    );
 
 
+    z_string chipname="/dev/gpiochip";
 
+    chipname<<_chip_number;
 
     _chip = gpiod_chip_open(chipname);
 
     if(_chip==nullptr)
     {
-        Z_ERROR_MSG(zs_io_error,"gpiod_chip_open failed:%s %d",strerror(errno),errno);
+        Z_ERROR_MSG(zs_io_error,"gpiod_chip_open `%s` failed:%s %d",chipname.c_str(),strerror(errno),errno);
 
         _initialized= false;
         return false;
@@ -479,7 +500,7 @@ z_status Gpio::beep()
     if(!initialize())
         return zs_io_error;
     beepPwm.pushBeeps({{500,50}});
-    //root.beeper.pushBeeps({{2000,500}});
+    gBeepPwm.pushBeeps({{2000,500}});
 
     return zs_ok;
 }*/
@@ -493,18 +514,8 @@ z_status Gpio::lightShow()
 }
 int Gpio::timer_callback(void *)
 {
-    static int index=0;
-    int i;
-    for(i=0;i<num_leds;i++)
-    {
-        //int head=(index==3?0:index+1);
-        //int val=(i==index)||(i==head);
-        int val=(i==index);
-        //gpioWrite(led_gpio[i],val);
-    }
-    if(++index>=num_leds)
-        index=0;
-    return 100;
+    // currently not used, used to be for light show
+    return 0;
 }
 
 
@@ -577,12 +588,20 @@ struct gpiod_line_request* Gpio::getPinRequest(gpiod_line_direction dir, unsigne
     int ret = gpiod_line_config_add_line_settings(line_cfg, &pin, 1, settings);
     if (ret) {
         Z_ERROR_MSG(zs_io_error,"gpiod_line_config_add_line_settings failed");
+
     }
     else {
         request = gpiod_chip_request_lines(_chip, 0, line_cfg);
         if (!request) {
-            perror("gpiod_chip_request_lines failed\n");
-            Z_ERROR_MSG(zs_io_error,"gpiod_chip_request_lines failed chip=%x, linecfg=%x",_chip,line_cfg);
+            if (errno == 517) {
+
+                Z_ERROR_LOG("Setting GPIO pin #%d failed\n", pin);
+            }
+            else {
+                perror("gpiod_chip_request_lines failed\n");
+                Z_ERROR_MSG(zs_io_error,"gpiod_chip_request_lines failed chip=%x, linecfg=%x",_chip,line_cfg);
+            }
+
         }
         else {
             //ZDBG("pin#%d success\n",pin);
@@ -627,21 +646,22 @@ int Gpio::setPinOutput( unsigned int pin,int value) {
  */
 void GpioBeep::init(Gpio* chip)
 {
+    //if ()
     Z_ASSERT(!_timer);
     _state=1; //SET OFF
     GpioPin::init(chip,"beep");
 
 
 }
-void GpioBeep::_off()
+z_status GpioBeep::_off()
 {
     // Reverse it
-    GpioPin::_on();
+    return   GpioPin::_on();
 }
-void GpioBeep::_on()
+z_status GpioBeep::_on()
 {
     // Reverse it
-    GpioPin::_off();
+    return GpioPin::_off();
 }
 typedef std::pair<int,int> Beep;
 

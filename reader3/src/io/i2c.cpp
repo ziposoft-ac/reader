@@ -66,10 +66,14 @@ void i2c_close(int i2c_fd) {
 // Write to an I2C slave device's register:
 int i2c_write(int i2c_fd,U8 slave_addr, U8 reg,U8 size, U8 *data) {
     int retval;
-    U8 outbuf[5];
+    U8 outbuf[5] = {};
 
-    struct i2c_msg msgs[1];
-    struct i2c_rdwr_ioctl_data msgset[1];
+    if (size>4) {
+        Z_ERROR_LOG("i2c write size too large");
+        return -1;
+    }
+    i2c_msg msgs[1]={};
+    i2c_rdwr_ioctl_data msgset[1]={};
 
     outbuf[0] = reg;
     memcpy(outbuf+1,data,size);
@@ -100,9 +104,9 @@ int i2c_write_word(int i2c_fd,U8 slave_addr, U8 reg, U16 data) {
 // Read the given I2C slave device's register and return the read value in `*result`:
 int i2c_read(int i2c_fd,U8 slave_addr, U8 reg,U8 size,U8 *result) {
     int retval;
-    U8 outbuf[2], inbuf[2];
-    struct i2c_msg msgs[2];
-    struct i2c_rdwr_ioctl_data msgset[1];
+    U8 outbuf[2]={}, inbuf[2]={};
+    struct i2c_msg msgs[2]={};
+    struct i2c_rdwr_ioctl_data msgset[1]={};
 
     msgs[0].addr = slave_addr;
     msgs[0].flags = 0;

@@ -196,7 +196,6 @@ z_status MqServer::send(z_string remote_mq_name, z_string msg) {
 }
 
 
-
 z_status MqServer::stop() {
     shutdown();
     return zs_success;

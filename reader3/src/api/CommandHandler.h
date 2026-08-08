@@ -35,7 +35,6 @@ public:
         _name = name;
     };
 
-    virtual int call_post_raw_data(ctext buffer, size_t len, z_string &ret);
 
     virtual int process_http_rx(http_request req, cmd_req_type type);
     virtual int callback_http(http_request req,z_string_map &vars,z_json_obj &jin, z_json_stream &jout) {
@@ -47,8 +46,9 @@ public:
 
     virtual void process_http_close(u_long id) {}
 
+    //virtual int call_post_raw_data(ctext buffer, size_t len, z_string &ret);
 
-    int process_mq(MqMsg *msg);
+    //int process_mq(MqMsg *msg);
     virtual int invoke_callback(int x,int y) {
         return 0;
     }
@@ -86,8 +86,28 @@ public:
 
             return  (_obj->*_func)(msg->data);
         }
+        if constexpr (std::is_same_v<F,callback_post_json_t<C>>) {
 
-        Z_ERROR_LOG("No matching template for http command %s\n",_name.c_str());
+            z_json_obj json_in;
+            if (msg->data_type==mq_data_json) {
+                zp_text_parser p;
+                z_status s=p.parseJsonObj(json_in,msg->data,msg->data_len);
+                if (s!=zs_ok)
+                    Z_ERROR(s);
+
+            }
+            z_json_str_stream json_out;
+            json_out.obj_start();
+            int res=  (_obj->*_func)(json_in,json_out);
+            json_out.obj_end();
+
+            if (msg->mq_reply_name && msg->mq_reply_name_len > 1) {
+                mq_send_json_reply(msg->mq_reply_name,msg->command_str,msg->msg_id,json_out.as_string());
+            }
+            return zs_ok;
+        }
+
+        Z_ERROR_LOG("No matching template for MQ command %s\n",_name.c_str());
         return Z_ERROR(zs_internal_error);
     }
 
