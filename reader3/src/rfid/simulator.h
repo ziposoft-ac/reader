@@ -16,6 +16,25 @@
 #define MODE_RANDOM "random"
 #define MODE_SEQ "seq"
 
+
+
+class SimRunner
+{
+
+
+
+
+};
+
+
+class SimRace
+{
+
+
+
+
+};
+
 class RfidSimulator : public RfidReader,public z_parse_csv {
     int timer_callback_file(void*);
     int timer_callback(void*);

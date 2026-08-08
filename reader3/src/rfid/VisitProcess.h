@@ -12,6 +12,8 @@
 
 #include "recordFile.h"
 
+constexpr ctext mqNodeBoxVisits="/mq_node_box_visits";
+
 
 extern ctext default_record_path;
 extern ctext default_record_path_raw;
