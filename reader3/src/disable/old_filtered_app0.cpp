@@ -57,10 +57,10 @@ z_status App0::open()
 
     if(!_timer)
         _timer=root.timerService.create_timer_t(this,&App0::timer_callback,0    );
-    //root.gpio.ledRed.on();
+    //gGpio.ledRed.on();
 
     _open=true;
-    root.gpio.beepPwm.pushBeeps( {{1000,50},{1200,50},{1400,50},{0,80}  });
+    gGpio.beepPwm.pushBeeps( {{1000,50},{1200,50},{1400,50},{0,80}  });
 
     return zs_ok;
 }
@@ -68,7 +68,7 @@ z_status App0::close()
 {
     if(!_open)
         return zs_ok;
-    root.gpio.beepPwm.pushBeeps(
+    gGpio.beepPwm.pushBeeps(
             {{1500,50},{1000,50},{500,50},{0,50},
             });
     stop();
@@ -97,10 +97,10 @@ z_status App0::stop()
     printf("deleting tags\n");
 
     _tags.delete_all();
-    root.gpio.beepPwm.pushBeeps(
+    gGpio.beepPwm.pushBeeps(
             {{1500,30},{1000,30},{750,30},{500,100}});
-    //root.gpio.ledRed.on();
-    //root.gpio.ledGreen.off();
+    //gGpio.ledRed.on();
+    //gGpio.ledGreen.off();
 
     return zs_ok;
 }
@@ -171,7 +171,7 @@ z_status App0::start()
     {
         return Z_ERROR_MSG(s, msg);
     }
-    root.gpio.beepPwm.pushBeeps(
+    gGpio.beepPwm.pushBeeps(
         {{500,30},{0,30},{750,30}});
     return s;
 }
@@ -189,7 +189,7 @@ int App0::add_json_status(z_json_stream &js) {
     js.key_bool("reading",is_reading());
     js.key_bool("recording",is_recording());
     js.keyval_int("last_index",getLastWriteTimestamp());
-    js.keyval_int("ts_start",(I64)_t_started.get_ptime_ms());
+    js.keyval_int("ts_start",(I64)_t_started.in_ms());
     js.obj_end();
 
     return 0;
@@ -219,7 +219,7 @@ bool App0::callbackQueueEmpty()
 
 void App0::beep() {
     if (_beep)
-        root.gpio.beeper.beep(50);
+        gGpio.beeper.beep(50);
 }
 
 int  App0::timer_callback(void*)
@@ -428,17 +428,17 @@ void RfidTag::writeOut(z_stream& s,FilteredReadState type) {
 
     switch (type) {
         case fr_type_arrived:
-            root.gpio.beepPwm.pushBeeps( {{1100,30}});
+            gGpio.beepPwm.pushBeeps( {{1100,30}});
             s,"ARR";
             break;
         case fr_type_departed:
             s,"DEP";
-            root.gpio.beepPwm.pushBeeps( {{500,25}});
+            gGpio.beepPwm.pushBeeps( {{500,25}});
 
             break;
         default:
             s,"HI";
-            root.gpio.beepPwm.pushBeeps( {{700,40},{1500,40}});
+            gGpio.beepPwm.pushBeeps( {{700,40},{1500,40}});
 
             break;
     }

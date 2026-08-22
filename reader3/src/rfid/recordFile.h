@@ -36,9 +36,9 @@ class VisitProcess;
 class RfidTag
 {
 public:
-    RfidTag(RfidRead* r,ctext epc_str)
+    RfidTag(RfidRead* r,ctext epc_str,U32 index)
     {
-
+        _index=index;
         _epc=epc_str;
     }
     z_time   _ts_first_time_seen ;
@@ -55,15 +55,25 @@ public:
     U8 _ant_hi=0;
     U32 _count_total = 0;
     U32 _count_hi = 0;
+    U32 _index=0;
+
     //int _index=0;
-    void writeOut(z_stream& s,int index);
+    void writeOut(z_stream& s,U64 writeTs);
+    void writeJson(z_json_stream& s);
     FilteredReadState _state=fr_type_arrived;
     // return time to check next
     //
+
+    /**
+     *
+     * @param read
+     * @param s
+     * @return timestamp of next check in
+     */
     z_time processRead (RfidRead* read,VisitProcess& s);
 
     // return true if it can be removed
-    bool processCheck (VisitProcess& s,z_time now);
+    bool processCheck (VisitProcess& s,const z_time& now);
     bool isDeparted() {
         return _state==fr_type_departed;
     }

@@ -195,7 +195,7 @@ void z_time::get_tm(tm& tm_struct,bool local) const
 This gets the number of milliseconds elapsed since the value of this time
 =now()-this
 */
-U64 z_time::get_elapsed_ms() const
+U64 z_time::ms_since() const
 {
 	auto milliseconds_since_epoch = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
 
@@ -204,13 +204,13 @@ U64 z_time::get_elapsed_ms() const
 
 }
 // This gets the number of milliseconds elapsed since the epoch 
-U64  z_time::get_ptime_ms() const
+U64  z_time::in_ms() const
 {
     return _t;
 
 }
 // This gets the number of seconds elapsed since the epoch 
-U32  z_time::get_ptime_seconds() const
+U32  z_time::in_seconds() const
 {
     return _t/1000;
 }
@@ -256,7 +256,7 @@ z_time & z_time::operator = (U64 val)
 
 U32 z_time::get_fract_ms() const
 {
-	return get_ptime_ms() % 1000;
+	return in_ms() % 1000;
 
 }
 

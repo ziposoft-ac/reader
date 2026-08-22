@@ -196,7 +196,20 @@ public:
 		if (_keys.size() == 0)
 			stream.set_pretty_print(pp);
 	}
+	virtual void convertToStringMap( z_string_map &map)
+	{
+		bool pp = false;
 
+		if (_keys.size() == 0) return;
+
+		for (auto p : _keys)
+		{
+			z_string val;
+			p.second->get_as_string(val);
+			map[p.first]=val;
+		}
+
+	}
 	I64 get_int(ctext key,I64 def=0);
 	bool get_int_val(ctext key, I64 &i);
 	bool get_str(ctext key,z_string& s);

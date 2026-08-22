@@ -6,6 +6,7 @@
 #include <numeric>
 
 unsigned int uiCrc16Cal(unsigned char const* pucY, unsigned char ucX);
+ZMETA_DEF(Cfmu804);
 
 void Response::dump()
 {
@@ -295,7 +296,7 @@ bool  Cfmu804::_rx_frame(ResponseFrame* frame )
         {
             t.set_now();
             if (!_port.waitReadable()) {
-                //ZDBG("serial timeout: %d\n",t.get_elapsed_ms());
+                //ZDBG("serial timeout: %d\n",t.ms_since());
                 continue;
 
             }
@@ -305,7 +306,7 @@ bool  Cfmu804::_rx_frame(ResponseFrame* frame )
                 zout << "No serial data available?.\n";
                 continue;
             }
-            //ZDBG("serial data available: %d ms, %d bytes\n",t.get_elapsed_ms(),bytes_available);
+            //ZDBG("serial data available: %d ms, %d bytes\n",t.ms_since(),bytes_available);
 
 
             _total_bytes_read+=frame->read(_port,_debug_rx_bytes);
@@ -524,7 +525,6 @@ z_status Cfmu804::__cmd_tx(U8 cmd_code,U8* data,U8 data_len)
 
 }
 
-ZMETA_DEF(Cfmu804);
 
 
 

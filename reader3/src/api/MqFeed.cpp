@@ -16,7 +16,7 @@ z_status MqFeed::publish(ctext command) {
 }
 
 FeedSubscriber::FeedSubscriber(MqFeed *feed, ctext name): _name(name) {
-    _rx_q_name=feed->_q_name + "-" + name;
+    _rx_q_name=name;
     _feed=feed;
 }
 
@@ -27,9 +27,7 @@ z_status FeedSubscriber::send(mq_command_enum_t cmd_type, ctext command, mq_data
 
     z_status status=mq_send_msg(_rx_q_name,cmd_type,command,data_type,buffer);
 
-    if (status==zs_ok) {
-        _timer->start(feed_keep_alive_ms,true);
-    }
+
     return status;
 }
 
@@ -38,16 +36,14 @@ z_status FeedSubscriber::send(mq_command_enum_t cmd_type, ctext command, mq_data
 z_status MqFeed::sendToSub(ctext subname,mq_command_enum_t cmd_type,ctext command,mq_data_type_t data_type,
     z_string* buffer) {
 
-    z_string rx_q_name=_q_name;
-    rx_q_name<<"-"<<subname;
-    ZDBG("sending to %s\n",rx_q_name.c_str());
+    ZDBG("sending to %s\n",subname);
 
-    z_status status=mq_send_msg(rx_q_name,cmd_type,command,data_type,buffer);
+    z_status status=mq_send_msg(subname,cmd_type,command,data_type,buffer);
     return status;
 
 }
 
-z_status MqFeed::publish(ctext command,z_string& buffer) {
+z_status MqFeed::publish(ctext command,z_string& buffer,mq_command_enum_t cmd_type) {
     std::unique_lock mlock(_lock);
 
 
@@ -55,7 +51,7 @@ z_status MqFeed::publish(ctext command,z_string& buffer) {
     while (it != _subscribers.end())
     {
         ctext name=it->first;
-        z_status status=sendToSub(name,mq_command_string,command,mq_data_json,&buffer);
+        z_status status=sendToSub(name,cmd_type,command,mq_data_json,&buffer);
         if (status==zs_ok) {
             it++;
         }
@@ -67,6 +63,9 @@ z_status MqFeed::publish(ctext command,z_string& buffer) {
             it=_subscribers.erase(it);
         }
     }
+    if (_timer)
+        _timer->start_ms_reset(feed_keep_alive_ms);
+
     return zs_ok;
 
 }
@@ -75,6 +74,13 @@ z_status MqFeed::remove_all_subscribers() {
 
     std::unique_lock mlock(_lock);
     _subscribers.delete_all();
+
+    return zs_ok;
+
+}
+z_status MqFeed::delete_mqueue_nodes() {
+
+
     std::string mqueue_path = "/dev/mqueue";
 
     if (!fs::exists(mqueue_path)) {
@@ -109,7 +115,10 @@ z_status MqFeed::remove_all_subscribers() {
 }
 
 z_status MqFeed::shutdown() {
+    if (_timer) {
+        _timer->stop();
 
+    }
     publish("close");
     remove_all_subscribers();
 
@@ -124,7 +133,10 @@ z_status MqFeed::run(ctext feedname) {
     _q_name=feedname;
     remove_all_subscribers();
 
-
+    if(!_timer) {
+        _timer=gTimerService.create_timer_t(this,&MqFeed::timer_callback );
+    }
+    _timer->start_ms_reset(feed_keep_alive_ms);
     return MqServer::run(feedname);
 
 
@@ -136,15 +148,24 @@ z_status MqFeed::process_message(MqMsg *msg) {
         return MqServer::process_message(msg);
     z_string sub_name;
 
-    sub_name.assign(msg->data,msg->data_len);
+    sub_name=msg->mq_reply_name;
 
 
     std::unique_lock mlock(_lock);
 
     if (msg->command_enum == mq_command_subscribe) {
         ZDBG("got subscribe request from :%s\n",sub_name.c_str());
-        FeedSubscriber* sub=new FeedSubscriber(this,sub_name);
-        _subscribers.add(sub_name,sub);
+        if (_subscribers.exists(sub_name)) {
+            ZDBG("subscriber already exists :%s\n",sub_name.c_str());
+
+        }
+        else {
+            ZDBG("adding subscriber :%s\n",sub_name.c_str());
+
+            FeedSubscriber* sub=new FeedSubscriber(this,sub_name);
+            _subscribers.add(sub_name,sub);
+        }
+
         z_status status=sendToSub(sub_name,mq_command_subscribe_ack,"",mq_data_none);
         return status;
 

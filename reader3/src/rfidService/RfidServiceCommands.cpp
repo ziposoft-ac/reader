@@ -28,14 +28,43 @@ int RfidService::getRawReads(http_request req, z_string_map &vars, z_json_obj &j
     }
 
     reader.get_reads_since(jout, fromIndex,return_reads);
-
     return 0;
-
-
-
 
 }
 
+int RfidService::getVisits(http_request req, z_string_map &vars, z_json_obj &jin, z_json_stream &jout) {
+
+    I64 fromLastWrite=vars.get_as<I64>("lastWriteTs",0);
+    bool return_reads=vars.get_as("return_reads",true);
+    bool debug=vars.get_as("debug",true);
+    I64 lastWriteTs=_visits.getLastWriteTimestamp();
+
+    ZDBG("requested %lld,  current,%lld \n",fromLastWrite,lastWriteTs);
+
+    if (fromLastWrite>lastWriteTs) {
+        fromLastWrite=0;
+        ZDBG("RAW requested index %lld greater than current, using 0\n",fromLastWrite);
+    }
+    if (fromLastWrite==lastWriteTs) {
+        //ZDBG("queueing req\n");
+
+        _getGetVisitsCd->add_pending(req,WAIT_FOR_NEW_READS_TIMEOUT,
+            [this,fromLastWrite,return_reads](z_json_stream& js) {
+                // this is bad, because each separate delayed request generates its own response data
+                //  even though it is the same for all of them. but normally only have one anyway
+
+                _visits.add_json_status(js);
+
+
+        });
+        return HTTP_STATUS_PROCESSING;
+    }
+
+    _visits.add_json_status(jout);
+
+    return 0;
+
+}
 
 
 int RfidService::post_start_stop_raw(z_json_obj& o,z_json_stream& jout) {
@@ -72,6 +101,13 @@ int RfidService::post_start_stop_raw(z_json_obj& o,z_json_stream& jout) {
     return CMD_SUCCESS;
 }
 int RfidService::get_status(z_string_map& params,z_json_stream& jout) {
+
+    return json_status(jout);
+}
+int RfidService::json_status(z_json_stream& jout) {
+    U64 us_end= z_time_get_ticks_us();
+    jout.keyval_int("tsUs",us_end);
+
     getRfidReader().add_json_status(jout);
     _visits.add_json_status(jout);
     return CMD_SUCCESS;
@@ -107,8 +143,9 @@ int RfidService::post_config(z_json_obj& o,z_json_stream& jout) {
 
 int RfidService::post_start_stop_visits(z_json_obj& o,z_json_stream& jout) {
     bool start= o.get_bool("start",false);
-    bool is_reading=getRfidReader().isReading();
     bool visit_running=_visits.is_recording();
+
+
 
     int ret=CMD_FAILED;
     ctext msg="Unexpected error";
@@ -116,7 +153,7 @@ int RfidService::post_start_stop_visits(z_json_obj& o,z_json_stream& jout) {
         if (visit_running)
             msg="already reading";
         else {
-            if (getRfidReader().start())
+            if (_visits.start())
                 msg="start command failed";
             else {
                 ret=CMD_SUCCESS;
@@ -128,7 +165,7 @@ int RfidService::post_start_stop_visits(z_json_obj& o,z_json_stream& jout) {
         if (!visit_running)
             msg="not running";
         else {
-            if (getRfidReader().stop())
+            if (_visits.stop())
                 msg="start command failed";
             else {
                 ret=CMD_SUCCESS;
@@ -137,6 +174,6 @@ int RfidService::post_start_stop_visits(z_json_obj& o,z_json_stream& jout) {
         }
     }
     jout.keyval("result",msg);
-    getRfidReader().add_json_status(jout);
-    return CMD_SUCCESS;
+    return json_status(jout);
+
 }

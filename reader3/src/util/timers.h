@@ -14,11 +14,16 @@ class TimerService;
  * return 0 to stop the timer.
   */
 typedef int (*TimerCallback)(void* data);
+enum timer_start_condition_t {
+    timer_start_reset,
+    timer_start_if_earlier,
+    timer_start_if_not_running
+
+};
 class Timer {
     friend TimerService;
 protected:
     bool _running=false;
-    int _interval=0;
     U64 _ts_expire=0;
     TimerService* _service;
     TimerCallback _user_callback;
@@ -29,14 +34,19 @@ protected:
 public:
     Timer(TimerService *service, TimerCallback callback, void* user_context);
     virtual ~Timer();
-    void start();
+    //void start();
     void stop();
-    void start(int ms,bool reset=true);
+    void start_ms_if_not_running(U32 ms);
+    void start_ms_if_sooner(U32 ms);
+    void start_ms_reset(U32 ms);
+
+    void start_ts_if_not_running(const z_time& ts);
+    void start_ts_if_sooner(const z_time& ts);
+    void start_ts_reset(const z_time& ts);
     void restart(int ms);
-    void set_minimum_ts_expire(U64 ts) {
-        if (ts<_ts_expire)
-            _ts_expire=ts;
-    }
+    U64 get_timout_ts() const
+    { return _ts_expire; }
+    bool is_running() const  { return _running; }
     bool _debug=false;
 
 };
@@ -70,7 +80,7 @@ class TimerService {
     std::thread _thread_handle;
     std::thread::id _thread_id=std::thread::id();
     std::set<Timer*> _timers;
-    bool _running=false;
+    bool _timer_serivce_running=false;
     bool _flag_reprocess_timers=false;
     std::thread _thread_process;
     void process_thread();
@@ -82,7 +92,8 @@ class TimerService {
     /*
      * Dont call this directly.
      */
-    z_status timer_start(Timer* timer,int ms,bool reset=false);
+    inline z_status _timer_start_ms(Timer* timer,U32 ms,timer_start_condition_t cond);
+    z_status _timer_start_ts(Timer* timer,const z_time& ts,timer_start_condition_t cond);
     void timer_stop(Timer* timer);
 public:
     TimerService();
@@ -94,12 +105,12 @@ public:
 
     Timer* createTimer(TimerCallback callback, void* user_data, int start = 0);
     bool remove_timer(Timer* timer);
-    template <class  T>  Timer* create_timer_t(T* object, int (T::*callback)(void*) , void* user_context, int start = 0)
+    template <class  T>  Timer* create_timer_t(T* object, int (T::*callback)(void*) , void* user_context=0, int start = 0)
     {
         Timer_t<T>* timer=z_new Timer_t<T>(this,object,callback,user_context);
         _timers.insert(timer);
         if(start)
-            timer->start(start,true);
+            timer->start_ms_reset(start);
         return timer;
     }
 

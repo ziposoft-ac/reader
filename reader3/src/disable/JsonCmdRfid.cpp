@@ -60,7 +60,7 @@ int fn_post_program_bcd(http_request r,z_json_obj &o)
     int bcd=o.get_int("bcd",0);
     bool overwrite=o.get_bool("overwrite",false);
     ZDBG("Program bcd=",bcd);
-    z_status status=root.cfmu804.program(bcd,overwrite);
+    z_status status=getReader().program(bcd,overwrite);
 
     send_json_response(r,[status](z_json_stream &js)
     {
@@ -78,7 +78,7 @@ int fn_post_program_epc(http_request r,z_json_obj &o)
     bool overwrite=o.get_bool("overwrite",false);
     z_status status=zs_bad_command;
     if (found) {
-         status=root.cfmu804.program_epc(hex);
+         status=getReader().program_epc(hex);
 
     }
 
@@ -96,7 +96,7 @@ int fn_post_program_epc(http_request r,z_json_obj &o)
 
 int fn_get_read_one(http_request r,z_string_map &vars)
 {
-    RfidRead* read=root.cfmu804.read_single(20);
+    RfidRead* read=getReader().read_single(20);
 
     send_json_response(r,[read](z_json_stream &js)
     {
@@ -128,7 +128,7 @@ int fn_get_pingpong(http_request r,z_string_map &vars)
     send_json_response(r,[count,flash](z_json_stream &js)
     {
         if (flash) {
-            root.gpio.ledYellow.toggle();
+            gGpio.ledYellow.toggle();
         }
         js.keyval_int("count",count);;
         return HTTP_STATUS_OK;
@@ -145,7 +145,7 @@ int fn_get_beep(http_request r,z_string_map &vars)
         int dur=vars.get_as("dur",25);
         int count=vars.get_as("count",2);
         while (count--)
-            root.gpio.beeper.pushBeeps({{dur,25}});
+            gGpio.beeper.pushBeeps({{dur,25}});
     }
 
     send_json_response(r,[](z_json_stream &js)
@@ -241,7 +241,7 @@ int fn_post_stop_visitProc(http_request r,z_json_obj &o)
 int fn_post_beepon(http_request r,z_json_obj &o)
 {
     bool beep=   o.get_bool("beep",false);
-    root.gpio.readBeep.off();
+    gGpio.readBeep.off();
     ZLOG("fn_post_beepon");
     send_rfid_status(r);
     return HTTP_STATUS_OK;
@@ -250,7 +250,7 @@ int fn_post_beepon(http_request r,z_json_obj &o)
 int fn_post_beepoff(http_request r,z_json_obj &o)
 {
     bool beep=   o.get_bool("beep",false);
-    root.gpio.readBeep.on();
+    gGpio.readBeep.on();
     ZLOG("fn_post_beepoff");
 
     send_rfid_status(r);

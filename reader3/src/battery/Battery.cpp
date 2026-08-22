@@ -86,7 +86,7 @@ int Battery::timer_callback(void *) {
 
             case batt_charge_status_discharging: {
                 ZDBG("batt_charge_status_discharging\n");
-               // root.gpio.ledGreen.on();
+               // gGpio.ledGreen.on();
                 gGpio.ledRed.off();
                 gBeepPwm.pushTones({{1500, 50}, {1000, 50}, {500, 50}});
             }
@@ -96,8 +96,8 @@ int Battery::timer_callback(void *) {
 
                // root.beeper.pushBeeps({{500, 50}, {1000, 50}, {1500, 50}});
 
-               // root.gpio.ledGreen.off();
-               // root.gpio.ledRed.on();
+               // gGpio.ledGreen.off();
+               // gGpio.ledRed.on();
             }
             break;
             default:
@@ -110,7 +110,7 @@ int Battery::timer_callback(void *) {
 z_status Battery::start() {
     if (init()) return zs_io_error;
 
-    _timer->start(100);
+    _timer->start_ms_reset(100);
     return zs_ok;
 }
 
@@ -148,6 +148,14 @@ U16 Battery::read_reg(U16 add) {
 }
 
 z_status Battery::read() {
+#ifdef NOGPIO
+
+    _batt_volt=12+(double)(random()%100)/100;
+    _input_volt=13+(double)(random()%100)/100;
+    _input_current=2+(double)(random()%100)/100;
+    _batt_current=1+(double)(random()%100)/100;
+    return zs_ok;
+#endif
     if (init()) return zs_io_error;
     U16 batt_volt_reg = read_reg(INA3221_REG_CH3_V);
     U16 batt_current_reg = read_reg(INA3221_REG_CH3_I);
@@ -193,6 +201,7 @@ z_status Battery::json_get(z_json_stream &js) {
 }
 
 z_status Battery::init() {
+#ifndef NOGPIO
     if (_i2c_fd > 0)
         return zs_ok;
     _i2c_fd = i2c_init();
@@ -212,6 +221,8 @@ z_status Battery::init() {
     res=i2c_write_word(_i2c_fd, slave_address, 0, INA3221_CONFIG);
     if (res<0)
         return zs_io_error;
+#endif
+
     if (!_timer)
         _timer = gTimerService.create_timer_t(this, &Battery::timer_callback, 0);
     return zs_ok;

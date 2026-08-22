@@ -24,7 +24,7 @@ struct Counter {
 class IoService : public  Service,public CommandHandler{
 public:
     //BeepPwm beeper;
-    IoApiTest apiTest;
+    IoApiClient apiTest;
     WebServer ws;
     MqServer mq;
     Battery bat;
@@ -75,9 +75,17 @@ public:
     z_status initialize() override{
         //ZDBGS.add_stdout();
         gGpio.initialize();
+
+        gGpio.ledRed.flash(2);
+        gGpio.ledGreen.flash(2);
+        gGpio.ledYellow.flash(2);
         gBeepPwm.init();
         bat.init();
-
+        gBeepPwm.pushNotes({
+            {2,2000,10},
+            {2,0,100},
+            {2,2000,10},
+        });
 
         reg_bin_func("setLed",&IoService::handleSetLed);
         reg_func("stat",&IoService::get_status_json);

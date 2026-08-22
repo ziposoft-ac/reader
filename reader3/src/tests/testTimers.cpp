@@ -3,7 +3,6 @@
 //
 
 #include "tests.h"
-#include "../root.h"
 #include "zipolib/z_error.h"
 #include <fcntl.h>
 #include <sys/stat.h>
@@ -58,7 +57,7 @@ z_status TestTimer::start()
 
     if(!_timer)
         _timer=gTimerService.create_timer_t(this,&TestTimer::timer_callback,0    );
-    _timer->start(_interval);
+    _timer->start_ms_reset(_interval);
     return zs_ok;
 }
 
@@ -80,7 +79,7 @@ int TestTimerCascade::onCallback(void *p) {
 
     printf("count=%d\n",_current_iteration--);
     if (_current_iteration==4) {
-        _timer2->start(3000,true);
+        _timer2->start_ms_reset(3000);
     }
     if (_current_iteration>0)
         return _interval;
@@ -150,7 +149,7 @@ int TestTimerStress::callback(void* vctx) {
         if (!_timers.get(id,other)) {
             Z_ERROR_MSG(zs_internal_error,"timer get failed");
         }
-        other->_timer->start(50+id,true);
+        other->_timer->start_ms_reset(50+id);
 
 
 
@@ -187,7 +186,7 @@ z_status TestTimerStress::start() {
     }
     _callback_count=0;
 
-    _timers.getobj(0)->_timer->start(10);
+    _timers.getobj(0)->_timer->start_ms_reset(10);
     return zs_ok;
 
 

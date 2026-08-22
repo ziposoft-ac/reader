@@ -47,6 +47,7 @@ enum mq_command_enum_t {
     mq_command_subscribe_ack=21,
     mq_command_unsubscribe=22,
     mq_command_unsubscribe_ack=23,
+    mq_command_keep_alive=24,
     mq_command_feed_close=90,
     mq_command_ping=100,
     mq_command_pong=101,

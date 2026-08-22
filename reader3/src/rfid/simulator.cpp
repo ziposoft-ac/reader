@@ -93,11 +93,11 @@ z_status RfidSimulator::_read_start() {
         _timer->start(_interval);
         return zs_ok;
         */
-        _timer->start(1);
+        _timer->start_ms_reset(1);
 
     }
     if (_mode==MODE_SEQ) {
-        _timer->start(1);
+        _timer->start_ms_reset(1);
 
     }
 
@@ -121,7 +121,7 @@ int RfidSimulator::timer_callback(void *p) {
     if (_mode==MODE_SEQ) {
         epc.set_bcd_from_int(_index);
     }
-    queueRead(1,54,epc.get_data(),epc.get_len(),z_time::get_now()
+    queueRead(1,54,epc.get_data(),epc.get_len(),z_time_get_ticks_ms()
 #ifdef  ENABLE_PHASE
         ,0,0
 #endif
@@ -146,7 +146,7 @@ z_status RfidSimulator::_read_stop() {
 z_status RfidSimulator::manRead(z_string hex,int rssi,int ant) {
     Epc epc;
     epc.setFromHexString(hex);
-    U64 ts=z_time::get_now();
+    U64 ts=z_time_get_ticks_ms();
     ZLOG("queueing read %llu %s\n",ts,hex.c_str());
     queueRead(ant,rssi,(U8*)epc.get_data(),epc.get_len(),ts
 #ifdef  ENABLE_PHASE
@@ -180,7 +180,7 @@ int RfidSimulator::timer_callback_file(void *) {
     U8 rssi=row[3].get_int_val();
     if(!_time_offset)
     {
-        _time_offset=z_time::get_now();
+        _time_offset=z_time_get_ticks_ms();
         _time_offset=_time_offset-ts;
     }
     U64 adj_ts=ts+_time_offset;

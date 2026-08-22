@@ -14,7 +14,6 @@ include_directories(
 set(SRC_DIR  ${CMAKE_CURRENT_SOURCE_DIR}/src)
 set(SRC_COMMON "src/io/ioApi.cpp")
 file(GLOB SRC "src/*.cpp")
-file(GLOB SRC_TEST "src/tests/*")
 file(GLOB SRC_RFID "src/rfid/*")
 file(GLOB SRC_RFID_SERVICE "src/rfidService/*")
 file(GLOB SRC_IO "src/io/*")
@@ -75,16 +74,17 @@ endfunction()
 target_func(omnibus src/disable/ReaderService.cpp src/disable/root.cpp ${SRC_RFID} src/leds/LedService.cpp)
 target_func(beepService src/beep/BeepService.cpp)
 target_func(testBlankService src/tests/TestBlankService.cpp)
-target_func(tester src/tests/Tester.cpp)
+target_func(tester src/tests/Tester.cpp src/tests/testTimers.cpp src/tests/tests.cpp ${SRC_RFID})
 
 
 
 target_func(testWeb src/tests/TestWeb.cpp src/tests/testChtml.cpp )
 target_func(TestBattery src/tests/TestBattery.cpp  ${SRC_BATTERY})
-target_func(testSubscribe src/tests/TestMqSubscribe.cpp  ${SRC_WEB})
+target_func(TestFeed src/tests/TestFeed.cpp  ${SRC_WEB})
 target_func(testMqReq src/tests/TestMq.cpp )
 target_func(ioService src/apps/IoService.cpp  ${SRC_BATTERY})
-target_func(rfidSerivce  ${SRC_RFID_SERVICE} ${SRC_RFID})
+target_func(ioClient src/apps/IoClient.cpp  )
+target_func(rfidService  ${SRC_RFID_SERVICE} ${SRC_RFID})
 
 add_compile_options(
         $<$<CONFIG:DEBUG>-DDEBUG>

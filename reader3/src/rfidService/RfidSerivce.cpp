@@ -9,6 +9,12 @@ struct Counter {
     U64 count;
 
 };
+void RfidService::callbackVisitNotify() {
+    ZDBG("callbackVisitNotify\n");
+    if (_getGetVisitsCd)
+        _getGetVisitsCd->complete_req_all();
+
+}
 
 
 z_status RfidService::initialize() {
@@ -23,18 +29,24 @@ z_status RfidService::initialize() {
     else
         _reader= &cfmu804;
 
+    LedSet_t set={LedRed,true  };
+    size_t s=sizeof(set);
+    ctext buffer=(ctext)&set;
+
     ioLedSet({LedRed,true  });
     ioLedSet({LedGreen,false  });
     ws.start();
-    mq.run("/rfidservice");
+    //mq.run("/rfidservice");
     _reader->open();
     _visits.initialize();
     //ZDBGS.add_stdout();
 
+    reg_func("config",&RfidService::post_config);
     reg_func("stopstart_raw",&RfidService::post_start_stop_raw);
     reg_func("stopstart_visits",&RfidService::post_start_stop_visits);
     reg_func("status",&RfidService::get_status);
     _getRawReadsCd=reg_func("reads_raw",&RfidService::getRawReads);
+    _getGetVisitsCd=reg_func("visits",&RfidService::getVisits);
 
 
 
@@ -71,3 +83,7 @@ RfidReader& getRfidReader() {
     return gRfidService.getRfidReader();
 }
 
+void gCallbackVisitNotify() {
+    gRfidService.callbackVisitNotify();
+
+}

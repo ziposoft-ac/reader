@@ -113,7 +113,7 @@ RfidRead*  Cfmu804::read_single(int retry)
     U8* epc=(U8*)(data+3);
     U8 rssi=data[epc_len+3];
     //ZDBG("rssi=%d epclen=%d \n",rssi,epc_len);
-    RfidRead* r=new RfidRead(1,data[0],rssi,epc,epc_len,z_time::get_now());
+    RfidRead* r=new RfidRead(1,data[0],rssi,epc,epc_len,z_time_get_ticks_ms());
 
 
     return r;

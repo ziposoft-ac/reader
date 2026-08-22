@@ -86,7 +86,7 @@ public:
 
 };
 class MqFeed;
-constexpr uint feed_keep_alive_ms=30*1000;
+constexpr uint feed_keep_alive_ms=5*1000;
 class FeedSubscriber {
 public:
 
@@ -97,38 +97,37 @@ public:
     FeedSubscriber(MqFeed* feed,ctext name);
 
     z_status send(mq_command_enum_t cmd_type,ctext command,mq_data_type_t data_type,z_string* buffer=0);
-    int timer_callback(void*) {
 
-        // send keep alive
-        return -1;
-    }
 
-    Timer* _timer=0;
-    void init() {
-        if(!_timer) {
-            _timer=gTimerService.create_timer_t(this,&FeedSubscriber::timer_callback,0,feed_keep_alive_ms );
 
-        }
-    }
 };
 
 class MqFeed : public MqServer {
     std::mutex _lock;
     z_obj_map<FeedSubscriber> _subscribers;
     friend z_factory_t<FeedSubscriber>;
+    Timer* _timer=0;
 
 public:
     friend z_factory_t<MqFeed>;
-
+    int timer_callback(void*) {
+        z_string s;
+        ZDBG("Sending keep alive\n");
+        publish("ping",s,mq_command_keep_alive);
+        return feed_keep_alive_ms;
+    }
     z_status sendToSub(ctext subname,mq_command_enum_t cmd_type,ctext command,mq_data_type_t data_type,z_string* buffer=0);
 
     z_status remove_all_subscribers();
-
+    z_status delete_mqueue_nodes();
+    U32 num_subscribers() {
+        return _subscribers.size();
+    }
     virtual z_status shutdown() override;
 
     virtual z_status run(ctext name) override;
 
-    z_status publish(ctext command,z_string& buffer);
+    z_status publish(ctext command,z_string& buffer,mq_command_enum_t cmd_type=mq_command_string);
     z_status publish(ctext command);
 
     virtual z_status process_message(MqMsg* msg) override;

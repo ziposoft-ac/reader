@@ -18,7 +18,7 @@ enum LedColor {
 struct LedSet_t
 {
     LedColor color;
-    bool on;
+    U32 on;
 
 };
 struct LedFlash_t
@@ -34,13 +34,13 @@ z_status ioLedFlash(LedFlash_t flash);
 
 
 
-class IoApiTest {
+class IoApiClient {
     public:
     z_status testBeep() {
         return ioBeep(2,{{500,20},{0,20},{500,20}});
     }
     z_status setLed(int color, int onoff) {
-        ioLedSet({(LedColor)color,(bool)onoff});
+        ioLedSet({(LedColor)color,(U32)onoff});
 
         return zs_ok;
     }
@@ -50,7 +50,31 @@ class IoApiTest {
 
         return zs_ok;
     }
+    z_status buzz(int duty,int f0,int d0,int f1,int d1,int f2,int d2);
 
 
+};
+
+ZMETA_DECL(IoApiClient) {
+    ZACT(testBeep);
+    ZCMD(setLed, ZFF_CMD_DEF, "setLed",
+         ZPRM(int, color, 1, "color", ZFF_PARAM),
+         ZPRM(int, on, 1, "onoff", ZFF_PARAM)
+    );
+
+    ZCMD(ledFlash, ZFF_CMD_DEF, "ledFlash",
+         ZPRM(int, color, 1, "color", ZFF_PARAM),
+         ZPRM(int, on, 1, "onoff", ZFF_PARAM)
+    );
+
+    ZCMD(buzz, ZFF_CMD_DEF, "buzz",
+         ZPRM(int, duty, 2, "duty", ZFF_PARAM),
+         ZPRM(int, f0, 1000, "freq0", ZFF_PARAM),
+         ZPRM(int, d0, 20, "duration0", ZFF_PARAM),
+         ZPRM(int, f1, 0, "freq1", ZFF_PARAM),
+         ZPRM(int, d1, 0, "duration1", ZFF_PARAM),
+         ZPRM(int, f2, 0, "freq2", ZFF_PARAM),
+         ZPRM(int, d2, 0, "duration2", ZFF_PARAM)
+    );
 };
 #endif //ZIPOSOFT_IOAPI_H

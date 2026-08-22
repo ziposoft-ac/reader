@@ -106,6 +106,29 @@ public:
             }
             return zs_ok;
         }
+        if constexpr (std::is_same_v<F,callback_get_t<C>>) {
+
+            z_json_obj json_in;
+            if (msg->data_type==mq_data_json) {
+                zp_text_parser p;
+                z_status s=p.parseJsonObj(json_in,msg->data,msg->data_len);
+                if (s!=zs_ok)
+                    Z_ERROR(s);
+
+            }
+            z_string_map vars;
+
+            json_in.convertToStringMap(vars);
+            z_json_str_stream json_out;
+            json_out.obj_start();
+            int res=  (_obj->*_func)(vars,json_out);
+            json_out.obj_end();
+
+            if (msg->mq_reply_name && msg->mq_reply_name_len > 1) {
+                mq_send_json_reply(msg->mq_reply_name,msg->command_str,msg->msg_id,json_out.as_string());
+            }
+            return zs_ok;
+        }
 
         Z_ERROR_LOG("No matching template for MQ command %s\n",_name.c_str());
         return Z_ERROR(zs_internal_error);
@@ -154,23 +177,28 @@ public:
     int timer_callback_req_wait_expire(void*) {
         delayed_request *dr;
         if (_outstanding_reqs.size()==0)
-            return 200; // todo this should be calculated to be the next exipiring
+            return 0; //
         std::unique_lock mlock(_mutex_req_list);
 
         U64 now=z_time_get_ticks_ms();
-
+        I64 next=0;
         //WS_DBG("current %d reqs\n",_outstanding_reqs.size());
 
 
-        _outstanding_reqs.filter_out([now](DelayedHttpRequest *dr) {
-            if (dr->_ts_expire > now)
-                return false;
-            dr->complete();
+        _outstanding_reqs.filter_out([now,&next](DelayedHttpRequest *dr) {
+            I64 expires=dr->_ts_expire -now;
+            if (expires<= 0) {
+                dr->complete();
+                return true;
+            }
+            if ((next==0)||(next>expires)) {
+                next=expires;
+            }
 
-            return true;
+            return false;
+
         });
-        return 200;// todo this should be calculated to be the next exipiring
-
+        return (int)next;
 
 
     }
@@ -193,10 +221,10 @@ public:
     {
 
         if(!_req_timer) {
-            _req_timer=gTimerService.create_timer_t(this,&CommandDelayed_t::timer_callback_req_wait_expire,0 );
+            _req_timer=gTimerService.create_timer_t(this,&CommandDelayed_t::timer_callback_req_wait_expire );
 
         }
-        _req_timer->start(200);
+        _req_timer->start_ms_reset(200);
         return zs_ok;
     }
     //int process_http_rx(http_request req, cmd_req_type type) override;
@@ -208,10 +236,10 @@ public:
         _outstanding_reqs.push_back(dr);
 
         if(!_req_timer) {
-            _req_timer=gTimerService.create_timer_t(this,&CommandDelayed_t::timer_callback_req_wait_expire,0 );
+            _req_timer=gTimerService.create_timer_t(this,&CommandDelayed_t::timer_callback_req_wait_expire );
 
         }
-        _req_timer->start(delay);
+        _req_timer->start_ms_if_sooner(delay);
         return true;
 
     }

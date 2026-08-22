@@ -19,7 +19,7 @@ ZMETA(GpioButton)
 };
 
 void GpioButton::press_counter_start() {
-    _timer_counter_function->start(_press_counter_window_ms,true);
+    _timer_counter_function->start_ms_reset(_press_counter_window_ms);
 
 }
 
@@ -51,7 +51,7 @@ int GpioButton::timer_callback_debounce(void *) {
     else {
         // Button pressed
         _hold_count=0;
-        _timer_hold_function->start(1000,true);
+        _timer_hold_function->start_ms_reset(1000);
         gBeepPwm.pushTones({{500,10}});
 
     }
@@ -182,7 +182,7 @@ void GpioButton::thread() {
         ZDBG("val=%d\r",val);
         if (val!=val_steady) {
             val_candidate=val;
-            _timer_debounce->start(_debounce_time,true);
+            _timer_debounce->start_ms_reset(_debounce_time);
         }
         else {
             _timer_debounce->stop();

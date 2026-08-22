@@ -88,9 +88,9 @@ z_status RecordFile::close_copy() {
 Visit RfidTag::get_visit() {
     return {
         _epc,
-        _ts_first_time_seen,
-        _ts_rssi_high,
-        _ts_last_time_seen,
+        _ts_first_time_seen.in_ms(),
+        _ts_rssi_high.in_ms(),
+        _ts_last_time_seen.in_ms(),
         _count_total,
         _ant_mask,
         _ant_hi,

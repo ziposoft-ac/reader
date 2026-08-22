@@ -37,6 +37,9 @@ bool pwm_is_init=false;
 
 
 int syswr(ctext filename,int i) {
+#ifdef NOGPIO
+    return 0;
+#endif
     z_string s=i;
     FILE* fd = fopen(filename, "wb");
     if (!fd) {
@@ -50,6 +53,11 @@ int syswr(ctext filename,int i) {
     return 0;
 }
 int setPwmFreq(int freq,int duty_percent) {
+#ifdef NOGPIO
+    return 0;
+#endif
+
+
     if (!pwm_is_init) {
         if (syswr(PWM_CHIP,0))
             return -1;
@@ -128,20 +136,20 @@ void BeepPwm::pushTones(std::initializer_list<Tone> const beeps)
         Note n={i.freq,i.duration,_duty};
         _queue.push(n);
     }
-    _timer->start(1,false);
+    _timer->start_ms_if_not_running(1);
 }
 
 void BeepPwm::pushNotes(std::initializer_list<Note> const notes)
 {
     z_status status=init();  if (status) return;
 
-    if(_queue.get_count()>1000)
+    if(_queue.get_count()>100)
         return;
     for(auto i : notes)
     {
         _queue.push(i);
     }
-    _timer->start(1,false);
+    _timer->start_ms_if_not_running(1);
 }
 
 z_status BeepPwm::pushRemoteBeep(RemoteBeep_t *r) {
@@ -152,10 +160,14 @@ z_status BeepPwm::pushRemoteBeep(RemoteBeep_t *r) {
         return zs_device_busy;
     for(int i=0;i<r->count;i++)
     {
+        auto note=r->notes[i];
+        if (note.duration) {
+            ZDBG("pushing %d,%d,%d\n",note.freq,note.duration,note.duty);
+            _queue.push(note);
 
-        _queue.push(r->notes[i]);
+        }
     }
-    _timer->start(1,false);
+    _timer->start_ms_if_not_running(1);
     return zs_ok;
 
 }
@@ -194,6 +206,8 @@ z_status BeepPwm::init() {
         return zs_not_open;
     if (_initialized)
         return zs_ok;
+
+#ifndef NOGPIO
     if (syswr(PWM_CHIP,0)) {
         _exists=false;
         Z_ERROR_MSG(zs_io_error,"PWM init failed, will try again later");
@@ -207,13 +221,18 @@ z_status BeepPwm::init() {
 
 
     }
-
+#endif
     _initialized=true;
     if(!_timer)
         _timer=gTimerService.create_timer_t(this,&BeepPwm::timer_callback,0    );
     return zs_ok;
 }
 z_status BeepPwm::shutdown() {
+#ifndef NOGPIO
+    if (!_enabled)
+        return zs_not_open;
     setPwmFreq(0,0);
+#endif
+
     return zs_ok;
 }

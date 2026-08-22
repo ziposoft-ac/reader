@@ -6,7 +6,9 @@
 #define ZIPOSOFT_TESTS_H
 
 #include "pch.h"
-#include "../util/timers.h"
+#include "util/timers.h"
+#include "rfid/rfid.h"
+
 
 
 class Test {

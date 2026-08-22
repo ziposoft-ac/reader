@@ -49,7 +49,7 @@ int fn_get_pingpong(http_request r,z_string_map &vars)
     send_json_response(r,[count,flash](z_json_stream &js)
     {
 
-        //if (flash) {             root.gpio.ledYellow.toggle();        }
+        //if (flash) {             gGpio.ledYellow.toggle();        }
         js.keyval_int("count",count);;
         if (count %1000 == 0) {
             printf("count=%d\n",count);

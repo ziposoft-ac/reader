@@ -18,23 +18,32 @@ constexpr ctext mqNodeBoxVisits="/mq_node_box_visits";
 extern ctext default_record_path;
 extern ctext default_record_path_raw;
 
+
+// TODO - make this an installable callback
+void gCallbackVisitNotify();
+
+
+
+
 class VisitProcess {
     friend z_factory_t<VisitProcess>;
     int _write_count=0;
     bool _open=false;
     bool _reading=false;
 
-    int _write_index=0;
+    U32 _persistent_index=10000;
 
-    int timer_callback(void*);
-    Timer* _timer=0;
+    int callback_tag_process(void*);
+    int callback_write_notify(void*);
+    Timer* _timer_tag_process=0;
+    Timer* _timer_write_notify=0;
     std::mutex _mutex_tags;
 
     z_obj_map<RfidTag> _tags;
     //PROPS
     int _min_rssi = 70;
     int _filter_epc = true;
-    const int _default_timer_period = 5000;
+    //const int _default_timer_period = 5000;
     bool _debug_reads=true;
     bool _beep=true;
     bool _buzzer=true;
@@ -47,6 +56,7 @@ class VisitProcess {
     U64 _last_write_timestamp=0;
     U64 _last_notify_timestamp=0;
     U64 _ts_last_read=0;
+    int _min_notify_ms=200;
 
     RfidReader* _reader;
 
@@ -57,6 +67,7 @@ public:
     virtual z_status initialize();
     virtual z_status run();
     virtual z_status shutdown();
+    z_status write_out_all();
 
     virtual z_status stop();
     virtual z_status start();
@@ -64,7 +75,6 @@ public:
     bool _simulate=true;
 
     int _presence_window_s = 5;
-    int _start_detection_s = 5;
     //int _minimum_log_time_ms = 1000;
     int _peak_window_ms = 500;
 
@@ -84,7 +94,7 @@ public:
 
     virtual z_status setup_reader_live(z_json_obj &settings);
 
-    z_status get_live_tag_visits(Visits &visits);
+    //z_status get_live_tag_visits(Visits &visits);
 
     virtual z_status start_json(z_json_obj& o);
 
@@ -94,6 +104,7 @@ public:
 
 
     int add_json_status(z_json_stream &js);
+    int get_live_tag_visits(z_json_stream &js);
 
 
 
@@ -112,7 +123,7 @@ ZMETA_DECL(VisitProcess) {
     ZPROP(_record_tod);
     ZPROP(_record_raw);
     ZPROP(_record_visits);
-    //ZPROP(_start_detection_s);
+    ZPROP(_persistent_index);
     //ZPROP(_minimum_log_time_ms);
     ZPROP(_min_rssi);
    // ZPROP(_test_tag);

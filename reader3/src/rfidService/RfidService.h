@@ -25,9 +25,12 @@ public:
     bool _simulate=true;
     Cfmu804 cfmu804;
     WebServer ws;
-    MqServer mq;
+    //MqServer mq;
+    MqFeed mq;
+    //MqFeed feed;
+
     VisitProcess _visits;
-    IoApiTest apiTest;
+    IoApiClient apiTest;
     RfidSimulator simulator;
     RfidReader& getRfidReader() {
         return *_reader;
@@ -53,20 +56,16 @@ public:
     virtual ~RfidService() {}
 
     CommandDelayed* _getRawReadsCd;
+    CommandDelayed* _getGetVisitsCd;
 
 
     z_status initialize() override;
-    z_status run() override {
 
-        return zs_ok;
-
-    }
     z_status shutdown() override{
 
         ws.remove_consumer(this);
         mq.remove_consumer(this);
         _visits.shutdown();
-
         ws.stop();
         mq.stop();
         mq.shutdown();
@@ -77,15 +76,19 @@ public:
         return zs_ok;
     };
     int getRawReads(http_request req,z_string_map &vars,z_json_obj &jin, z_json_stream &jout);
+    int getVisits(http_request req,z_string_map &vars,z_json_obj &jin, z_json_stream &jout);
 
     int post_start_stop_raw(z_json_obj& o,z_json_stream& jout);
     int post_start_stop_visits(z_json_obj& o,z_json_stream& jout);
+    int json_status(z_json_stream& jout);
     int get_status(z_string_map& params,z_json_stream& jout);
     int get_raw_reads(z_string_map& params,z_json_stream& jout);
     int post_config(z_json_obj& o,z_json_stream& jout);
-
+    void callbackVisitNotify();
     U64 _counter=0;
 
 };
 
+// todo - get rid of this
+extern RfidService gRfidService;
 #endif //ZIPOSOFT_RFIDSERVICE_H

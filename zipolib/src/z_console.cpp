@@ -234,7 +234,7 @@ z_status z_console::_ExecuteLineInternal(ctext text)
 		//cmd_line.print_context(zout);
 	}
 	if (_show_duration) {
-		_out.format_append("\n%s(%d) %dms\n",zs_get_status_text(status),status, time.get_elapsed_ms());
+		_out.format_append("\n%s(%d) %dms\n",zs_get_status_text(status),status, time.ms_since());
 	}
 	return status;
 

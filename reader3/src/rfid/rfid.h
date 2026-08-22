@@ -156,13 +156,13 @@ protected:
     U32 _queue_max_depth=1000;
     z_time _ts_reading_started;
 
-	virtual z_status ant_mask_set(int mask) {   return zs_ok;  }
+	virtual z_status ant_mask_set(int mask) {   return zs_not_implemented;  }
 
-    virtual z_status _read_start()  {   return zs_ok;  }
-    virtual z_status _read_stop()  {   return zs_ok;  }
-    virtual z_status _hw_open()  {   return zs_ok;  }
-    virtual z_status _hw_init()  {   return zs_ok;  }
-    virtual z_status _hw_close()  {   return zs_ok;  }
+    virtual z_status _read_start()  {   return zs_not_implemented;  }
+    virtual z_status _read_stop()  {   return zs_not_implemented;  }
+    virtual z_status _hw_open()  {   return zs_not_implemented;  }
+    virtual z_status _hw_init()  {   return zs_not_implemented;  }
+    virtual z_status _hw_close()  {   return zs_not_implemented;  }
     void queueRead(U8 antnum,U8 rssi,U8* epc,size_t epc_len,U64 ts
 #ifdef  ENABLE_PHASE
     ,int16_t phase1=0,int16_t phase2=0
@@ -204,6 +204,7 @@ public:
 
     U32 get_queue_depth() { return _queue_reads.get_count(); }
     z_status get_reads_since(z_json_stream& s,U32 index,bool include_reads) ;
+	virtual z_status inv(int session, int target, int scantime) {   return zs_not_implemented;  }
 
     void register_cb_read(void* caller,cb_rfid_read_t cb_read);
     void register_cb_queue_empty(void* caller,cb_rfid_queue_empty_t cb_rfid_queue_empty);
@@ -237,6 +238,7 @@ public:
     virtual z_status info_dump(){ return zs_not_implemented;}
     virtual z_status ant_dump(){ return zs_not_implemented;}
     virtual z_status ant_detect(bool print){ return zs_not_implemented;}
+	virtual int get_temperature_cmd(){ return zs_not_implemented;}
 
     z_status add_json_status(z_json_stream &js);
 
@@ -307,4 +309,9 @@ ZMETA_DECL(RfidReader)
 
     ZSTAT(cached_read_count);
 };
+
+// Global reader- only support single reader for now
+RfidReader& getRfidReader();
+
+
 #endif //ZIPOSOFT_RFID_H

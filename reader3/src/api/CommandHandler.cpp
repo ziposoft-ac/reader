@@ -120,8 +120,14 @@ void DelayedHttpRequest::complete() {
     js.obj_start();
     _callback(js);
     js.obj_end();
+    z_string& s=js.as_string();
 
-    mg_wakeup(_r.c->mgr, _r.c->id, js.as_string(), js.as_string().length()); // Respond to parent
+    size_t len=s.length();
+    ctext buffer=s.c_str();
+    ZDBG("len=%d\n",len);
+    ZDBG("buff=%s\n",buffer);
+
+    mg_wakeup(_r.c->mgr, _r.c->id, buffer, len); // Respond to parent
 
 }
 

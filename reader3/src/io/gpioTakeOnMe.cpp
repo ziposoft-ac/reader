@@ -173,18 +173,18 @@ int songLength = sizeof(melody)/sizeof(melody[0]);
 
 /*
 if (!freq) {
-    root.gpio.ledGreen.on();
-    root.gpio.ledRed.on();
-    root.gpio.ledYellow.on();
+    gGpio.ledGreen.on();
+    gGpio.ledRed.on();
+    gGpio.ledYellow.on();
 }
 else
     if (freq<600) {
-        root.gpio.ledGreen.off();
+        gGpio.ledGreen.off();
     }else
         if (freq>800) {
-            root.gpio.ledRed.off();
+            gGpio.ledRed.off();
         }else {
-            root.gpio.ledYellow.off();
+            gGpio.ledYellow.off();
         }
         */
 int getLed(int note)

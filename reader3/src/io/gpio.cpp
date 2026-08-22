@@ -265,7 +265,7 @@ z_status GpioPinLed::toggling_start()
         return zs_io_error;
     _timer->stop();
     _toogleCount=100000;
-    _timer->start(1,true);
+    _timer->start_ms_reset(1);
 
     return zs_ok;
 }
@@ -274,7 +274,7 @@ z_status GpioPinLed::flash(int count)
     if(!gGpio.initialize())
         return zs_io_error;
     if(!_toogleCount)
-        _timer->start(1,false);
+        _timer->start_ms_if_not_running(1);
     _toogleCount+=count*2;
     if(_toogleCount>_flashCountMax)
         _toogleCount=_flashCountMax;
@@ -509,7 +509,7 @@ z_status Gpio::lightShow()
     if(!initialize())
         return zs_io_error;
 
-    _timer->start(100,true);
+    _timer->start_ms_reset(100);
     return zs_ok;
 }
 int Gpio::timer_callback(void *)
@@ -726,6 +726,6 @@ void GpioBeep::pushBeeps(std::initializer_list<Beep> const beeps)
     {
         _queue.push(i);
     }
-    _timer->start(1,false);
+    _timer->start_ms_if_not_running(1);
 }
 

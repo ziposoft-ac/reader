@@ -16,6 +16,7 @@ class TestWeb : public  Service,public CommandHandler{
 public:
     WebServer ws;
     MqServer mq;
+    MqFeed feed;
 
     TestWeb(){}
     virtual ~TestWeb() {}

@@ -9,6 +9,7 @@
 
 
 extern z_console gConsole;
+extern bool g_process_shutting_down ;
 
 void process_quit_notify();
 void process_wait_for_quit();

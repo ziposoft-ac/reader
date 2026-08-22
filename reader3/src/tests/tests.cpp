@@ -3,14 +3,15 @@
 //
 
 #include "tests.h"
-
+#include "global.h"
 #include "zipolib/z_error.h"
 #include <fcntl.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <unistd.h>
 #include <sys/poll.h>
 #include <sys/eventfd.h>
+#include <sys/stat.h>
+
+#include "io/gpio.h"
+
 ZMETA(Tests)
 {
 
@@ -144,7 +145,7 @@ z_status TestPipe::read()
         {
         }
         zout.flush();
-        if(root.shuttingDown())
+        if(g_process_shutting_down)
             break;
     }while(running);
     return zs_ok;
@@ -179,17 +180,17 @@ z_status TestThread::stop()
 
 
 z_status TestHeatTest::onStart() {
-    if (root.cfmu804.stop())
+    if (getRfidReader().stop())
         return zs_io_error;
     auto conf=rfid_config_heattest;
     conf.pauseTime=_read_pause_time;
 
-    if (root.cfmu804.configure(conf))
+    if (getRfidReader().configure(conf))
         return zs_io_error;
-    root.cfmu804.config_dump();
+    getRfidReader().config_dump();
     ZLOG("STARTING HEAT TEST: intvl=%d maxtemp=%d pause=%d\n",_interval,_max_temp_shutoff,_read_pause_time);
 
-    root.cfmu804.start();
+    getRfidReader().start();
 
     return zs_ok;
 
@@ -200,24 +201,24 @@ z_status TestHeatTest::onStart() {
  *
  */
 z_status ReaderTest::onStart() {
-    if (root.cfmu804.stop())
+    if (getRfidReader().stop())
         return zs_io_error;
     auto conf=rfid_config_heattest;
     conf.pauseTime=_read_pause_time;
     conf.session=_session;
 
-    if (root.cfmu804.configure(conf))
+    if (getRfidReader().configure(conf))
         return zs_io_error;
-    root.cfmu804.config_dump();
+    getRfidReader().config_dump();
     ZLOG("STARTING ReaderTest : _time_off=%d _time_on=%d pause=%d\n",_time_off,_time_on,_read_pause_time);
 
-    root.cfmu804.start();
+    getRfidReader().start();
 
     return zs_ok;
 
 }
 z_status ReaderTest::onStop() {
-    root.cfmu804.stop();
+    getRfidReader().stop();
 
     ZLOG("STOPPING ReaderTest : _time_off=%d _time_on=%d pause=%d\n",_time_off,_time_on,_read_pause_time);
     ZLOG("TIME STOP:",z_time::getTimeStrLocal().c_str());
@@ -229,18 +230,18 @@ z_status ReaderTest::onStop() {
 
 int ReaderTest::onCallback(void* context)
 {
-    if(root.shuttingDown()) {
-        root.cfmu804.stop();
+    if(g_process_shutting_down) {
+        getRfidReader().stop();
         return 0;
 
     }
-    if (root.cfmu804.isReading()) {
+    if (getRfidReader().isReading()) {
 
-        root.cfmu804.stop();
+        getRfidReader().stop();
 
         return _time_off;
     }
-    root.cfmu804.start();
+    getRfidReader().start();
     return _time_on;
 }
 
@@ -250,7 +251,7 @@ int ReaderTest::onCallback(void* context)
  *
  */
 z_status Inventory::onStart() {
-    if (root.cfmu804.stop())
+    if (getRfidReader().stop())
         return zs_io_error;
 
     return zs_ok;
@@ -258,7 +259,7 @@ z_status Inventory::onStart() {
 }
 z_status Inventory::onStop() {
 
-    //root.cfmu804.cmd(0x93);
+    //getRfidReader().cmd(0x93);
 
     return zs_ok;
 
@@ -270,13 +271,13 @@ void Inventory::thread()
     U64 last_count=0;
     U64 count=0;
     while (!_quit) {
-        if(root.shuttingDown()) {
+        if(g_process_shutting_down) {
             _quit=true;
             break;
 
         }
 
-        z_status status=root.cfmu804.inv(
+        z_status status=getRfidReader().inv(
             _session,
             _target,
             _scan_time
@@ -307,12 +308,12 @@ void Inventory::thread()
 
 z_status TestGpioOnOff::onStop()
 {
-    root.gpio.set(_gpioNum,false);
+    gGpio.set(_gpioNum,false);
     return zs_ok;
 }
 
 z_status TestHeatTest::onStop() {
-    root.cfmu804.stop();
+    getRfidReader().stop();
 
     ZLOG("STOPPING HEAT TEST: intvl=%d maxtemp=%d pause=%d\n",_interval,_max_temp_shutoff,_read_pause_time);
     ZLOG("TIME STOP:",z_time::getTimeStrLocal().c_str());
@@ -324,12 +325,12 @@ z_status TestHeatTest::onStop() {
 
 int TestHeatTest::onCallback(void* context)
 {
-    root.cfmu804.stop();
-    if(root.shuttingDown())
+    getRfidReader().stop();
+    if(g_process_shutting_down)
         return 0;
 
-    int count=root.cfmu804.getReadIndex();
-    int temp=root.cfmu804.get_temperature_cmd();
+    int count=getRfidReader().getReadIndex();
+    int temp=getRfidReader().get_temperature_cmd();
     z_string ts=z_time::getTimeStrLocal();
     double tempf=temp;
     tempf=tempf*9/5+32;
@@ -340,9 +341,9 @@ int TestHeatTest::onCallback(void* context)
         return 0;
 
     }
-    if(root.shuttingDown())
+    if(g_process_shutting_down)
         return 0;
-    root.cfmu804.start();
+    getRfidReader().start();
     return _interval;
 }
 
@@ -356,7 +357,7 @@ int  TestGpioOnOff::onCallback(void*)
     if(_current_iteration++>_iterations)
         return 0;
     _state=!_state;
-    root.gpio.set(_gpioNum,_state);
+    gGpio.set(_gpioNum,_state);
     if(_state)
         return _time_on;
     else

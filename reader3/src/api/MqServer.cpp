@@ -103,8 +103,13 @@ void MqServer::thread() {
             Z_ERROR_LOG("Error parsing RX MQ msg");
             continue;
         }
+        if (_debug) {
+            MQ_DBG("MQ RX command %s\n",msg.command_str);
+            MQ_DBG("from %s\n",msg.mq_reply_name);
+            MQ_DBG("from %s\n",msg.data);
 
-        MQ_DBG("MQ RX command %s\n",msg.command_str);
+
+        }
         if (_shutdown_flag)
             break;
         if (msg.command_enum == mq_command_internal_wakeup) {
@@ -190,7 +195,12 @@ z_status MqServer::run(ctext name) {
 
 z_status MqServer::send(z_string remote_mq_name, z_string msg) {
 
+    if (_debug) {
+        MQ_DBG("MQ send to %s\n",remote_mq_name.c_str());
+        MQ_DBG("MQ send  %s\n",msg.c_str());
 
+
+    }
     return mq_send_msg(remote_mq_name,mq_command_string,msg);
 
 }

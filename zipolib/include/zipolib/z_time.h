@@ -30,12 +30,16 @@ public:
 	static U64 get_now_ms();
 
 	// This gets the number of milliseconds since the epoch
-	U64 get_ptime_ms() const;
-
+	U64 in_ms() const;
+	/*
+	This gets the number of milliseconds elapsed since the value of this time
+	=now()-this
+	*/
 	// This gets the number of milliseconds elapsed since the time
-	U64 get_ms_since() const;
-	// This gets the number of seconds elapsed since the epoch 
-	U32 get_ptime_seconds() const;
+	U64 ms_since() const;
+	//
+	// This gets the number of seconds elapsed since the epoch
+	U32 in_seconds() const;
 
 	z_time& set_tm(tm tm_struct,bool local);
 	void get_tm(tm& tm_struct,bool local) const;
@@ -70,15 +74,11 @@ public:
 	/*
 	Check if it is a valid time
 	*/
-	operator bool() const	{		return _t!=0;	}
+	//operator bool() const	{		return _t!=0;	}
 	void invalidate() { _t = 0; }
 
 
-	/* 
-	This gets the number of milliseconds elapsed since the value of this time
-	=now()-this
-	*/
-	U64 get_elapsed_ms() const;
+
 
 	bool operator > (const z_time& t2) const;
 	bool operator < (const z_time& t2) const;

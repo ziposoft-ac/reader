@@ -524,8 +524,8 @@ z_status RfidReader::stop()
     _reading = false;
     ioLedSet({LedGreen,false  });
     ioLedSet({LedRed,true  });
-    //root.gpio.ledRed.on();
-    //root.gpio.ledGreen.off();
+    //gGpio.ledRed.on();
+    //gGpio.ledGreen.off();
     return zs_ok;
 
 }

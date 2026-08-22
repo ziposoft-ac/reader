@@ -371,7 +371,7 @@ z_status cgi_input::ExecQuery(z_json_stream&output)
 
 	z_time time;
 	//if (_show_duration)		time.set_now();
-	//if (_show_duration)		out << "\n" << time.get_elapsed_ms() << "ms\n";
+	//if (_show_duration)		out << "\n" << time.ms_since() << "ms\n";
 
 	z_string cmd;
 	if (!_query.get("command", cmd))

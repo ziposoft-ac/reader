@@ -25,6 +25,7 @@ z_status msg_create(MqMsg* msg,ctext mq_reply_name, ctext command,mq_command_enu
     }
     msg->buff_len=len_total;
     ctext b=msg->buffer=new char[len_total];
+    memset((void*)b,0,len_total);
     *(U16*)b=len_name;b+=sizeof(U16);
     *(U16*)b=len_cmd;b+=sizeof(U16);
     *(U8*)b=command_enum;b+=sizeof(U8);

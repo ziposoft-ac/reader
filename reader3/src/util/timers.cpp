@@ -42,10 +42,7 @@ U64 Timer::update()
 
     }
     U64 ts_now=z_time::get_now_ms();
-    if (_debug) {
-        int dummy=2;
-        dummy=1;
-    }
+
     U64 ms_left=0;
     if(_ts_expire> ts_now)
         return _ts_expire;
@@ -71,17 +68,37 @@ void Timer::stop() {
     _running=false;
     _ts_expire=0;
 }
-void Timer::start() {
-    //TODO calling start if already running?
-    if (_running)
-        return;
-    _service->timer_start(this,_interval,false);
-}
-void Timer::start(int ms,bool reset) {
 
-    _service->timer_start(this,ms,reset);
+void Timer::start_ms_if_not_running(U32 ms) {
+    _service->_timer_start_ms(this,ms,timer_start_if_not_running);
 
 }
+
+void Timer::start_ms_if_sooner(U32 ms) {
+    _service->_timer_start_ms(this,ms,timer_start_if_earlier);
+
+}
+
+void Timer::start_ms_reset(U32 ms) {
+    _service->_timer_start_ms(this,ms,timer_start_reset);
+
+}
+
+void Timer::start_ts_if_not_running(const z_time& ts) {
+    _service->_timer_start_ts(this,ts,timer_start_if_not_running);
+
+}
+
+void Timer::start_ts_if_sooner(const z_time& ts) {
+    _service->_timer_start_ts(this,ts,timer_start_if_earlier);
+
+}
+
+void Timer::start_ts_reset(const z_time& ts) {
+    _service->_timer_start_ts(this,ts,timer_start_reset);
+
+}
+
 int Timer::invoke_callback()
 {
     return (*_user_callback)(_user_context);
@@ -104,9 +121,9 @@ z_status TimerService::stop()
 {
     std::unique_lock mlock(_mutex_sync);
 
-    if(_running)
+    if(_timer_serivce_running)
     {
-        _running=false;
+        _timer_serivce_running=false;
 
         _cond_stop_wait.notify_all();
     }
@@ -115,6 +132,8 @@ z_status TimerService::stop()
     return zs_ok;
 }
 bool TimerService::remove_timer(Timer *timer) {
+    if (!timer)
+        return false;
     // stop locks itself
     timer->stop();
 
@@ -134,7 +153,7 @@ Timer* TimerService::createTimer(TimerCallback callback, void* user_data, int ms
         std::unique_lock mlock(_mutex_sync);
         _timers.insert(timer);
     }
-    timer_start(timer,ms_expire,true);
+    _timer_start_ms(timer,ms_expire,timer_start_reset);
     return timer;
 }
 
@@ -142,7 +161,7 @@ Timer* TimerService::createTimer(TimerCallback callback, void* user_data, int ms
 z_time test_time;
 int test_callback(void* data)
 {
-    U64 ms=test_time.get_elapsed_ms()%100000;
+    U64 ms=test_time.ms_since()%100000;
 
     size_t interval;
     interval = (size_t) data;
@@ -160,13 +179,12 @@ z_status TimerService::test()
 
     return zs_ok;
 }
+z_status TimerService::_timer_start_ms(Timer *timer, U32 ms, timer_start_condition_t cond) {
+    return _timer_start_ts(timer,ms+z_time::get_now_ms(),cond);
+}
 
-/*
- * This is called by Timer::start to start the thread if necessary.
- * The timer service cannot run if there are no timers
- */
-z_status TimerService::timer_start(Timer* t,int ms,bool reset)
-{
+z_status TimerService::_timer_start_ts(Timer *t, const z_time &ts, timer_start_condition_t cond) {
+
 
     bool external_context=false;
     std::unique_lock lock(_mutex_sync, std::defer_lock);
@@ -177,20 +195,27 @@ z_status TimerService::timer_start(Timer* t,int ms,bool reset)
     else {
         _flag_reprocess_timers=true;
     }
+    if (t->_running && _timer_serivce_running) {
+        if (cond==timer_start_if_not_running)
+            return zs_no_change;
+
+        if (cond==timer_start_if_earlier) {
+            if (ts.in_ms() >= t->_ts_expire) {
+                return zs_no_change;
+            }
+        }
+    }
     //std::unique_lock mlock(_mutex_sync);
     t->_running=true;
-    if(reset || (t->_ts_expire==0))
-    {
-        t->_interval=ms;
-        t->_ts_expire=ms+z_time::get_now_ms();
-    }
+    t->_ts_expire=ts.in_ms();
+
     // If called from the timer callback loop, then exit
     // The _flag_reprocess_timers is set to apply new timer
 
     if (!external_context)
         return zs_ok;
 
-    if(_running) {
+    if(_timer_serivce_running) {
         if (_ts_next_expire>t->_ts_expire) {
             // If new timer starts sooner than wait loop
             //force restart of loop
@@ -201,7 +226,7 @@ z_status TimerService::timer_start(Timer* t,int ms,bool reset)
     // If the serive is not running then start it
     if (_thread_process.joinable())
         _thread_process.join();
-    _running=true;
+    _timer_serivce_running=true;
     _thread_process = std::thread(&TimerService::process_thread, this);
     _thread_id=_thread_process.get_id();
 
@@ -255,7 +280,7 @@ bool TimerService::update_timers()
 
 
     if (!_ts_next_expire) {
-        _running=false;
+        _timer_serivce_running=false;
         return false;
 
     }
@@ -264,11 +289,13 @@ bool TimerService::update_timers()
 
 
 }
+
+
 void TimerService::process_thread()
 {
     try {
         int ms_elapsed=0;
-        while(_running)
+        while(_timer_serivce_running)
         {
             //ZDBG("process_thread\n");
 
@@ -288,7 +315,7 @@ void TimerService::process_thread()
     {
         Z_ERROR_MSG(zs_internal_error,"Timer Service Thread exception: %s",e.what());
         std::cout << "Type:    " << typeid(e).name() << "\n";
-        _running=false;
+        _timer_serivce_running=false;
     }
 
 
