@@ -23,7 +23,7 @@ z_status RfidService::initialize() {
 
     if (_simulate) {
         ZDBG("Simulate is on\n");
-        _reader= &simulator;
+        _reader= &simRace;
 
     }
     else
@@ -70,6 +70,7 @@ ZMETA(RfidService) {
     ZOBJ_X(cfmu804,"rfid",ZFF_PROP_DEF,"cf-804 module");
     ZOBJ(ws);
     ZOBJ(simulator);
+    ZOBJ(simRace);
     ZPROP(_simulate);
     ZOBJ(_visits);
     ZOBJ(apiTest);

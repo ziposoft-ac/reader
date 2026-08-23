@@ -163,14 +163,15 @@ protected:
     virtual z_status _hw_open()  {   return zs_not_implemented;  }
     virtual z_status _hw_init()  {   return zs_not_implemented;  }
     virtual z_status _hw_close()  {   return zs_not_implemented;  }
-    void queueRead(U8 antnum,U8 rssi,U8* epc,size_t epc_len,U64 ts
-#ifdef  ENABLE_PHASE
-    ,int16_t phase1=0,int16_t phase2=0
-#endif
-        );
-
 
 public:
+    void queueRead(U8 antnum,U8 rssi,U8* epc,size_t epc_len,U64 ts
+#ifdef  ENABLE_PHASE
+,int16_t phase1=0,int16_t phase2=0
+#endif
+    );
+
+
     U64 _indexReads=0;
 
     // Configuration

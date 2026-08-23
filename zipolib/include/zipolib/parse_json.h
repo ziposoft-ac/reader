@@ -257,7 +257,7 @@ public:
 
 	virtual void clear()
 	{
-		_array.destroy();
+		_array.delete_all();
 	}
 	virtual z_json_array*  get_as_json_array() override { return this; };
 	virtual bool add_val(ctext key, z_json_val* val) {

@@ -43,6 +43,7 @@ public:
 	void obj_end();
 	void array_start();
 	void array_end();
+	void obj_array_start(ctext name);
 	void obj_array_start();
 	void obj_array_end();
 	// returns previous value, for save/restore

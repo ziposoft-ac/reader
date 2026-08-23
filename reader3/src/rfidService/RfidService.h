@@ -14,6 +14,7 @@
 #include "../api/IoApi.h"
 
 #include "global.h"
+#include "rfid/simRace.h"
 #include "rfid/VisitProcess.h"
 #define WAIT_FOR_NEW_READS_TIMEOUT 29000
 
@@ -32,6 +33,7 @@ public:
     VisitProcess _visits;
     IoApiClient apiTest;
     RfidSimulator simulator;
+    RfidSimRace simRace;
     RfidReader& getRfidReader() {
         return *_reader;
     }
@@ -39,7 +41,7 @@ public:
     z_status simulate_on() {
         _reader->close();
 
-        _reader=&simulator;
+        _reader=&simRace;
         _simulate=true;
         _reader->open();
         return zs_ok;
@@ -62,6 +64,7 @@ public:
     z_status initialize() override;
 
     z_status shutdown() override{
+        Service::shutdown();
         //command_handler_stop();
 
         ws.remove_consumer(this);
@@ -74,6 +77,7 @@ public:
         mq.shutdown();
         */
         simulator.close();
+        simRace.close();
         cfmu804.close();
 
         return zs_ok;

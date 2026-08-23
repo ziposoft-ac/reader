@@ -43,18 +43,17 @@ public:
     }
     z_time   _ts_first_time_seen ;
     z_time   _ts_last_time_seen ;
-    z_time   _ts_time_logged ;
     z_time   _ts_rssi_high ;
     z_time   _ts_next_check_required;
 
     z_string _epc;
+    bool _peaked=false;
     U8 _last_rssi=0;
-    U8 _rssi_high_logged=0;
     U8 _rssi_high=0;
     U8 _ant_mask=0;
     U8 _ant_hi=0;
     U32 _count_total = 0;
-    U32 _count_hi = 0;
+    //U32 _count_hi = 0;
     U32 _index=0;
 
     //int _index=0;

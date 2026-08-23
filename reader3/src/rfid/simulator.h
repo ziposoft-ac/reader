@@ -11,6 +11,7 @@
 
 
 
+#define MODE_RACE "race"
 #define MODE_MANUAL "manual"
 #define MODE_FILE "file"
 #define MODE_RANDOM "random"
@@ -18,22 +19,6 @@
 
 
 
-class SimRunner
-{
-
-
-
-
-};
-
-
-class SimRace
-{
-
-
-
-
-};
 
 class RfidSimulator : public RfidReader,public z_parse_csv {
     int timer_callback_file(void*);
@@ -71,7 +56,10 @@ public:
     );
     virtual z_status manRead(z_string epc,int rssi,int ant) ;
     virtual z_status loadFile(z_string fn) ;
-
+    virtual z_status runRace() {
+        _mode=MODE_RACE;
+        return zs_ok;
+    }
     virtual z_status setRandomMode() {
         _mode=MODE_RANDOM;
         return zs_ok;

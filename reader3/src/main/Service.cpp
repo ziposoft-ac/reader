@@ -20,6 +20,8 @@ z_status Service::service() {
 }
 
 z_status Service::shutdown() {
+    gTimerService.shutdown();
+
     return zs_ok;
 }
 

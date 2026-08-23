@@ -95,7 +95,12 @@ void z_json_stream::obj_array_start()
 	if (_pretty_print) _out << '\n';
 	_depth++;
 }
+void z_json_stream::obj_array_start(ctext name)
+{
+	key(name);
+	obj_array_start();
 
+}
 void z_json_stream::obj_array_end()
 {
 	_depth--;

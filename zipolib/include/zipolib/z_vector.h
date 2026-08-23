@@ -21,7 +21,7 @@ public:
 	virtual ~z_obj_vector()
 	{
 		if(OWNER)
-		destroy();
+		delete_all();
 	}
 
 
@@ -55,7 +55,7 @@ public:
 		vect::push_back(item);
 		return;
 	}
-	void destroy()
+	void delete_all()
 	{
 		if (OWNER)
 		{

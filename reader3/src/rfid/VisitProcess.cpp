@@ -189,13 +189,14 @@ int VisitProcess::get_live_tag_visits(z_json_stream &js) {
     std::unique_lock mlock(_mutex_tags);
     //ZDBG("get_live_tag_visits done\n");
 
-    js.obj_val_start("live_visits");
+    js.obj_array_start("live_visits");
+
 
     for (auto const& [key, t] : _tags) {
 
         t->writeJson(js);
     }
-    js.obj_end();
+    js.obj_array_end();
 
 
 
@@ -399,8 +400,9 @@ z_time RfidTag::processRead(RfidRead *r, VisitProcess &rc) {
         // new RSSI high
         _ts_next_check_required = ts + (U64) rc._peak_window_ms;
         _rssi_high = r->_rssi;
+
         _ant_hi = r->_antNum;
-        _count_hi = _count_total;
+        //_count_hi = _count_total;
         _ts_rssi_high = r->_time_stamp;
         _state = fr_type_signal_going_up;
         hi = true;
@@ -438,11 +440,11 @@ bool RfidTag::processCheck(VisitProcess &rc, const z_time& now) {
             // waiting to see if signal is going up, don't write it
             // come back when peak window expires
             _ts_next_check_required = _ts_rssi_high + (U64) rc._peak_window_ms;
-            return false; // it has peaked, so write it out.
+            return false;
         }
         // if the time since last peak is past the peak window,
         _state = fr_type_peaked;
-
+        _peaked=true;
         write_it_out = true;
     }
     if (_state == fr_type_peaked) {
@@ -503,14 +505,21 @@ export class ReadVisit
  */
 void RfidTag::writeJson(z_json_stream& s) {
     U64 ts = _ts_rssi_high.get_t();
+    s.obj_start();
     s.keyval("epc",_epc);
     s.keyval_int("ts",ts);
     s.keyval_int("count",_count_total);
     s.keyval_int("rssi",_rssi_high);
     s.keyval_int("antMask",_ant_mask);
-    s.keyval_int("antHi",_ant_hi);
+    if (_peaked) {
+        s.keyval_int("antHi",_ant_hi);
+
+    }
     s.keyval_int("toIn", _ts_first_time_seen.get_t() - ts);
-    s.keyval_int("toOut", _ts_last_time_seen.get_t() - ts);
+    s.obj_end();
+
+    // don't show exit
+    //s.keyval_int("toOut", _ts_last_time_seen.get_t() - ts);
 
 
 }
