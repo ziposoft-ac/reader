@@ -9,6 +9,7 @@
 
 //#include "JsonCmd.h"
 #include "api/CommandHandler.h"
+#include "zipolib/http_status.h"
 
 #if 1
 #define WS_DBG(...)
@@ -103,7 +104,16 @@ void WebServer::page_show_stats( mg_connection *c) {
     }
     mg_http_printf_chunk(c, ""); // Don't forget the last empty chunk
 }
+void WebServer::page_show_crap( mg_connection *c) {
+    ctext data="{}";
+    http_status_t   http_status=HTTP_STATUS_OK;
 
+    send_default_headers(c,http_status);
+
+    mg_http_write_chunk(c, data, 2);
+
+    mg_http_printf_chunk(c, ""); // Don't forget the last empty chunk
+}
 z_status WebServer::complete_by_id(unsigned long id) {
 
 
@@ -266,10 +276,14 @@ void WebServer::event_handler(struct mg_connection *c, int ev, void *ev_data) {
     // this is a delayed request being completed
     if (ev == MG_EV_WAKEUP) {
         WS_DBG("[%d] MG_EV_WAKEUP\n",c->id);
-
         struct mg_str *data = (struct mg_str *) ev_data;
-        mg_http_reply(c, 200, "Content-Type:application/json\r\nAccess-Control-Allow-Origin: *\r\nAccess-Control-Allow-Headers: Origin, Content-Type, X-Auth-Token\r\nAccess-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS\r\n", "%.*s\n",
-            data->len, data->buf);
+
+        send_default_headers(c,200);
+
+        mg_http_write_chunk(c, data->buf, data->len);
+
+        mg_http_printf_chunk(c, ""); // Don't forget the last empty chunk
+        //mg_http_reply(c, 200, "Content-Type:application/json\r\nAccess-Control-Allow-Origin: *\r\nAccess-Control-Allow-Headers: Origin, Content-Type, X-Auth-Token\r\nAccess-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS\r\n", "%.*s\r\n",        data->len, data->buf);
     }
     if (ev == MG_EV_HTTP_MSG) {
         _req_count++;
@@ -279,12 +293,16 @@ void WebServer::event_handler(struct mg_connection *c, int ev, void *ev_data) {
         WS_DBG("[%d] MG_EV_HTTP_MSG: %*.s\n",c->id,hm->uri.len,hm->uri.ptr);
 
 
-        /*
+        if (mg_match(hm->uri, mg_str("/crap"),NULL)) {
+            page_show_crap(c);
+            return;
+        }
+
         if (mg_match(hm->uri, mg_str("/"),NULL)) {
             page_show_stats(c);
             return;
         }
-        */
+
         cmd_req_type type=REQUEST_INVALID;
         if (hm->method.len == 4 && !memcmp(hm->method.buf, "POST", 4)) {
             // Verify it's a POST request
@@ -348,7 +366,7 @@ z_status WebServer::start() {
     _h_thread = std::thread(&WebServer::thread, this);
     /*
     if(!_req_timer) {
-        _req_timer=gTimerService.create_timer_t(this,&WebServer::timer_callback_req_wait_expire,0 );
+        _req_timer=CREATE_TIMER(WebServer::timer_callback_req_wait_expire,0 );
 
     }
     */

@@ -56,6 +56,11 @@ public:
     z_string _mode=MODE_SEQ;
     virtual z_status _read_start()  ;
     virtual z_status _read_stop()  ;
+    virtual z_status _hw_open()  {   return zs_ok;  }
+    virtual z_status _hw_init()  {   return zs_ok;  }
+    virtual z_status _hw_close()  {   return zs_ok;  }
+	virtual z_status ant_mask_set(int mask) {   return zs_ok;  }
+
     z_string _source_file = "simulate.csv";
     virtual z_status setupParams(
             U8 antmask,

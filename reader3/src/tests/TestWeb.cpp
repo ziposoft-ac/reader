@@ -74,7 +74,7 @@ public:
         return zs_ok;
     }
     int test_delay(http_request req,z_string_map &vars,z_json_obj &jin, z_json_stream &jout) {
-        int delay=vars.get_as<int>("delay",1000);
+        int delay=vars.get_as<int>("delay",100);
         int index=vars.get_as<int>("index",0);
 
         jout.keyval_int("delay",delay);;
@@ -87,9 +87,13 @@ public:
 
             });
 
+            return HTTP_STATUS_PROCESSING;
 
         }
-        return HTTP_STATUS_PROCESSING;
+        jout.keyval_int("counter",_counter);;
+        return HTTP_STATUS_OK;
+
+
     }
     CommandDelayed* _cd=0;
     z_status initialize() override{

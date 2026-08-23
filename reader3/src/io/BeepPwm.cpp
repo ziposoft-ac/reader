@@ -224,7 +224,7 @@ z_status BeepPwm::init() {
 #endif
     _initialized=true;
     if(!_timer)
-        _timer=gTimerService.create_timer_t(this,&BeepPwm::timer_callback,0    );
+        _timer=CREATE_TIMER(BeepPwm::timer_callback );
     return zs_ok;
 }
 z_status BeepPwm::shutdown() {

@@ -26,7 +26,7 @@ public:
     Cfmu804 cfmu804;
     WebServer ws;
     //MqServer mq;
-    MqFeed mq;
+    //MqFeed mq;
     //MqFeed feed;
 
     VisitProcess _visits;
@@ -62,14 +62,17 @@ public:
     z_status initialize() override;
 
     z_status shutdown() override{
+        //command_handler_stop();
 
         ws.remove_consumer(this);
-        mq.remove_consumer(this);
         _visits.shutdown();
         ws.stop();
+
+        /*
+        mq.remove_consumer(this);
         mq.stop();
         mq.shutdown();
-
+        */
         simulator.close();
         cfmu804.close();
 

@@ -224,7 +224,7 @@ z_status Battery::init() {
 #endif
 
     if (!_timer)
-        _timer = gTimerService.create_timer_t(this, &Battery::timer_callback, 0);
+        _timer = CREATE_TIMER(Battery::timer_callback, 0);
     return zs_ok;
 }
 

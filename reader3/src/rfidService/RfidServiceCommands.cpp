@@ -34,22 +34,23 @@ int RfidService::getRawReads(http_request req, z_string_map &vars, z_json_obj &j
 
 int RfidService::getVisits(http_request req, z_string_map &vars, z_json_obj &jin, z_json_stream &jout) {
 
-    I64 fromLastWrite=vars.get_as<I64>("lastWriteTs",0);
+    I64 req_last_notify=vars.get_as<I64>("last_notify",0);
     bool return_reads=vars.get_as("return_reads",true);
     bool debug=vars.get_as("debug",true);
-    I64 lastWriteTs=_visits.getLastWriteTimestamp();
+    I64 last_notify=_visits.getLastNotifyTimestamp();
 
-    ZDBG("requested %lld,  current,%lld \n",fromLastWrite,lastWriteTs);
+    ZDBG("requested %lld,  current,%lld \n",req_last_notify,last_notify);
 
-    if (fromLastWrite>lastWriteTs) {
-        fromLastWrite=0;
-        ZDBG("RAW requested index %lld greater than current, using 0\n",fromLastWrite);
+    if (req_last_notify>last_notify) {
+        ZDBG("RAW requested index %lld greater than current, using 0\n",req_last_notify);
+        req_last_notify=0;
+
     }
-    if (fromLastWrite==lastWriteTs) {
+    if (req_last_notify==last_notify) {
         //ZDBG("queueing req\n");
 
         _getGetVisitsCd->add_pending(req,WAIT_FOR_NEW_READS_TIMEOUT,
-            [this,fromLastWrite,return_reads](z_json_stream& js) {
+            [this,req_last_notify,return_reads](z_json_stream& js) {
                 // this is bad, because each separate delayed request generates its own response data
                 //  even though it is the same for all of them. but normally only have one anyway
 

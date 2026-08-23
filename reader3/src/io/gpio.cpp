@@ -110,7 +110,7 @@ z_status GpioPin::init(Gpio* chip,ctext name)
     if (!_request)
         return zs_io_error;
     if(!_timer)
-        _timer=gTimerService.create_timer_t(this,&GpioPin::timer_callback,0    );
+        _timer=CREATE_TIMER(GpioPin::timer_callback);
 
     /*
     if (_output ) {
@@ -385,7 +385,7 @@ bool Gpio::initialize() {
     return false;
 #endif
     if(!_timer)
-        _timer=gTimerService.create_timer_t(this,&Gpio::timer_callback,0    );
+        _timer=CREATE_TIMER(Gpio::timer_callback  );
 
 
     z_string chipname="/dev/gpiochip";

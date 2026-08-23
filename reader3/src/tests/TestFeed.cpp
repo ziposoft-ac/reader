@@ -43,14 +43,14 @@ public:
         mq.register_consumer(this);
 
         if (!_timer_stat)
-            _timer_stat=gTimerService.create_timer_t(this,&TestSubscribe::timer_stats,0 ,_stat_interval   );
+            _timer_stat=CREATE_TIMER(TestSubscribe::timer_stats,0 ,_stat_interval   );
         _running=true;
 
         return zs_ok;
     };
     z_status start_counter() {
         if (!_timer_counter)
-            _timer_counter=gTimerService.create_timer_t(this,&TestSubscribe::counter_callback   );
+            _timer_counter=CREATE_TIMER(TestSubscribe::counter_callback   );
         _timer_counter->start(_timer_interval);
         return zs_ok;
     };

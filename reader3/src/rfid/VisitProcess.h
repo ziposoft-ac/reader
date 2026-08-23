@@ -89,6 +89,7 @@ public:
         return _last_write_timestamp;
     }
     U64 getLastWriteTimestamp()   { return _last_write_timestamp; }
+    U64 getLastNotifyTimestamp()   { return _last_notify_timestamp; }
     bool is_reading() ;
     bool is_recording()  { return _running; }
 

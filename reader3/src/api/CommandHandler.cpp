@@ -124,8 +124,8 @@ void DelayedHttpRequest::complete() {
 
     size_t len=s.length();
     ctext buffer=s.c_str();
-    ZDBG("len=%d\n",len);
-    ZDBG("buff=%s\n",buffer);
+    //ZDBG("len=%d\n",len);
+    //ZDBG("buff=%s\n",buffer);
 
     mg_wakeup(_r.c->mgr, _r.c->id, buffer, len); // Respond to parent
 

@@ -29,35 +29,20 @@ double get_dbg_ts(const z_time &ts) {
     return diff / 1000;
 }
 
-double get_dbg_ts_ms(U64 ts) {
+static double get_dbg_ts_ms(U64 ts) {
     double diff = ts - DBG_TS_START.in_ms();
     return diff / 1000;
 }
 
-z_string MARK(const z_time &ts) {
-    z_string time_mark;
-    I64 diff = ts - DBG_TS_START;
-    time_mark.format_append("%4.3lf", diff / 1000);
-    return time_mark;
-}
 
-z_string MARK_IN(I64 from) {
-    z_string time_mark;
-    z_time now;
-    now.set_now();
-
-    I64 diff = now - DBG_TS_START + from;
-    time_mark.format_append("%4.3lf", diff / 1000);
-    return time_mark;
-}
 
 #define DBGL(...) { z_time now; now.set_now();get_debug_logger().time_mark(now-DBG_TS_START);get_debug_logger().format_append(__VA_ARGS__); ZDBGS<<'\n';   }
 #else
 #define DBGL(...) {}
 #endif
 
-//#undef DBGL
-//#define DBGL(...)
+#undef DBGL
+#define DBGL(...)
 
 VisitProcess::VisitProcess() {
 }
@@ -88,12 +73,13 @@ z_status VisitProcess::initialize() {
     //root.web_server.start();
 
     if (!_timer_tag_process)
-        _timer_tag_process = gTimerService.create_timer_t(this, &VisitProcess::callback_tag_process);
+        _timer_tag_process = CREATE_TIMER(VisitProcess::callback_tag_process);
     if (!_timer_write_notify)
-        _timer_write_notify = gTimerService.create_timer_t(this, &VisitProcess::callback_write_notify);
+        _timer_write_notify = CREATE_TIMER(VisitProcess::callback_write_notify);
 
     _open = true;
     //root.beeper.pushBeeps( {{1000,50},{1200,50},{1400,50},{0,80}  });
+    _last_notify_timestamp=z_time_get_ticks_ms();
 
     return zs_ok;
 }
@@ -199,7 +185,10 @@ bool VisitProcess::is_reading() {
 }
 
 int VisitProcess::get_live_tag_visits(z_json_stream &js) {
+    //ZDBG("get_live_tag_visits wait...\n");
     std::unique_lock mlock(_mutex_tags);
+    //ZDBG("get_live_tag_visits done\n");
+
     js.obj_val_start("live_visits");
 
     for (auto const& [key, t] : _tags) {
@@ -223,7 +212,7 @@ int VisitProcess::add_json_status(z_json_stream &js) {
     js.key_bool("reading", is_reading());
     js.key_bool("recording", is_recording());
     js.keyval_int("ts_last_file_write", getLastWriteTimestamp());
-    js.keyval_int("ts_last_read", _ts_last_read);
+    js.keyval_int("ts_last_notify", getLastNotifyTimestamp());
     js.keyval_int("ts_started", (I64) _t_started.in_ms());
     js.obj_end();
 
@@ -266,9 +255,9 @@ int VisitProcess::callback_tag_process(void *) {
 
     // LOCK TAGS
     {
+        //ZDBG("callback_tag_process wait...\n");
         std::unique_lock mlock(_mutex_tags);
-        DBGL("PROCESS CHECK");
-
+        //ZDBG("callback_tag_process done\n");
         auto it = _tags.start();
         while (it != _tags.end()) {
             RfidTag *t = it->second;
@@ -276,6 +265,7 @@ int VisitProcess::callback_tag_process(void *) {
 
             if (t->processCheck(*this, now)) {
                 if (t->_state == fr_type_peaked) {
+                    ZDBG("peaked:%s\n", epc.c_str());
                         signalWaitingRequests();
                     beep();
 
@@ -347,10 +337,12 @@ z_status VisitProcess::write_out_all() {
 
 
 bool VisitProcess::callbackRead(RfidRead *read) {
+    //ZDBG("callbackRead\n");
+
     if (!_running)
         return false;
     z_time now = z_time::get_now_ms();
-
+    bool signal=false;
     try {
         z_string epc;
         read->getEpcString(epc);
@@ -358,29 +350,39 @@ bool VisitProcess::callbackRead(RfidRead *read) {
         if (_record_raw) {
             _file_raw.writeRfidRead(read, epc);
         }
-        std::unique_lock mlock(_mutex_tags);
 
-        RfidTag *pTag = _tags.getobj(epc);
-        if (!pTag) {
-            pTag = z_new RfidTag(read, epc,_persistent_index++);
-            pTag->_epc = epc;
-            _tags.add(epc, pTag);
-            signalWaitingRequests();
+        {
+            std::unique_lock mlock(_mutex_tags);
+           // ZDBG("callbackRead locked\n");
+
+            RfidTag *pTag = _tags.getobj(epc);
+            if (!pTag) {
+                pTag = z_new RfidTag(read, epc,_persistent_index++);
+                pTag->_epc = epc;
+                _tags.add(epc, pTag);
+                signal=true;
+
+
+            }
+
+            _ts_last_read = read->_time_stamp;
+
+            z_time next_check_in = pTag->processRead(read, *this);
+
+            for (auto const& [key, t] : _tags) {
+                if (t->_ts_next_check_required < next_check_in)
+                    next_check_in = t->_ts_next_check_required;
+            }
+            _timer_tag_process->start_ts_reset(next_check_in);
+            DBGL("new timer check at=%4.3lf", get_dbg_ts_ms(_timer_tag_process->get_timout_ts()));
         }
 
-        _ts_last_read = read->_time_stamp;
-
-        z_time next_check_in = pTag->processRead(read, *this);
-
-        for (auto const& [key, t] : _tags) {
-            if (t->_ts_next_check_required < next_check_in)
-                next_check_in = t->_ts_next_check_required;
-        }
-        _timer_tag_process->start_ts_reset(next_check_in);
-        DBGL("new timer check at=%4.3lf", get_dbg_ts_ms(_timer_tag_process->get_timout_ts()));
     } catch (...) {
         Z_THROW_MSG(zs_internal_error, "Exception writing to read log file");
     }
+    if (signal) signalWaitingRequests();
+    //ZDBG("callbackRead exit\n");
+
     return true;
 }
 #if 1

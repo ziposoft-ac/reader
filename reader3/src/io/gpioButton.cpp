@@ -143,11 +143,11 @@ z_status GpioButton::start() {
     _thread_handle = std::thread(&GpioButton::thread, this);
     _running = true;
     if(!_timer_debounce)
-        _timer_debounce=gTimerService.create_timer_t(this,&GpioButton::timer_callback_debounce,0    );
+        _timer_debounce=CREATE_TIMER(GpioButton::timer_callback_debounce );
     if(!_timer_hold_function)
-        _timer_hold_function=gTimerService.create_timer_t(this,&GpioButton::timer_callback_hold_function,0    );
+        _timer_hold_function=CREATE_TIMER(GpioButton::timer_callback_hold_function );
     if(!_timer_counter_function)
-        _timer_counter_function=gTimerService.create_timer_t(this,&GpioButton::timer_callback_counter_function,0    );
+        _timer_counter_function=CREATE_TIMER(GpioButton::timer_callback_counter_function );
     return zs_ok;
 }
 

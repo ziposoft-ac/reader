@@ -134,7 +134,7 @@ z_status MqFeed::run(ctext feedname) {
     remove_all_subscribers();
 
     if(!_timer) {
-        _timer=gTimerService.create_timer_t(this,&MqFeed::timer_callback );
+        _timer=CREATE_TIMER(MqFeed::timer_callback );
     }
     _timer->start_ms_reset(feed_keep_alive_ms);
     return MqServer::run(feedname);

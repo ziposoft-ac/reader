@@ -176,7 +176,7 @@ z_status RfidReader::open()
     if (_open)
         return zs_ok;
 
-    _stat_timer=gTimerService.create_timer_t(this,&RfidReader::stat_timer_callback,0,1000    );
+    _stat_timer=CREATE_TIMER(RfidReader::stat_timer_callback );
     status=_hw_open();
     if(zs_ok==status)
     {
@@ -196,7 +196,7 @@ z_status RfidReader::open()
         Z_ERROR_MSG(zs_io_error,"hw_init failed in reader");
     }
 
-
+    _stat_timer->start_ms_reset(1000);
 
     return status;
 

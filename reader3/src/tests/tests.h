@@ -107,6 +107,7 @@ public:
 };
 class TestTimerCascade : public TestTimer{
 public:
+    int _timer2_delay=20;
     int onCallback(void*) override;
     int timer_callback2(void*);
     z_status onStop() override;

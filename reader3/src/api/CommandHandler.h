@@ -157,7 +157,19 @@ public:
     http_request _r;
     U64 _ts_expire;
     std::function<void(z_json_stream& json_out)> _callback;
+
+#if USE_CH_THREAD
+    bool _to_be_completed=false;
+
+    void mark_completed() {
+        _to_be_completed=true;
+    }
+    void worker_complete() ;
+#else
     void complete() ;
+
+#endif
+
     bool isConnectionId(unsigned long id);
 };
 template <typename C> class CommandDelayed_t : public Command_t<C,callback_http_delayed_t<C>> {
@@ -221,7 +233,7 @@ public:
     {
 
         if(!_req_timer) {
-            _req_timer=gTimerService.create_timer_t(this,&CommandDelayed_t::timer_callback_req_wait_expire );
+            _req_timer=CREATE_TIMER(CommandDelayed_t::timer_callback_req_wait_expire );
 
         }
         _req_timer->start_ms_reset(200);
@@ -236,19 +248,20 @@ public:
         _outstanding_reqs.push_back(dr);
 
         if(!_req_timer) {
-            _req_timer=gTimerService.create_timer_t(this,&CommandDelayed_t::timer_callback_req_wait_expire );
+            _req_timer=CREATE_TIMER(CommandDelayed_t::timer_callback_req_wait_expire );
 
         }
         _req_timer->start_ms_if_sooner(delay);
         return true;
 
     }
+    /*
     z_status complete()
     {
         z_string buffer="{ \"nap\": 43 }";
         complete_req_all(buffer);
         return zs_ok;
-    }
+    }*/
     z_status complete_req_all()
     {
         DelayedHttpRequest *dr;
@@ -257,6 +270,11 @@ public:
         std::unique_lock mlock(_mutex_req_list);
 
         ZDBG("completing requests\n");
+
+
+        for (auto i: _outstanding_reqs) {
+
+        }
 
         // filterout deletes the req
         _outstanding_reqs.filter_out([](DelayedHttpRequest *dr) {
@@ -278,10 +296,47 @@ public:
     z_obj_map<Command, true> _map;
     //z_obj_list<Command> _owned_commands;
     std::mutex _map_mutex;
+    std::mutex _mutex_stop_wait;
+#if USE_CH_THREAD
+    std::thread _thread_handle;
+    std::condition_variable _cv;
+    bool _thread_running=false;
+    virtual void thread() {
+        std::unique_lock m_wait(_mutex_stop_wait);
 
+        _cv.wait(m_wait);
+        if (!_thread_running) {
+            ZDBG("Exiting CommandHandler thread\n");
+            return;
+        }
+        ZDBG("CommandHandler thread wakeup\n");
+
+
+    }
+    z_status command_handler_start() {
+        if (_thread_running)
+            return zs_already_open;
+        _thread_running=true;
+        _thread_handle = std::thread(&CommandHandler::thread, this);
+        return zs_ok;
+
+    }
+    z_status command_handler_stop() {
+        _thread_running=false;
+        wakeup_thread();
+        if (_thread_handle.joinable())
+            _thread_handle.join();
+        return zs_ok;
+
+    }
+    void wakeup_thread() {
+        _cv.notify_one();
+    }
+#endif
     CommandHandler(){}
     virtual ~CommandHandler() {
     }
+
 
     int process_http_close(u_long id);
 

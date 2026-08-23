@@ -24,6 +24,7 @@ z_status Service::shutdown() {
 }
 
 z_status Service::initialize() {
+    gTimerService.init();
     return zs_ok;
 
 }

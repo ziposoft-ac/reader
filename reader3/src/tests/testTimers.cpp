@@ -31,6 +31,8 @@ ZMETA(TestTimerSimple)
 };
 ZMETA(TestTimerCascade)
 {
+    ZPROP(_timer2_delay);
+
     ZBASE(TestTimer);
 };
 
@@ -56,7 +58,7 @@ z_status TestTimer::start()
 
 
     if(!_timer)
-        _timer=gTimerService.create_timer_t(this,&TestTimer::timer_callback,0    );
+        _timer=CREATE_TIMER(TestTimer::timer_callback );
     _timer->start_ms_reset(_interval);
     return zs_ok;
 }
@@ -77,11 +79,11 @@ int TestTimer::timer_callback(void* context)
 
 int TestTimerCascade::onCallback(void *p) {
 
-    printf("count=%d\n",_current_iteration--);
-    if (_current_iteration==4) {
-        _timer2->start_ms_reset(3000);
+    printf("count=%d\n",_current_iteration++);
+    if (_current_iteration==3) {
+        _timer2->start_ms_reset(_timer2_delay);
     }
-    if (_current_iteration>0)
+    if (_current_iteration<_iterations )
         return _interval;
 
 
@@ -103,9 +105,9 @@ z_status TestTimerCascade::onStop() {
 }
 
 z_status TestTimerCascade::onStart() {
-    _current_iteration=_iterations;
+    _current_iteration=0;;
     if(!_timer2)
-        _timer2=gTimerService.create_timer_t(this,&TestTimerCascade::timer_callback2,0    );
+        _timer2=CREATE_TIMER(TestTimerCascade::timer_callback2  );
     _timer2->_debug=true;
     return zs_ok;
 
@@ -116,7 +118,6 @@ z_status TestTimerCascade::onStart() {
 int  TestTimerInterval::onCallback(void*)
 {
     // zout <<  "TestWsBlast::onCallback\n";
-    _iterations--;
     _current_iteration++;
     if(_current_iteration*_interval>_print_interval_seconds*1000)
     {
@@ -179,7 +180,7 @@ z_status TestTimerStress::start() {
     stop();
     for (i=0;i<_num_timers;i++) {
         auto ctx=new TestTimerContext(i);
-        ctx->_timer=gTimerService.create_timer_t(this,&TestTimerStress::callback,ctx    );
+        ctx->_timer=CREATE_TIMER_EX(TestTimerStress::callback,ctx ,0   );
 
         _timers.add(i,ctx);
 

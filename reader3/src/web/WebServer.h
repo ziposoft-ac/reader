@@ -50,6 +50,7 @@ public:
     z_status complete_by_id(unsigned long id);
     z_status complete_req_all();
     void page_show_stats( mg_connection *c);
+    void page_show_crap( mg_connection *c);
     /*
     z_status complete_req_all();
     z_status complete_req_type(int type);

@@ -72,7 +72,7 @@ public:
 	}
 
 
-	bool push(T& item)
+	bool push(const T& item)
 	{
 	    /*
 	     *

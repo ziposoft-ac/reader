@@ -35,6 +35,8 @@ z_status RfidService::initialize() {
 
     ioLedSet({LedRed,true  });
     ioLedSet({LedGreen,false  });
+
+    //command_handler_start();
     ws.start();
     //mq.run("/rfidservice");
     _reader->open();
@@ -59,7 +61,7 @@ z_status RfidService::initialize() {
 
 
     ws.register_consumer(this);
-    mq.register_consumer(this);
+    //mq.register_consumer(this);
     return zs_ok;
 };
 
