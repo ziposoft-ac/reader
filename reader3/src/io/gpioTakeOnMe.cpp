@@ -6,7 +6,7 @@
 
 extern U16 melody[] ;
 int getLed(int note);
-int setPwmFreq(int freq,int duty);
+int _setPwmFreq(int freq,int duty);
 
 
 // The note duration, 8 = 8th note, 4 = quarter note, etc.
@@ -22,7 +22,6 @@ extern int songLength ;
 #define MULT 800
 z_status BeepPwm::takeOnMe()
 {
-    if(_quiet) return zs_ok;
     if(init())
     {
         zout << "initialize failed.\n";
@@ -38,10 +37,10 @@ z_status BeepPwm::takeOnMe()
 
         // gpioWrite(led,1);
         // gpioHardwarePWM(18,melody[thisNote],100000);
-        setPwmFreq(melody[thisNote],50);
+        _setPwmFreq(melody[thisNote],50);
         usleep(duration*MULT);
         //gpioWrite(led,0);
-        setPwmFreq(0,50);
+        _setPwmFreq(0,50);
 
         //gpioHardwarePWM(18,0,500000);
         //int pause = duration * 1;

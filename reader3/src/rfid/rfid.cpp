@@ -236,7 +236,7 @@ z_status RfidReader::start()
 
 
 }
-z_status RfidReader::configure(
+z_status RfidReader::config_set(
         const rfid_config_t& c
         ){
     if (isReading())
@@ -477,7 +477,7 @@ z_status RfidReader::add_json_config(z_json_stream &js) {
         js.keyval_int("session",_session);
         js.keyval_int("pauseTime",_pause_read_time);
         js.keyval_int("filterTime",_filter_time);
-        js.keyval_int("beepEnable",_filter_time);
+        //js.keyval_int("beepEnable",_filter_time);
         js.key_bool("valid",true);
         js.key_bool("reading",_reading);
 
@@ -486,6 +486,26 @@ z_status RfidReader::add_json_config(z_json_stream &js) {
     js.obj_end();
 
     return zs_ok;
+}
+z_status RfidReader::json_config_set(z_json_obj &o) {
+
+    rfid_config_t cfg;
+    ZDBG("Setting config\n");
+    //o.print(stdout_json);
+    cfg.qValue=o.get_int("qValue",_qvalue);
+    cfg.session=o.get_int("session",_session);
+    cfg.power=o.get_int("power",_power);
+    cfg.pauseTime=o.get_int("pauseTime",_pause_read_time);
+    cfg.antMask=o.get_int("antMask",_antenna_enabled);
+    cfg.freqLow=o.get_int("freqLow",_freq_low);
+    cfg.freqHigh=o.get_int("freqHigh",_freq_high);
+    cfg.filterTime=o.get_int("filterTime",_filter_time);
+    cfg.profile=o.get_int("profile",_profile);
+    z_status s=config_set(cfg);
+
+
+
+    return s;
 }
 
 z_status RfidReader::json_config_get(z_json_stream &js) {
@@ -508,6 +528,8 @@ z_status RfidReader::add_json_status(z_json_stream &js) {
     js.key_bool("reading",_reading);
     js.keyval_int("antenna_enabled",_antenna_enabled);
     js.keyval_int("ant_detected",_antenna_detected);
+    js.keyval_int("ts",z_time_get_ticks_ms());
+
     js.obj_end();
     add_json_config(js);
     return zs_ok;

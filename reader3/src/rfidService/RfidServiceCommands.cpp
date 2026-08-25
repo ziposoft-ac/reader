@@ -102,7 +102,10 @@ int RfidService::post_start_stop_raw(z_json_obj& o,z_json_stream& jout) {
     return CMD_SUCCESS;
 }
 int RfidService::get_status(z_string_map& params,z_json_stream& jout) {
-
+    RfidReader& r=getRfidReader();
+    if (!r.isReading()) {
+        r.config_read();
+    }
     return json_status(jout);
 }
 int RfidService::json_status(z_json_stream& jout) {
@@ -120,22 +123,11 @@ int RfidService::get_raw_reads(z_string_map &params, z_json_stream &jout) {
 }
 
 int RfidService::post_config(z_json_obj& o,z_json_stream& jout) {
-    rfid_config_t cfg;
-    ZDBG("Setting config\n");
-    //o.print(stdout_json);
-    cfg.qValue=o.get_int("qValue",5);
-    cfg.session=o.get_int("session",1);
-    cfg.power=o.get_int("power",30);
-    cfg.pauseTime=o.get_int("pauseTime",0);
-    cfg.antMask=o.get_int("antMask",0xf);
-    cfg.freqLow=o.get_int("freqLow",0);
-    cfg.freqHigh=o.get_int("freqHigh",3);
-    cfg.filterTime=o.get_int("filterTime",0);
-    cfg.profile=o.get_int("profile",1);
-    z_status s=getRfidReader().configure(cfg);
+
+    z_status s=getRfidReader().json_config_set(o);
 
     if (s==zs_ok) {
-        getRfidReader().json_config_get(jout);
+        json_status(jout);
         return CMD_SUCCESS;
 
     }

@@ -269,7 +269,7 @@ public:
             return zs_ok;
         std::unique_lock mlock(_mutex_req_list);
 
-        ZDBG("completing requests\n");
+       // ZDBG("completing requests\n");
 
 
         for (auto i: _outstanding_reqs) {

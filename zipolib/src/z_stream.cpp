@@ -298,6 +298,8 @@ z_status z_stream_multi::write(const char* data, size_t len)
 		i->write(data, len);
 		
 	}
+	if (always_flush)
+		flush();
 	return zs_ok;
 }
 void z_stream_multi::flush() {

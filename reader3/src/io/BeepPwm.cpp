@@ -5,14 +5,16 @@
 #include "BeepPwm.h"
 
 
+
 ZMETA(BeepPwm) {
     ZACT(init);
     ZACT(shutdown);
     ZACT(toneRise);
     ZACT(takeOnMe);
     ZACT(takeOnMePush);
-    ZPROP(_quiet);
+    ZPROP(_output_enable);
     ZPROP(_duty);
+    ZPROP(_max_duty);
     ZPROP(_enabled);
     ZCMD(buzz, ZFF_CMD_DEF, "buzz",
          ZPRM(int, f0, 8000, "freq0", ZFF_PARAM),
@@ -33,11 +35,12 @@ ZMETA(BeepPwm) {
 // will this avoid valgrind memmleak?
 BeepPwm& gBeepPwm=BeepPwm::getInstance();
 
-bool pwm_is_init=false;
 
 
 int syswr(ctext filename,int i) {
 #ifdef NOGPIO
+    printf("syswr: %s,%d\n",filename,i);
+
     return 0;
 #endif
     z_string s=i;
@@ -52,21 +55,24 @@ int syswr(ctext filename,int i) {
     fclose(fd);
     return 0;
 }
-int setPwmFreq(int freq,int duty_percent) {
+int BeepPwm::_setPwmFreq(int freq,int duty_percent) {
+
+
+    if (duty_percent>_max_duty)
+        duty_percent=_max_duty;
+
+    if (!_output_enable) {
+        freq=0;
+        duty_percent=0;
+    }
 #ifdef NOGPIO
+    printf("pwm: %d,%d\n",freq,duty_percent);
+
     return 0;
 #endif
 
 
-    if (!pwm_is_init) {
-        if (syswr(PWM_CHIP,0))
-            return -1;
-        if (syswr(PWM_PATH "enable",0))
-            return -1;
-        pwm_is_init=true;
 
-
-    }
     if (freq) {
         U64 period=1000000000/freq;
         U64 duty=period*duty_percent/100;
@@ -93,15 +99,12 @@ int BeepPwm::timer_callback(void *)
 {
     Note beep;
     if(!_queue.pop(beep)) {
-        setPwmFreq(0,0);
+        _setPwmFreq(0,0);
         return 0;
 
     }
 
     auto  [freq, delay, duty] = beep;
-#ifdef NO_GPIO
-    printf("beep: %d,%d,%d\n",freq,delay,duty);
-#endif
 
     if(delay>2000)
     {
@@ -111,12 +114,7 @@ int BeepPwm::timer_callback(void *)
     if(!delay)
         delay=1;
     if (_enabled) {
-        if(_quiet) {
-            ZDBG("buzzer set to quiet\n");
-
-        }
-        else
-            setPwmFreq(freq,duty);
+            _setPwmFreq(freq,duty);
     }
     else {
         ZDBG("buzzer not enabled\n");
@@ -129,7 +127,7 @@ void BeepPwm::pushTones(std::initializer_list<Tone> const beeps)
 {
     z_status status=init();  if (status) return;
 
-    if(_queue.get_count()>1000)
+    if(_queue.get_count()>10)
         return;
     for(auto i : beeps)
     {
@@ -167,6 +165,8 @@ z_status BeepPwm::pushRemoteBeep(RemoteBeep_t *r) {
 
         }
     }
+    // Add delay so beeps do not run together
+    _queue.push({0,40,0});
     _timer->start_ms_if_not_running(1);
     return zs_ok;
 
@@ -207,21 +207,27 @@ z_status BeepPwm::init() {
     if (_initialized)
         return zs_ok;
 
-#ifndef NOGPIO
+
+
+
     if (syswr(PWM_CHIP,0)) {
         _exists=false;
-        Z_ERROR_MSG(zs_io_error,"PWM init failed, will try again later");
+        Z_ERROR_MSG(zs_io_error,"PWM chip export failed, will try again later");
         return zs_io_error;
     }
-
-    if (  setPwmFreq(0,0)) {
+    z_sleep_ms(10);
+    if (syswr(PWM_PATH "enable",0)){
+        _exists=false;
+        Z_ERROR_MSG(zs_io_error,"PWM enable failed, will try again later");
+        return zs_io_error;
+    }
+    if (  _setPwmFreq(0,0)) {
         _exists=false;
         Z_ERROR_MSG(zs_io_error,"PWM does not exists, disabling");
         return zs_io_error;
 
 
     }
-#endif
     _initialized=true;
     if(!_timer)
         _timer=CREATE_TIMER(BeepPwm::timer_callback );
@@ -231,7 +237,7 @@ z_status BeepPwm::shutdown() {
 #ifndef NOGPIO
     if (!_enabled)
         return zs_not_open;
-    setPwmFreq(0,0);
+    _setPwmFreq(0,0);
 #endif
 
     return zs_ok;

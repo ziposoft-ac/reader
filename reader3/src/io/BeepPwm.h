@@ -34,7 +34,7 @@ protected:
     Timer* _timer=0;
     bool _initialized=false;
     bool _open=false;
-
+    int _setPwmFreq(int freq,int duty_percent);
 public:
 
     static BeepPwm& getInstance() {
@@ -43,8 +43,10 @@ public:
         return instance;
     }
     bool _exists=false;
-    bool _quiet=false;
+    bool _output_enable=false;
     bool _enabled=false;
+    int _max_duty=70;
+    int _max_beep_queue=10;
     U16 _duty=50;
     BeepPwm() {}
 

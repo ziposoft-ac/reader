@@ -26,6 +26,11 @@ z_status Service::shutdown() {
 }
 
 z_status Service::initialize() {
+    if (!globalLock()) {
+        printf("Cannot acquire global lock, service already running\n");
+        return zs_already_open;
+
+    }
     gTimerService.init();
     return zs_ok;
 
@@ -43,11 +48,14 @@ z_status Service::run_as_service() {
 z_status Service::init_logfile() {
 
     std::error_code ec;
+    z_string logname=getName();
+    logname+="_logs";
+    std::filesystem::create_directory(logname.c_str());
+    logname+="/";
 
-    std::filesystem::create_directory("logs");
-    z_string logname="logs/reader-";
     logname+=z_time::getTimeStrLocalFsFormat()+".log";
     _log_file.open(logname);
+    get_default_logger().always_flush=true;
     get_default_logger().create_file_out(logname);
     std::filesystem::remove("last.log",ec);
     std::filesystem::create_symlink(logname.c_str(),"last.log",ec);
@@ -59,6 +67,7 @@ z_status Service::init_logfile() {
          z_time::getTimeStrGmt().c_str(),
          BUILD_TIME_STAMP);
     ZTF;
+
     return zs_ok;
 
 }

@@ -185,7 +185,7 @@ z_status TestHeatTest::onStart() {
     auto conf=rfid_config_heattest;
     conf.pauseTime=_read_pause_time;
 
-    if (getRfidReader().configure(conf))
+    if (getRfidReader().config_set(conf))
         return zs_io_error;
     getRfidReader().config_dump();
     ZLOG("STARTING HEAT TEST: intvl=%d maxtemp=%d pause=%d\n",_interval,_max_temp_shutoff,_read_pause_time);
@@ -207,7 +207,7 @@ z_status ReaderTest::onStart() {
     conf.pauseTime=_read_pause_time;
     conf.session=_session;
 
-    if (getRfidReader().configure(conf))
+    if (getRfidReader().config_set(conf))
         return zs_io_error;
     getRfidReader().config_dump();
     ZLOG("STARTING ReaderTest : _time_off=%d _time_on=%d pause=%d\n",_time_off,_time_on,_read_pause_time);

@@ -35,8 +35,8 @@ class Battery {
     Timer* _timer=0;
     virtual int timer_callback(void*);
 
-
-    int _poll_interval=1000;
+    bool _debug=false;
+    int _poll_interval=5000;
 
     U16 read_reg(U16 reg);
 public:

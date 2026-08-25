@@ -193,7 +193,7 @@ public:
 
     // Status
     int _antenna_detected=0;
-    int _antenna_enabled=0xf;
+    int _antenna_enabled=0xff;
 
     int cached_read_count() {
         return _queue_reads_all.size();
@@ -219,8 +219,8 @@ public:
     z_status close();
     z_status start();
     z_status dump_queue(int index);
-
-    virtual z_status configure(
+    //virtual z_status config_get( rfid_config_t& config        );
+    virtual z_status config_set(
             const rfid_config_t& config
             );
     virtual z_status config_write() {
@@ -245,6 +245,7 @@ public:
 
     z_status add_json_config(z_json_stream &js);
     z_status json_config_get(z_json_stream &js);
+    z_status json_config_set(z_json_obj &js);
     z_status json_readmode_get(z_json_stream &js);
 	virtual z_status freq_set(U8 low,U8 max){ return zs_ok;}
 

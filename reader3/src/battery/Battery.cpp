@@ -16,6 +16,7 @@ ZMETA(Battery) {
     ZACT(stop);
     ZACT(shutdown);
     ZPROP(_poll_interval);
+    ZPROP(_debug);
     ZPROP(_shunt_battery);
     ZPROP(_shunt_input);
 };
@@ -167,12 +168,15 @@ z_status Battery::read() {
 
     _batt_current = get_current(batt_current_reg,_shunt_battery);
     _input_current =  get_current(input_current_reg,_shunt_input);
-    ZDBG("batt voltage=%04x, %0.2lf\n", batt_volt_reg, _batt_volt);
-    ZDBG("batt current=%04x, %0.2lf\n", batt_current_reg, _batt_current);
+    if (_debug) {
+        ZDBG("batt voltage=%04x, %0.2lf\n", batt_volt_reg, _batt_volt);
+        ZDBG("batt current=%04x, %0.2lf\n", batt_current_reg, _batt_current);
 
 
-    ZDBG("input voltage=%04x %0.2lf\n", input_volt_reg, _input_volt);
-    ZDBG("input current=%04x %0.2lf\n", input_current_reg, _input_current);
+        ZDBG("input voltage=%04x %0.2lf\n", input_volt_reg, _input_volt);
+        ZDBG("input current=%04x %0.2lf\n", input_current_reg, _input_current);
+
+    }
 
     return zs_ok;
 }
@@ -195,6 +199,7 @@ z_status Battery::json_get(z_json_stream &js) {
     js.keyval_float("input_v", _input_volt);
     js.keyval_float("batt_current", _batt_current);
     js.keyval_float("input_current", _input_current);
+    js.keyval_int("ts", z_time_get_ticks_ms());
     js.obj_end();
 
     return zs_ok;
@@ -224,7 +229,7 @@ z_status Battery::init() {
 #endif
 
     if (!_timer)
-        _timer = CREATE_TIMER(Battery::timer_callback, 0);
+        _timer = CREATE_TIMER(Battery::timer_callback);
     return zs_ok;
 }
 

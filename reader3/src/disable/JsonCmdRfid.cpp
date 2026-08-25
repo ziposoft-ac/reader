@@ -170,7 +170,7 @@ int fn_post_config(http_request r,z_json_obj &o)
     cfg.freqHigh=o.get_int("freqHigh",3);
     cfg.filterTime=o.get_int("filterTime",0);
     cfg.profile=o.get_int("profile",1);
-    z_status s=root.getReader().configure(cfg);
+    z_status s=root.getReader().config_set(cfg);
 
     if (s==zs_ok) {
         send_json_response(r,[](z_json_stream &js)

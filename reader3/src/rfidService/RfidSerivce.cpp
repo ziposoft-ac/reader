@@ -10,7 +10,7 @@ struct Counter {
 
 };
 void RfidService::callbackVisitNotify() {
-    ZDBG("callbackVisitNotify\n");
+    //ZDBG("callbackVisitNotify\n");
     if (_getGetVisitsCd)
         _getGetVisitsCd->complete_req_all();
 
@@ -18,9 +18,12 @@ void RfidService::callbackVisitNotify() {
 
 
 z_status RfidService::initialize() {
-    if (!globalLock())
-        return zs_already_open;
+    z_status status=Service::initialize();
+    if (status)
+        return status;
 
+
+    init_logfile();
     if (_simulate) {
         ZDBG("Simulate is on\n");
         _reader= &simRace;

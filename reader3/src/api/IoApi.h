@@ -44,8 +44,8 @@ class IoApiClient {
 
         return zs_ok;
     }
-    z_status ledFlash(int color, int onoff) {
-        LedFlash_t f;
+    z_status ledFlash(int color, int count) {
+        LedFlash_t f={(LedColor)color,10,(U32)count};
         ioLedFlash(f);
 
         return zs_ok;

@@ -148,7 +148,7 @@ class z_stream_multi : public z_stream
     std::mutex _mutex;
 
 public:
-
+	bool always_flush=false;
 	z_obj_vector<z_stream,false> _streams;
 	void add_stdout()
 	{

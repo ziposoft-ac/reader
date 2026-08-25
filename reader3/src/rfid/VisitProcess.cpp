@@ -128,7 +128,7 @@ z_status VisitProcess::setup_reader_live(z_json_obj &settings) {
         filterTime = 5;
     if ((power < 10) || (power > 33))
         power = 33;
-    return getRfidReader().configure({
+    return getRfidReader().config_set({
         5, 1, 0xf, 0, 3, 30, 0, 0
     });
 }
@@ -170,7 +170,9 @@ z_status VisitProcess::start() {
             _t_started = getRfidReader().getTimeReadingStart();
         }
     }
+#ifdef DEBUG
     DBG_TS_START = _t_started;
+#endif
     // update server with status
     if (s) {
         stop();
@@ -266,7 +268,7 @@ int VisitProcess::callback_tag_process(void *) {
 
             if (t->processCheck(*this, now)) {
                 if (t->_state == fr_type_peaked) {
-                    ZDBG("peaked:%s\n", epc.c_str());
+                    //ZDBG("peaked:%s\n", epc.c_str());
                         signalWaitingRequests();
                     beep();
 
@@ -307,6 +309,8 @@ int VisitProcess::callback_tag_process(void *) {
     }
 
     if (signal_write) {
+        ioBeep(_beep_volume,{{500,5}});
+
         getNewWriteTimestamp();
         _file_visits.flush();
         signalWaitingRequests();
@@ -381,7 +385,12 @@ bool VisitProcess::callbackRead(RfidRead *read) {
     } catch (...) {
         Z_THROW_MSG(zs_internal_error, "Exception writing to read log file");
     }
-    if (signal) signalWaitingRequests();
+    if (signal) {
+        ioBeep(_beep_volume,{{2000,5}});
+
+        signalWaitingRequests();
+
+    }
     //ZDBG("callbackRead exit\n");
 
     return true;
@@ -445,6 +454,10 @@ bool RfidTag::processCheck(VisitProcess &rc, const z_time& now) {
         // if the time since last peak is past the peak window,
         _state = fr_type_peaked;
         _peaked=true;
+        ioBeep(rc._beep_volume,{{1000,20},{0,5},{2000,40}});
+
+        ioLedFlash({LedYellow,30,1});
+
         write_it_out = true;
     }
     if (_state == fr_type_peaked) {

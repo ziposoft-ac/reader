@@ -297,11 +297,11 @@ void WebServer::event_handler(struct mg_connection *c, int ev, void *ev_data) {
             page_show_crap(c);
             return;
         }
-
+        /*
         if (mg_match(hm->uri, mg_str("/"),NULL)) {
             page_show_stats(c);
             return;
-        }
+        }*/
 
         cmd_req_type type=REQUEST_INVALID;
         if (hm->method.len == 4 && !memcmp(hm->method.buf, "POST", 4)) {

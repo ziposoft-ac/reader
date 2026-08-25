@@ -30,7 +30,6 @@ class VisitProcess {
     int _write_count=0;
     bool _open=false;
     bool _reading=false;
-
     U32 _persistent_index=10000;
 
     int callback_tag_process(void*);
@@ -63,6 +62,8 @@ class VisitProcess {
 
 
 public:
+    int _beep_volume=60;
+
     VisitProcess();
     virtual z_status initialize();
     virtual z_status run();
@@ -123,6 +124,7 @@ ZMETA_DECL(VisitProcess) {
     ZPROP(_presence_window_s);
     ZPROP(_record_tod);
     ZPROP(_record_raw);
+    ZPROP(_beep_volume);
     ZPROP(_record_visits);
     ZPROP(_persistent_index);
     //ZPROP(_minimum_log_time_ms);
