@@ -64,7 +64,7 @@ public:
 
     z_status pushRemoteBeep(RemoteBeep_t *);
     void pushTones(std::initializer_list<Tone> const beeps);
-    void pushNotes(std::initializer_list<Note> const beeps);
+    void pushNotes(std::initializer_list<Note> const beeps,bool no_limit=false);
 };
 // TODO, globals, ugh
 extern BeepPwm& gBeepPwm;

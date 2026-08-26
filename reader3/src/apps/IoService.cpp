@@ -84,7 +84,12 @@ public:
         return zs_bad_parameter;
 
     }
+    int takeOnMe(z_string_map& params,z_json_stream& jout) {
 
+
+        gBeepPwm.takeOnMePush();
+        return zs_ok;
+    }
     z_status handleBeep(RemoteBeep_t* set) {
 
 
@@ -153,6 +158,7 @@ public:
         reg_func("stat",&IoService::get_status_json);
         reg_func("",&IoService::get_status_json);
         reg_func("beep",&IoService::get_beep_json);
+        reg_func("takeOnMe",&IoService::takeOnMe);
         reg_func("config",&IoService::post_config);
         reg_bin_func("beepMq",&IoService::handleBeep);
         ws.register_consumer(this);

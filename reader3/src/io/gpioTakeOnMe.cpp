@@ -65,7 +65,7 @@ z_status BeepPwm::takeOnMePush()
         pushNotes( {
             { melody[thisNote],  duration, _duty},
             {0,delay,_duty},
-                          });
+                          },true);
 
     }
     return zs_ok;

@@ -139,15 +139,17 @@ void BeepPwm::pushTones(std::initializer_list<Tone> const beeps)
     _timer->start_ms_if_not_running(1);
 }
 
-void BeepPwm::pushNotes(std::initializer_list<Note> const notes)
+void BeepPwm::pushNotes(std::initializer_list<Note> const notes,bool no_limit)
 {
     z_status status=init();  if (status) return;
 
-    if(_queue.get_count()>_max_beep_queue) {
-        ZDBG("droping notes, queue full\n");
-        return;
-
+    if (!no_limit) {
+        if(_queue.get_count()>_max_beep_queue) {
+            ZDBG("droping notes, queue full\n");
+            return;
+        }
     }
+
     for(auto i : notes)
     {
         _queue.push(i);

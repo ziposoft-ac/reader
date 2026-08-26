@@ -270,7 +270,6 @@ int VisitProcess::callback_tag_process(void *) {
                 if (t->_state == fr_type_peaked) {
                     //ZDBG("peaked:%s\n", epc.c_str());
                         signalWaitingRequests();
-                    beep();
 
                 }
 
@@ -309,7 +308,7 @@ int VisitProcess::callback_tag_process(void *) {
     }
 
     if (signal_write) {
-        ioBeep(_beep_volume,{{500,5}});
+        //ioBeep(_beep_volume,{{500,5}});
 
         getNewWriteTimestamp();
         _file_visits.flush();
@@ -454,7 +453,7 @@ bool RfidTag::processCheck(VisitProcess &rc, const z_time& now) {
         // if the time since last peak is past the peak window,
         _state = fr_type_peaked;
         _peaked=true;
-        ioBeep(rc._beep_volume,{{1000,20},{0,5},{2000,40}});
+        ioBeep(rc._beep_volume,{{1000,40},{0,5},{2000,60}});
 
         ioLedFlash({LedYellow,30,1});
 
