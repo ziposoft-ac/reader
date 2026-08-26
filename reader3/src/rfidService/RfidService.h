@@ -64,11 +64,11 @@ public:
     z_status initialize() override;
 
     z_status shutdown() override{
-        Service::shutdown();
         //command_handler_stop();
-
-        ws.remove_consumer(this);
+        _visits.stop();
         _visits.shutdown();
+        ws.remove_consumer(this);
+
         ws.stop();
 
         /*
@@ -79,6 +79,7 @@ public:
         simulator.close();
         simRace.close();
         cfmu804.close();
+        Service::shutdown();
 
         return zs_ok;
     };

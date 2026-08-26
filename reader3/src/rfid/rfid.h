@@ -145,6 +145,8 @@ class RfidReader
     Timer* _stat_timer=0;
     int stat_timer_callback(void* context);
 
+
+    void _read_processing_complete(RfidRead* read);
 protected:
     bool _open=false;
     bool _reading=false;

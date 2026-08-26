@@ -58,7 +58,7 @@ RfidRead* SimRunner::getRead(U64 ms,SimRace* race) {
         offset=race->_lap_dist_meters-offset;
     int rssi= (int)(100-offset*2);
 
-    ZDBG("%lld runner %d ,offset %4.2lf position: %4.2lf rssi=%d\n",ms,_bib,offset,position,rssi);
+    //ZDBG("%lld runner %d ,offset %4.2lf position: %4.2lf rssi=%d\n",ms,_bib,offset,position,rssi);
     int ant=1 << ((int)(offset*100)%8);
     race->_reader->queueRead(ant,rssi,(U8*)_epc.get_data(),_epc.get_len(),z_time_get_ticks_ms());
 

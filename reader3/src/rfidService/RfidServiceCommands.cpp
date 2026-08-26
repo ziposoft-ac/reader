@@ -39,7 +39,7 @@ int RfidService::getVisits(http_request req, z_string_map &vars, z_json_obj &jin
     bool debug=vars.get_as("debug",true);
     I64 last_notify=_visits.getLastNotifyTimestamp();
 
-    ZDBG("requested %lld,  current,%lld \n",req_last_notify,last_notify);
+   // ZDBG("requested %lld,  current,%lld \n",req_last_notify,last_notify);
 
     if (req_last_notify>last_notify) {
         ZDBG("RAW requested index %lld greater than current, using 0\n",req_last_notify);

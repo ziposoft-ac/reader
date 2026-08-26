@@ -127,8 +127,10 @@ void BeepPwm::pushTones(std::initializer_list<Tone> const beeps)
 {
     z_status status=init();  if (status) return;
 
-    if(_queue.get_count()>10)
+    if(_queue.get_count()>_max_beep_queue) {
+        ZDBG("droping Tone, queue full\n");
         return;
+    }
     for(auto i : beeps)
     {
         Note n={i.freq,i.duration,_duty};
@@ -141,8 +143,11 @@ void BeepPwm::pushNotes(std::initializer_list<Note> const notes)
 {
     z_status status=init();  if (status) return;
 
-    if(_queue.get_count()>100)
+    if(_queue.get_count()>_max_beep_queue) {
+        ZDBG("droping notes, queue full\n");
         return;
+
+    }
     for(auto i : notes)
     {
         _queue.push(i);
@@ -154,13 +159,17 @@ z_status BeepPwm::pushRemoteBeep(RemoteBeep_t *r) {
     z_status status=init();  if (status) return status;
     if (r->count>RemoteBeepMaxLength)
         return zs_bad_parameter;
-    if(_queue.get_count()>1000)
+    if(_queue.get_count()>_max_beep_queue) {
+        ZDBG("dropping beeps, queue full\n");
+
         return zs_device_busy;
+
+    }
     for(int i=0;i<r->count;i++)
     {
         auto note=r->notes[i];
         if (note.duration) {
-            ZDBG("pushing %d,%d,%d\n",note.freq,note.duration,note.duty);
+            //ZDBG("pushing %d,%d,%d\n",note.freq,note.duration,note.duty);
             _queue.push(note);
 
         }

@@ -149,7 +149,7 @@ void RfidReader::process_reads_thread() {
 
                i.second(r);
             }
-
+            _read_processing_complete(r);
             //delete read;
             sched_yield();
         }
@@ -301,21 +301,16 @@ z_status RfidReader::readmode_dump() {
     printf("ReadPauseTime=%d\n", _pause_read_time);
     return zs_ok;
 }
+void RfidReader::_read_processing_complete(RfidRead* r) {
 
-void RfidReader::queueRead(U8 antnum,U8 rssi,U8* epc,size_t epc_len,U64 ts
-    #ifdef  ENABLE_PHASE
-    ,int16_t phase1,int16_t phase2
-    #endif
-    )
-{
-	std::unique_lock mlock(_queue_reads_all_mutex);
-    _indexReads++;
-    RfidRead* r=new RfidRead(_indexReads,antnum,rssi,(U8*)epc,epc_len,ts);
-#ifdef  ENABLE_PHASE
-    r->phase1=phase1;
-    r->phase2=phase2;
+#ifndef SUPPORT_LIVE_READS
+
+    delete r;
+
+    return;
 #endif
-    _queue_reads.push(r);
+	std::unique_lock mlock(_queue_reads_all_mutex);
+
     _queue_reads_all.push_front(r);
 
     //std::unique_lock mlock(_queue_reads_all_mutex);
@@ -323,11 +318,30 @@ void RfidReader::queueRead(U8 antnum,U8 rssi,U8* epc,size_t epc_len,U64 ts
     while (_queue_reads_all.size()>_queue_max_depth) {
         RfidRead* old=_queue_reads_all.back();
         z_string s;
-        old->getEpcString(s);
+        //old->getEpcString(s);
         //ZDBG("DELETING OLD READ: %d %s\n",old->_index,s.c_str());
         _queue_reads_all.pop_back();
         delete old;
     }
+
+}
+
+void RfidReader::queueRead(U8 antnum,U8 rssi,U8* epc,size_t epc_len,U64 ts
+    #ifdef  ENABLE_PHASE
+    ,int16_t phase1,int16_t phase2
+    #endif
+    )
+{
+    _indexReads++;
+    RfidRead* r=new RfidRead(_indexReads,antnum,rssi,(U8*)epc,epc_len,ts);
+#ifdef  ENABLE_PHASE
+    r->phase1=phase1;
+    r->phase2=phase2;
+#endif
+    _queue_reads.push(r);
+
+
+
 
 }
 z_status RfidReader::dump_queue(

@@ -13,6 +13,10 @@ ZMETA(MqServerTest) {
 
 #define	MQ_DBG(...) {if(_debug) ZDBG(__VA_ARGS__); }
 
+#undef MQ_DBG
+
+#define MQ_DBG(...)
+
 MqServer::MqServer() {}
 
 MqServer::~MqServer() {
