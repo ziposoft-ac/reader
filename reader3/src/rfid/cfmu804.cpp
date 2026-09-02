@@ -434,7 +434,6 @@ void  Cfmu804::rx_thread()
         zout << "Unhandled Exception: " << e.what() << '\n';
 
     }
-    zout << "exiting rx_thread\n";
     if (p_frame)
         delete p_frame;
     return;

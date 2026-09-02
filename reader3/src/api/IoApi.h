@@ -8,6 +8,7 @@
 #include "io/BeepPwm.h"
 #include "api/MqClient.h"
 constexpr ctext ioServiceName="/ioservice";
+constexpr ctext rfidServiceName="/ioservice";
 
 enum LedColor {
     LedRed=1,

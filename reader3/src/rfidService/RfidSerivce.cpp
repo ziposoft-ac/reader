@@ -36,7 +36,19 @@ z_status RfidService::initialize() {
     size_t s=sizeof(set);
     ctext buffer=(ctext)&set;
 
-    ioLedSet({LedRed,true  });
+
+    // TODO this is horrible
+    int retry=10;
+    while (retry--) {
+        status=ioLedSet({LedRed,true  });
+        if (status==zs_ok)
+            break;
+
+        z_sleep_ms(100);
+
+
+    }
+
     ioLedSet({LedGreen,false  });
 
     //command_handler_start();

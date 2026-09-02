@@ -77,6 +77,7 @@ public:
         if (color<LedMax)
             led=_leds[color];
         if (led) {
+            ZDBG("handleSetLed %d, %d ", color, set->on);
             (set->on? led->on():led->off());
             return zs_ok;
 
@@ -131,12 +132,17 @@ public:
         z_status status=Service::initialize();
         if (status)
             return status;
+        init_logfile();
 
         gGpio.initialize();
         _leds={0,  &gGpio.ledRed,&gGpio.ledGreen,&gGpio.ledYellow      };
 
-        gGpio.ledRed.flash(2);
-        gGpio.ledGreen.flash(2);
+        // TODO rfid service should turn this on on startup, but it is not working
+        gGpio.ledRed.on();
+        gGpio.ledGreen.off();
+        gGpio.ledYellow.off();
+        //gGpio.ledRed.flash(2);
+        //gGpio.ledGreen.flash(2);
         gGpio.ledYellow.flash(2);
         gBeepPwm.init();
 
@@ -178,6 +184,8 @@ public:
         mq.shutdown();
         gGpio.shutdown();
         bat.shutdown();
+
+        Service::shutdown();
 
         return zs_ok;
     };

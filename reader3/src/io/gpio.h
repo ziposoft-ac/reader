@@ -78,6 +78,7 @@ protected:
     int _delay_off=100;
     //int _flashCount=0;
     int _toogleCount=0;
+    bool _steady_state=false;
     int _flashCountMax=10;
 
 public:

@@ -62,16 +62,18 @@ int Battery::timer_callback(void *) {
             new_status = batt_charge_status_charged;
         }
     }
-
-    if (new_status==batt_charge_status_charging) {
-        int flash_count=1;
-        if (_batt_volt>12) {
-            flash_count=(_batt_volt-12)*10 +1;
-        }
-
-        gGpio.ledRed.flash(flash_count);
+    int flash_count=1;
+    if (_batt_volt>12) {
+        flash_count=(_batt_volt-12)*10 +1;
     }
 
+    ZDBG("batt %d flash count=%d , current=%lf volt=%lf\n",new_status,flash_count,_batt_current,_batt_volt);
+    if (new_status==batt_charge_status_charging) {
+        gGpio.ledGreen.flash(flash_count);
+    }
+    if (new_status==batt_charge_status_discharging) {
+        gGpio.ledRed.flash(flash_count);
+    }
 
     if (new_status != _status) {
         _status = new_status;
@@ -80,15 +82,14 @@ int Battery::timer_callback(void *) {
             case batt_charge_status_charged: {
                 ZDBG("batt_charge_status_charged\n");
 
-                gGpio.ledGreen.off();
-                gGpio.ledRed.on();
+                //gGpio.ledRed.on();
             }
             break;
 
             case batt_charge_status_discharging: {
                 ZDBG("batt_charge_status_discharging\n");
                // gGpio.ledGreen.on();
-                gGpio.ledRed.off();
+                //gGpio.ledRed.off();
                 gBeepPwm.pushTones({{1500, 50}, {1000, 50}, {500, 50}});
             }
             break;
@@ -158,6 +159,10 @@ z_status Battery::read() {
     return zs_ok;
 #endif
     if (init()) return zs_io_error;
+
+    U64 ts_start_ns = z_time_get_ticks_ns();
+    U64 ts_start_us = z_time_get_ticks_us();
+    U64 ts_start_ms = z_time_get_ticks_ms();
     U16 batt_volt_reg = read_reg(INA3221_REG_CH3_V);
     U16 batt_current_reg = read_reg(INA3221_REG_CH3_I);
 
@@ -169,6 +174,12 @@ z_status Battery::read() {
     _batt_current = get_current(batt_current_reg,_shunt_battery);
     _input_current =  get_current(input_current_reg,_shunt_input);
     if (_debug) {
+        U64 elap=z_time_get_ticks_ns()-ts_start_ns;;
+        ZDBG("read took:%lld ns\n", elap);
+        elap=z_time_get_ticks_us()-ts_start_us;;
+        ZDBG("read took:%lld us\n", elap);
+        elap=z_time_get_ticks_ms()-ts_start_ms;;
+        ZDBG("read took:%lld ms\n", elap);
         ZDBG("batt voltage=%04x, %0.2lf\n", batt_volt_reg, _batt_volt);
         ZDBG("batt current=%04x, %0.2lf\n", batt_current_reg, _batt_current);
 

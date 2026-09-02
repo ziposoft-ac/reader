@@ -9,18 +9,10 @@
 
 Service *gService = NULL;
 
-z_status Service::service() {
-
-    if (!gConsole.is_console_running()) {
-        process_wait_for_quit();
-        ZLOG("\n======== Service %s exit:%s =========\n",getName(), z_time::getTimeStrLocal().c_str() );
-
-    }
-    return zs_ok;
-}
 
 z_status Service::shutdown() {
     gTimerService.shutdown();
+    ZLOG("\n======== Exiting %s:%s =========\n",getName(), z_time::getTimeStrLocal().c_str() );
 
     return zs_ok;
 }
@@ -40,6 +32,7 @@ z_status Service::run_as_service() {
     if (gConsole.is_console_running())
         return zs_already_open;
     process_wait_for_quit();
+    ZLOG("received exit signal");
     return zs_ok;
 
 
@@ -57,11 +50,13 @@ z_status Service::init_logfile() {
     _log_file.open(logname);
     get_default_logger().always_flush=true;
     get_default_logger().create_file_out(logname);
-    std::filesystem::remove("last.log",ec);
-    std::filesystem::create_symlink(logname.c_str(),"last.log",ec);
+    z_string link_name=getName();
+    link_name+=".log";
+    std::filesystem::remove(link_name.c_str(),ec);
+    std::filesystem::create_symlink(logname.c_str(),link_name.c_str(),ec);
     z_string ts=z_time::getTimeStrLocal();
 
-    ZLOG("\n========%s=========\nLOCAL:%s\nGMT:%s\nBUILD: %s\n",
+    ZLOG("\n========starting %s =========\nLOCAL:%s\nGMT:%s\nBUILD: %s\n",
         getName(),
          z_time::getTimeStrLocal().c_str(),
          z_time::getTimeStrGmt().c_str(),

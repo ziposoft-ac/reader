@@ -96,13 +96,18 @@ z_status VisitProcess::stop() {
     getRfidReader().stop();
 
     write_out_all();
-    _running = false;
 
     _reading = false;
     _file_raw.close_copy();
     _file_visits.close_copy();
+    if (_running) {
+
+        ioBeep(_beep_volume,{{2000,50},{0,50},{1000,50},{0,50},{500,50}});
+        _running = false;
+    }
+
+
     std::unique_lock mlock(_mutex_tags);
-    printf("deleting tags\n");
 
     _tags.delete_all();
     //root.beeper.pushBeeps(            {{1500,30},{1000,30},{750,30},{500,100}});
@@ -168,6 +173,8 @@ z_status VisitProcess::start() {
             _running = true;
             msg = "reading started";
             _t_started = getRfidReader().getTimeReadingStart();
+            ioBeep(_beep_volume,{{500,50},{0,50},{1000,50},{0,50},{2000,50}});
+
         }
     }
 #ifdef DEBUG
@@ -178,6 +185,7 @@ z_status VisitProcess::start() {
         stop();
         return Z_ERROR_MSG(s, msg);
     }
+
     //root.beeper.pushBeeps(         {{500,30},{0,30},{750,30}});
     return s;
 }
@@ -385,7 +393,7 @@ bool VisitProcess::callbackRead(RfidRead *read) {
         Z_THROW_MSG(zs_internal_error, "Exception writing to read log file");
     }
     if (signal) {
-        ioBeep(_beep_volume,{{2000,5}});
+        ioBeep(_beep_volume,{{500,10}});
 
         signalWaitingRequests();
 
@@ -452,10 +460,17 @@ bool RfidTag::processCheck(VisitProcess &rc, const z_time& now) {
         }
         // if the time since last peak is past the peak window,
         _state = fr_type_peaked;
-        _peaked=true;
-        ioBeep(rc._beep_volume,{{1000,40},{0,5},{2000,60}});
+        if (!_peaked) {
+            _peaked=true;
+            ioBeep(rc._beep_volume,{{1000,40},{0,5},{2000,60}});
+            ioLedFlash({LedYellow,30,1});
+        }
+        else {
+            // Only a new high
+            ioBeep(rc._beep_volume,{{2000,20}});
 
-        ioLedFlash({LedYellow,30,1});
+        }
+
 
         write_it_out = true;
     }

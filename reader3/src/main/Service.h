@@ -45,7 +45,6 @@ public:
     }
     friend z_factory_t<Service>;
     virtual z_status shutdown();
-    virtual z_status service();
     virtual z_status initialize();
     virtual z_status run_as_service();
     z_status init_logfile();

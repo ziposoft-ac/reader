@@ -99,6 +99,8 @@ z_status GpioPin::init(Gpio* chip,ctext name)
     Z_ASSERT(!_timer);
     _name=name;
     //_chip=chip;
+    if(!_timer)
+        _timer=CREATE_TIMER(GpioPin::timer_callback);
 
     if (!_pin) {
         return Z_ERROR_MSG(zs_not_open,"GPIO: %s pin is disabled, set to 0\n",name);
@@ -109,8 +111,6 @@ z_status GpioPin::init(Gpio* chip,ctext name)
 
     if (!_request)
         return zs_io_error;
-    if(!_timer)
-        _timer=CREATE_TIMER(GpioPin::timer_callback);
 
     /*
     if (_output ) {
@@ -273,6 +273,8 @@ z_status GpioPinLed::flash(int count)
 {
     if(!gGpio.initialize())
         return zs_io_error;
+    if (!_timer)
+        return zs_io_error;
     if(!_toogleCount)
         _timer->start_ms_if_not_running(1);
     _toogleCount+=count*2;
@@ -282,23 +284,27 @@ z_status GpioPinLed::flash(int count)
 }
 int GpioPinLed::timer_callback(void *)
 {
-    if(!_toogleCount)
+    if(!_toogleCount) {
+        if (_steady_state)
+            _off();
+        else
+            _on();
+
         return 0;
+
+    }
     _toogleCount--;
+
 
     if(_state)
     {
-        _state=false;
         _off();
         return _delay_off;
     }
-    else
-    {
-        _state=true;
-        _on();
-        return _delay_on;
+    _on();
+    return _delay_on;
 
-    }
+
 }
 z_status GpioPinLed::init(Gpio* chip,ctext name)
 {
@@ -321,7 +327,7 @@ z_status GpioPinLed::off()
     if(!gGpio.initialize())
         return zs_io_error;
     //setOutput();
-
+    _steady_state=false;
     //_timer->stop();
     //_on();
 
@@ -331,8 +337,7 @@ z_status GpioPinLed::off()
 z_status GpioPinLed::on()
 {
     if(!gGpio.initialize()) return zs_io_error;
-    //setOutput();
-    //_timer->stop();
+    _steady_state=true;
     _off();
     return zs_ok;
 }

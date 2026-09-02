@@ -374,7 +374,7 @@ z_status Cfmu804::info_dump()
     if (_info_get(&info)==zs_ok) {
         return info_print(info);
     }
-    printf("error reading info\n");
+    Z_ERROR_LOG("error reading info\n");
     return zs_ok;
 
 }
@@ -402,18 +402,7 @@ z_status Cfmu804::readmode_set()
     if(status)
         return status;
 
-    /*
-    printf("set status=%x\n", status);
 
-    printf("TagProtocol=%x\n", mode.TagProtocol);
-    printf("ReadPauseTime=%x\n", mode.ReadPauseTime);
-    printf("FilterTime=%x\n", mode.FilterTime);
-    printf("QValue=%x\n", mode.QValue);
-    printf("Session=%d\n", mode.Session);
-    printf("MaskMem=%d\n", mode.MaskMem);
-    printf("MaskAdr=%d\n", mode.MaskAdr);
-    printf("MaskLen=%d\n", mode.MaskLen);
-*/
     return zs_ok;
 
 }
@@ -443,17 +432,7 @@ z_status Cfmu804::readmode_get()
     _maskMem=mode.MaskMem;
     _tagProtocol=mode.TagProtocol;
     _pause_read_time=mode.ReadPauseTime;
-    /*
-    printf("ReadMode=%x\n", mode.ReadMode);
-    printf("TagProtocol=%x\n", mode.TagProtocol);
-    printf("ReadPauseTime=%x\n", mode.ReadPauseTime);
-    printf("FilterTime=%x\n", mode.FilterTime);
-    printf("QValue=%x\n", mode.QValue);
-    printf("Session=%d\n", mode.Session);
-    printf("MaskMem=%d\n", mode.MaskMem);
-    printf("MaskAdr=%d\n", mode.MaskAdr);
-    printf("MaskLen=%d\n", mode.MaskLen)    ;
-    */
+
     return zs_ok;
 }
 
@@ -465,7 +444,7 @@ z_status Cfmu804::config_read() {
     if (readmode_get())
         return zs_read_error;
     if (_reading) {
-        printf("currently reading, cannot dump rest of config");
+        ZLOG("currently reading, cannot dump rest of config");
         return zs_ok;
     }
     if (antCheck())
@@ -746,7 +725,7 @@ z_status Cfmu804::profile_set_get(U8 &profile_return,U8 profile_set)
     }
     z_status status=send_command(0x7f,&profile_set,1,2000,&return_code,&profile_return,1);
     if (status==zs_ok) {
-        ZLOG("Current profile=%d\n",profile_return);
+        //ZLOG("Current profile=%d\n",profile_return);
         _profile=profile_return;
     }
     else {
