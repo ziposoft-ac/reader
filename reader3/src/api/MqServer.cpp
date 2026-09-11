@@ -174,7 +174,7 @@ z_status MqServer::run(ctext name) {
     if (_mq_server_fd)
         return zs_already_open;
     struct mq_attr attr;
-    mq_unlink(name);
+    //mq_unlink(name);
     // Configure queue parameters
     attr.mq_flags = 0;
     attr.mq_maxmsg = 10;
