@@ -78,6 +78,7 @@ public:
     int _presence_window_s = 5;
     //int _minimum_log_time_ms = 1000;
     int _peak_window_ms = 500;
+    U8 _priority_mask=0;
 
     z_string _file_path_record = default_record_path;
     z_string _file_path_record_raw =default_record_path_raw;
@@ -118,6 +119,7 @@ ZMETA_DECL(VisitProcess) {
 
     ZPROP(_file_path_record);
     //ZPROP(_file_path_complete);
+    ZPROP(_priority_mask);
     ZPROP(_beep);
     ZPROP(_buzzer);
     ZPROP(_peak_window_ms);

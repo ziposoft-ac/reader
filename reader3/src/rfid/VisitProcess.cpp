@@ -413,6 +413,13 @@ z_time RfidTag::processRead(RfidRead *r, VisitProcess &rc) {
     z_time ts = r->_time_stamp;
     bool hi = false;
     if (_rssi_high < r->_rssi) {
+
+        if (rc._priority_mask) {
+
+
+
+        }
+
         // new RSSI high
         _ts_next_check_required = ts + (U64) rc._peak_window_ms;
         _rssi_high = r->_rssi;

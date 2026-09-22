@@ -416,6 +416,7 @@ template class z_variable<long long>;
 //template class z_variable<float>;
 template class z_variable<double>;
 template class z_variable<int>;
+template class z_variable<U8>;
 template class z_variable<char>;
 template class z_variable<ctext>;
 template class z_variable<unsigned long>;
