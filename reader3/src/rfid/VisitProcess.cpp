@@ -413,22 +413,24 @@ z_time RfidTag::processRead(RfidRead *r, VisitProcess &rc) {
     z_time ts = r->_time_stamp;
     bool hi = false;
     if (_rssi_high < r->_rssi) {
+        //priority check
+        bool is_priority_read=rc._priority_mask&r->_antNum;
+        bool have_priority_read=rc._priority_mask&_ant_mask;
 
-        if (rc._priority_mask) {
+        if (is_priority_read || (!have_priority_read))
+        {
+            // new RSSI high
+            _ts_next_check_required = ts + (U64) rc._peak_window_ms;
+            _rssi_high = r->_rssi;
 
-
-
+            _ant_hi = r->_antNum;
+            //_count_hi = _count_total;
+            _ts_rssi_high = r->_time_stamp;
+            _state = fr_type_signal_going_up;
+            hi = true;
         }
 
-        // new RSSI high
-        _ts_next_check_required = ts + (U64) rc._peak_window_ms;
-        _rssi_high = r->_rssi;
 
-        _ant_hi = r->_antNum;
-        //_count_hi = _count_total;
-        _ts_rssi_high = r->_time_stamp;
-        _state = fr_type_signal_going_up;
-        hi = true;
     } else {
     }
 
