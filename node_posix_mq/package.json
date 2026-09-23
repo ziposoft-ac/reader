@@ -1,0 +1,15 @@
+{
+  "name": "zmq",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "build": "cmake-js configure && cmake-js build",
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "node-addon-api": "^8.9.0"
+  },
+  "binary": {
+    "napi_versions": [ 3 ]
+  }
+}
