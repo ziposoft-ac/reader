@@ -37,7 +37,14 @@ public:
     RfidReader& getRfidReader() {
         return *_reader;
     }
+    z_status simulate_file() {
+        _reader->close();
 
+        _reader=&simulator;
+        _simulate=true;
+        _reader->open();
+        return zs_ok;
+    }
     z_status simulate_on() {
         _reader->close();
 

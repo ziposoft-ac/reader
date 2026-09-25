@@ -75,13 +75,17 @@ z_status RfidSimulator::burstSeq(int count,int interval_ms) {
 
 z_status RfidSimulator::_read_start() {
     ZTF;
+    _time_offset=0;
     if(!_timer)
         _timer=CREATE_TIMER(RfidSimulator::timer_callback );
     if (_mode==MODE_FILE) {
         printf("Loading file: %s\n ",_source_file.c_str());
+        _data.clear();
+
         z_parse_csv_file csv;
         z_string path=   _source_file;
         z_status  status=csv.ParseFileData(path,_data);
+        printf("Loaded: %d reads\n ",_data.size());
 
         if (status!=zs_ok) {
             return Z_ERROR(status);
@@ -200,7 +204,9 @@ int RfidSimulator::timer_callback_file(void *) {
 
     if (_file_reads_delay)
         delay=_file_reads_delay;
-    ZDBG("next read %d\n",delay);
+    //ZDBG("next read %d\n",delay);
+    if (delay==0)
+        delay=1;
     if(_max_interval)
         if(_max_interval<delay)
             delay=_max_interval;

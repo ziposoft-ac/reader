@@ -78,7 +78,7 @@ public:
     int _presence_window_s = 5;
     //int _minimum_log_time_ms = 1000;
     int _peak_window_ms = 500;
-    U8 _priority_mask=0;
+    int _priority_mask=0;
 
     z_string _file_path_record = default_record_path;
     z_string _file_path_record_raw =default_record_path_raw;

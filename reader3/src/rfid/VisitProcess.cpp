@@ -41,8 +41,10 @@ static double get_dbg_ts_ms(U64 ts) {
 #define DBGL(...) {}
 #endif
 
-#undef DBGL
-#define DBGL(...)
+
+
+//#undef DBGL
+//#define DBGL(...)
 
 VisitProcess::VisitProcess() {
 }
@@ -408,17 +410,21 @@ z_time RfidTag::processRead(RfidRead *r, VisitProcess &rc) {
     _ts_last_time_seen = r->_time_stamp;
     if (!_ts_first_time_seen)
         _ts_first_time_seen = _ts_last_time_seen;
-    _ant_mask = _ant_mask | r->_antNum;
     _count_total++;
     z_time ts = r->_time_stamp;
     bool hi = false;
-    if (_rssi_high < r->_rssi) {
-        //priority check
-        bool is_priority_read=rc._priority_mask&r->_antNum;
-        bool have_priority_read=rc._priority_mask&_ant_mask;
-
-        if (is_priority_read || (!have_priority_read))
+    bool is_priority_read=rc._priority_mask&r->_antNum;
+    bool have_priority_read=rc._priority_mask&_ant_mask;
+    _ant_mask = _ant_mask | r->_antNum;
+    if (is_priority_read || (!have_priority_read))
+    {
+        if (
+            (is_priority_read && (!have_priority_read)) || //always count new priority
+            (_rssi_high < r->_rssi))
         {
+            //priority check
+
+
             // new RSSI high
             _ts_next_check_required = ts + (U64) rc._peak_window_ms;
             _rssi_high = r->_rssi;
@@ -428,12 +434,12 @@ z_time RfidTag::processRead(RfidRead *r, VisitProcess &rc) {
             _ts_rssi_high = r->_time_stamp;
             _state = fr_type_signal_going_up;
             hi = true;
+
         }
-
-
-    } else {
     }
-
+    else {
+        DBGL("ignoring low priority read");
+    }
 
     DBGL("%s read %s at  %4.3lf  check in is  %4.3lf", (hi?"HI":"LOW"), _epc.c_str(),
          get_dbg_ts(ts),

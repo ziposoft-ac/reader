@@ -26,7 +26,8 @@ z_status RfidService::initialize() {
     init_logfile();
     if (_simulate) {
         ZDBG("Simulate is on\n");
-        _reader= &simRace;
+        //_reader= &simRace;
+        _reader= &simulator;
 
     }
     else
@@ -92,6 +93,7 @@ ZMETA(RfidService) {
 
     ZACT(simulate_on);
     ZACT(simulate_off);
+    ZACT(simulate_file);
 
 
 };
