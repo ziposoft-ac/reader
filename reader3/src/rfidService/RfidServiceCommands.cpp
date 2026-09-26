@@ -125,7 +125,7 @@ int RfidService::get_raw_reads(z_string_map &params, z_json_stream &jout) {
 int RfidService::post_config(z_json_obj& o,z_json_stream& jout) {
 
     z_status s=getRfidReader().json_config_set(o);
-
+    _visits._priority_mask=o.get_int("priorityMask",_visits._priority_mask);
     if (s==zs_ok) {
         json_status(jout);
         return CMD_SUCCESS;

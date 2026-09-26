@@ -26,8 +26,8 @@ z_status RfidService::initialize() {
     init_logfile();
     if (_simulate) {
         ZDBG("Simulate is on\n");
-        //_reader= &simRace;
-        _reader= &simulator;
+        _reader= &simRace;
+        //_reader= &simulator;
 
     }
     else
