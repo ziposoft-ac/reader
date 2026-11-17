@@ -134,6 +134,50 @@ int RfidService::post_config(z_json_obj& o,z_json_stream& jout) {
     return CMD_FAILED;
 }
 
+int RfidService::post_program_bcd(z_json_obj &o, z_json_stream &jout) {
+
+    int bcd=o.get_int("bcd",0);
+    bool overwrite=o.get_bool("overwrite",false);
+    ZDBG("Program bcd=",bcd);
+    z_status status=getRfidReader().program(bcd,overwrite);
+
+    return status==zs_ok?CMD_SUCCESS:CMD_FAILED;
+
+
+}
+
+int RfidService::post_program_epc(z_json_obj &o, z_json_stream &js) {
+    z_string hex="";
+    bool found=o.get_str("epc",hex);
+    bool overwrite=o.get_bool("overwrite",false);
+    z_status status=zs_bad_command;
+    if (found) {
+        status=getRfidReader().program_epc(hex);
+
+    }
+
+    js.key_bool("success",status==zs_ok);
+    js.keyval("error",zs_get_status_text(status));
+    return status==zs_ok?CMD_SUCCESS:CMD_FAILED;
+
+
+}
+
+int RfidService::get_read_one(z_string_map &params, z_json_stream &js) {
+    RfidRead* read=getRfidReader().read_single(20);
+
+    js.key_bool("success",(read != nullptr));
+    if (read) {
+        z_string epc;
+        read->getEpcString(epc);
+        js.keyval("epc",epc);
+        return CMD_SUCCESS;
+
+    }
+    return CMD_SUCCESS;
+
+}
+
 int RfidService::post_start_stop_visits(z_json_obj& o,z_json_stream& jout) {
     bool start= o.get_bool("start",false);
     bool visit_running=_visits.is_recording();

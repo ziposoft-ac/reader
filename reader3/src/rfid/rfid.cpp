@@ -191,12 +191,15 @@ z_status RfidReader::open()
     status=_hw_init();
     if(zs_ok==status)
     {
+        _stat_timer->start_ms_reset(1000);
+        return zs_ok;
+
     }
     else {
         Z_ERROR_MSG(zs_io_error,"hw_init failed in reader");
+        close();
     }
 
-    _stat_timer->start_ms_reset(1000);
 
     return status;
 

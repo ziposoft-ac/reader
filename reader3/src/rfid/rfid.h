@@ -11,7 +11,7 @@
 #define ENABLE_PHASE 0
 #undef ENABLE_PHASE
 
-
+#define SUPPORT_LIVE_READS 1
 
 
 class RfidRead {
@@ -240,6 +240,19 @@ public:
     virtual z_status readmode_set(){ return zs_not_implemented;}
     virtual z_status info_dump(){ return zs_not_implemented;}
     virtual z_status ant_dump(){ return zs_not_implemented;}
+
+	virtual RfidRead *read_single(int retry) {
+        return nullptr;
+    }
+    virtual z_status program_epc(z_string hex) {
+
+        return zs_not_implemented;
+    }
+	virtual z_status program(int number, bool overwrite){ return zs_not_implemented;}
+
+    virtual RfidRead *program_bcd(int number, bool overwrite, bool &programmed) {
+        return nullptr;
+    }
     virtual z_status ant_detect(bool print){ return zs_not_implemented;}
 	virtual int get_temperature_cmd(){ return zs_not_implemented;}
 

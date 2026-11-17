@@ -241,9 +241,10 @@ z_status Cfmu804::_hw_init() {
                 break;
 
         }
+        return zs_ok;
 
     }
-    return zs_ok;
+    return zs_io_error;
 }
 
 z_status Cfmu804::_hw_open()
@@ -262,10 +263,10 @@ z_status Cfmu804::_hw_open()
         serial::Timeout to = serial::Timeout::simpleTimeout(100);
         _port.setTimeout(to);
 
-        if (_rx_thread_start()) {
+        if (_rx_thread_start()==zs_ok) {
 
 
-            return zs_io_error;
+            return zs_ok;
 
         }
         //DO NOT CALL ANY COMMANDS HERE
@@ -276,13 +277,13 @@ z_status Cfmu804::_hw_open()
 
     catch (std::system_error & e) {
         zout << "System error: " << e.what() << '\n';
-        return zs_could_not_open_file;
     }
     catch (std::exception & e) {
        // zout << "Unhandled Exception: " << e.what() << '\n';
-        return zs_could_not_open_file;
     }
-    return zs_ok;
+    if (_port.isOpen())
+        _port.close();
+    return zs_could_not_open_file;
 }
 
 bool  Cfmu804::_rx_frame(ResponseFrame* frame )

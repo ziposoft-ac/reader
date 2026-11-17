@@ -99,6 +99,14 @@ public:
     int get_status(z_string_map& params,z_json_stream& jout);
     int get_raw_reads(z_string_map& params,z_json_stream& jout);
     int post_config(z_json_obj& o,z_json_stream& jout);
+    int post_program_bcd(z_json_obj& o,z_json_stream& jout);
+    int post_program_epc(z_json_obj& o,z_json_stream& jout);
+    int get_read_one(z_string_map& params,z_json_stream& jout);
+
+
+
+
+
     void callbackVisitNotify();
     U64 _counter=0;
 

@@ -63,6 +63,12 @@ z_status RfidService::initialize() {
     reg_func("stopstart_raw",&RfidService::post_start_stop_raw);
     reg_func("stopstart_visits",&RfidService::post_start_stop_visits);
     reg_func("status",&RfidService::get_status);
+
+    reg_func("program_bcd",&RfidService::post_program_bcd);
+    reg_func("program_epc",&RfidService::post_program_epc);
+    reg_func("read_one",&RfidService::get_read_one);
+
+
     _getRawReadsCd=reg_func("reads_raw",&RfidService::getRawReads);
     _getGetVisitsCd=reg_func("visits",&RfidService::getVisits);
 
